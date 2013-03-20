@@ -25,6 +25,7 @@ library
 
   exposed-modules:
       Data.Prednote.Pdct
+    , Data.Prednote.TestTree
 
   build-depends:
       base >= 4.6 && < 5
