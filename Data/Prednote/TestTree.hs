@@ -1,6 +1,57 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Prednote.TestTree where
+-- | Helps you build a tree of tests that run against a series of
+-- items. This is best illustrated with an example.
+--
+-- Let's say that you have a list of Int. You want to make sure that
+-- every Int in the list is odd and that every Int is greater than
+-- zero. You also want to make sure that at least 5 Ints in the list
+-- are greater than 20.
+--
+-- 'Pdct' from "Data.Prednote.Pdct" will help you, but only so much: a
+-- 'Pdct' can test individual Int, but by itself it will not help you
+-- run a check against a whole list of Int. Of course you can build
+-- such a test fairly easily with 'any' and 'all', but what if you
+-- want to view the results of the tests verbosely? That's where this
+-- module comes in.
+--
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > isOdd :: Pdct Int
+-- > isOdd = operand "is odd" odd
+-- >
+-- > greaterThan0 :: Pdct Int
+-- > greaterThan0 = operand "greater than zero" (> 0)
+-- >
+-- > greaterThan20 :: Pdct Int
+-- > greaterThan20 = operand "greater than 20" (> 20)
+-- >
+-- > tests :: [TestTree Int]
+-- > tests = undefined
+module Data.Prednote.TestTree
+  (
+  -- * The TestTree
+    Name
+  , TestFunc
+  , TestTree (..)
+  , Payload (..)
+  , test
+
+  -- * Tests
+  , eachSubjectMustBeTrue
+  , seriesAtLeastN
+
+  -- * Grouping tests
+  , group
+
+  -- * Running and showing tests
+  , Pass
+  , Verbosity (..)
+  , PassVerbosity
+  , FailVerbosity
+  , showTestTree
+  , evalTestTree
+  ) where
 
 import Data.Maybe (isJust)
 import qualified Data.Text as X
@@ -18,9 +69,7 @@ import qualified Data.Prednote.Pdct as Pt
 type Pass = Bool
 type Name = Text
 
--- | A tree of tests. On evaluation of the tree, the name is not shown
--- for tests (it is only shown for groups.) However, the name is used
--- when the tree is displayed statically, without evaluation.
+-- | A tree of tests.
 data TestTree a = TestTree Name (Payload a)
 
 data Payload a
@@ -194,3 +243,36 @@ evalTestTree i l pv fv as (TestTree n p) = case p of
   Test f -> [Right $ f i pv fv as l]
   Group ts -> Left (indent i l n)
               : concatMap (evalTestTree i (l + 1) pv fv as) ts
+
+--
+-- Running a group of tests
+--
+
+type NPassed = Int
+type NFailed = Int
+
+-- | Runs all tests. Reports on how many passed and how many failed.
+
+runAllTests
+  :: Pt.IndentAmt
+  -> Pt.Level
+  -> PassVerbosity
+  -> FailVerbosity
+  -> [a]
+  -> [TestTree a]
+  -> ([R.Chunk], NPassed, NFailed)
+runAllTests = undefined
+
+type AllPassed = Bool
+
+-- | Runs tests. Stops running tests if a single test fails. Returns
+-- True if all tests passed, or False if a single test failed.
+runUntilFailure
+  :: Pt.IndentAmt
+  -> Pt.Level
+  -> PassVerbosity
+  -> FailVerbosity
+  -> [a]
+  -> [TestTree a]
+  -> ([R.Chunk], AllPassed)
+runUntilFailure = undefined
