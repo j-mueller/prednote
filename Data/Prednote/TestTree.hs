@@ -8,6 +8,7 @@ import Data.Text (Text)
 import qualified Data.List.Split as Sp
 
 import qualified System.Console.Rainbow as R
+import System.Console.Rainbow ((+.+))
 import qualified Data.Prednote.Pdct as Pt
 
 --
@@ -32,7 +33,7 @@ type TestFunc a
   -> FailVerbosity
   -> [a]
   -> Pt.Level
-  -> (Pass, [C.Chunk])
+  -> (Pass, [R.Chunk])
 
 
 group :: Name -> [TestTree a] -> TestTree a
@@ -103,19 +104,16 @@ isSubjectAndDiscardsShown v b = case v of
 showTestTitle :: Pt.IndentAmt -> Pt.Level -> Name -> Pass -> [R.Chunk]
 showTestTitle i l n p = [idt, open, passFail, close, blank, txt, nl]
   where
-    passFail = C.chunk ts tf
-    idt = C.chunk C.defaultTextSpec (X.replicate (i * l) " ")
-    nl = C.chunk C.defaultTextSpec "\n"
-    (tf, ts) =
+    idt = R.plain (X.replicate (i * l) " ")
+    nl = R.plain "\n"
+    passFail =
       if p
-      then ("PASS", Sw.switchForeground C.color8_f_green
-                    C.color256_f_2 C.defaultTextSpec)
-      else ("FAIL", Sw.switchForeground C.color8_f_red
-                    C.color256_f_1 C.defaultTextSpec)
-    open = C.chunk C.defaultTextSpec "["
-    close = C.chunk C.defaultTextSpec "]"
-    blank = C.chunk C.defaultTextSpec (X.singleton ' ')
-    txt = C.chunk C.defaultTextSpec n
+      then R.plain "PASS" +.+ R.f_green
+      else R.plain "FAIL" +.+ R.f_red
+    open = R.plain "["
+    close = R.plain "]"
+    blank = R.plain (X.singleton ' ')
+    txt = R.plain n
 
 isTrue :: Maybe Bool -> Bool
 isTrue = maybe False id
@@ -163,12 +161,12 @@ seriesAtLeastN n swr count p = TestTree n (Test tf)
         cks = tit ++ subjectChunks
         tit = if v == Silent then [] else showTestTitle idnt l n pass
         subjectChunks =
-          concatMap (showSubject swr v idnt (l + 1) p) . concat $ resultList
+          concatMap (showSubject swr v idnt (l + 1) p)
+          . concat $ resultList
 
 indent :: Pt.IndentAmt -> Pt.Level -> Text -> R.Chunk
-indent amt lvl t = C.chunk ts txt
+indent amt lvl t = R.plain txt
   where
-    ts = C.defaultTextSpec
     txt = X.concat [spaces, t, "\n"]
     spaces = X.replicate (amt * lvl) " "
 
