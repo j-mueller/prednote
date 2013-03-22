@@ -39,25 +39,31 @@ module Data.Prednote.TestTree
 
   -- * Tests
   , eachSubjectMustBeTrue
-  , seriesAtLeastN
+  , nSubjectsMustBeTrue
 
   -- * Grouping tests
   , group
 
-  -- * Running and showing tests
-  , Pass
-  , Verbosity (..)
-  , PassVerbosity
-  , FailVerbosity
-  , GroupPred
-  , TestPred
-  , StopOnFail
-  , AllPassed
-  , EvalEnv (..)
-  , evalTree
+  -- * Simple test runners
+  , Verbosity(..)
+  , GroupVerbosity (..)
+  , TestOpts (..)
+  , Pt.Level
+  , PassCount
+  , FailCount
   , runAllTests
+  , AllPassed
   , runUntilFailure
+
+  -- * Showing the test tree
   , showTestTree
+
+  -- * Tree evaluator
+  , EvalEnv (..)
+  , ShortCircuit
+  , Pass
+  , evalTree
+
   ) where
 
 import Data.Either (rights)
@@ -88,8 +94,12 @@ data Payload a
 
 type TestFunc a
   = Pt.IndentAmt
-  -> PassVerbosity
-  -> FailVerbosity
+  -> Verbosity
+  -- ^ Use this verbosity for tests that pass
+
+  -> Verbosity
+  -- ^ Use this verbosity for tests that fail
+
   -> [a]
   -> Pt.Level
   -> (Pass, [R.Chunk])
@@ -101,10 +111,6 @@ group n ts = TestTree n (Group ts)
 test :: Name -> TestFunc a -> TestTree a
 test n t = TestTree n (Test t)
 
-type PassVerbosity = Verbosity
-type FailVerbosity = Verbosity
-
--- TODO verbosity must be used when showing trees
 data Verbosity
   = Silent
   -- ^ Show nothing at all
@@ -201,13 +207,13 @@ eachSubjectMustBeTrue n swr p = TestTree n (Test tf)
           concatMap (showSubject swr v i (lvl + 1) p) rslts
 
 -- | Passes if at least n subjects are True.
-seriesAtLeastN
+nSubjectsMustBeTrue
   :: Name
   -> (a -> X.Text)
   -> Int
   -> Pt.Pdct a
   -> TestTree a
-seriesAtLeastN n swr count p = TestTree n (Test tf)
+nSubjectsMustBeTrue n swr count p = TestTree n (Test tf)
   where
     tf idnt pv fv as l = (pass, cks)
       where
@@ -252,18 +258,17 @@ showTestTree amt l (TestTree n p) = indent amt l n : children
       Group ts -> concatMap (showTestTree amt l) ts
       Test _ -> []
 
-type GroupPred = Name -> Bool
-type TestPred = Name -> Bool
-type StopOnFail = Bool
 
 data EvalEnv a = EvalEnv
-  { eeIndentAmt :: Pt.IndentAmt
-  , eePassVerbosity :: PassVerbosity
-  , eeFailVerbosity :: FailVerbosity
-  , eeGroupPred :: GroupPred
-  , eeTestPred :: TestPred
+  { eeIndentAmt :: Int
+  , eePassVerbosity :: Verbosity
+  , eeFailVerbosity :: Verbosity
+  , eeShowSkippedTests :: Bool
+  , eeGroupVerbosity :: GroupVerbosity
+  , eeGroupPred :: Name -> Bool
+  , eeTestPred :: Name -> Bool
   , eeSubjects :: [a]
-  , eeStopOnFail :: StopOnFail
+  , eeStopOnFail :: Bool
   }
 
 
@@ -288,8 +293,15 @@ evalGroup ee n l ts = if eeGroupPred ee n
   then let ls = unfoldr (unfoldList ee l) (False, ts)
            stop = any not . map fst $ ls
            rslts = concat . map snd $ ls
-        in (stop, rslts)
-  else (False, [Left $ skip "group" (eeIndentAmt ee) l n])
+           groupNm = if eeGroupVerbosity ee /= NoGroups
+                     then indent (eeIndentAmt ee) l n
+                     else R.plain ""
+        in (stop, Left [groupNm] : rslts)
+  else let groupNm = if eeGroupVerbosity ee == AllGroups
+                     then skip "group" (eeIndentAmt ee) l n
+                     else [R.plain ""]
+       in (False, [Left groupNm])
+
 
 evalTest
   :: EvalEnv a
@@ -299,33 +311,55 @@ evalTest
   -> (ShortCircuit, [Either [R.Chunk] (Pass, [R.Chunk])])
 evalTest ee n l tf = if eeTestPred ee n
   then (not p, [Right (p, cs)])
-  else (False, [Left $ skip "test" (eeIndentAmt ee) l n])
+  else (False, skipped)
   where
     (p, cs) = tf (eeIndentAmt ee) (eePassVerbosity ee)
               (eeFailVerbosity ee) (eeSubjects ee) l
+    skipped = if eeShowSkippedTests ee
+              then [Left $ skip "test" (eeIndentAmt ee) l n]
+              else []
 
 
 --
 -- Running a group of tests
 --
 
-type NPassed = Int
-type NFailed = Int
+type PassCount = Int
+type FailCount = Int
+
+data GroupVerbosity
+
+  = NoGroups
+  -- ^ Show no group names at all. However, groups will still be
+  -- indented.
+
+  | ActiveGroups
+  -- ^ Show groups that are not skipped.
+
+  | AllGroups
+  -- ^ Show all groups, and indicate which groups are skipped.
+  deriving (Eq, Ord, Show)
+
+data TestOpts a = TestOpts
+  { tIndentAmt :: Int
+  , tPassVerbosity :: Verbosity
+  , tFailVerbosity :: Verbosity
+  , tShowSkippedTests :: Bool
+  , tGroupVerbosity :: GroupVerbosity
+  , tGroupPred :: Name -> Bool
+  , tTestPred :: Name -> Bool
+  , tSubjects :: [a]
+  }
 
 -- | Runs all tests. Reports on how many passed and how many failed.
 
 runAllTests
-  :: Pt.IndentAmt
+  :: TestOpts a
   -> Pt.Level
-  -> GroupPred
-  -> TestPred
-  -> PassVerbosity
-  -> FailVerbosity
-  -> [a]
   -> [TestTree a]
-  -> ([R.Chunk], NPassed, NFailed)
-runAllTests i l gp tp pv fv ss ts =
-  let ee = EvalEnv i pv fv gp tp ss False
+  -> ([R.Chunk], PassCount, FailCount)
+runAllTests (TestOpts i pv fv sk gv gp tp ss) l ts =
+  let ee = EvalEnv i pv fv sk gv gp tp ss False
       rs = concatMap snd . map (evalTree ee l) $ ts
       testRs = rights rs
       passed = length . filter id . map fst $ testRs
@@ -339,17 +373,12 @@ type AllPassed = Bool
 -- | Runs tests. Stops running tests if a single test fails. Returns
 -- True if all tests passed, or False if a single test failed.
 runUntilFailure
-  :: Pt.IndentAmt
+  :: TestOpts a
   -> Pt.Level
-  -> GroupPred
-  -> TestPred
-  -> PassVerbosity
-  -> FailVerbosity
-  -> [a]
   -> [TestTree a]
   -> ([R.Chunk], AllPassed)
-runUntilFailure i l gp tp pv fv ss ts =
-  let ee = EvalEnv i pv fv gp tp ss True
+runUntilFailure (TestOpts i pv fv sk gv gp tp ss) l ts =
+  let ee = EvalEnv i pv fv sk gv gp tp ss True
       ls = unfoldr (unfoldList ee l) (False, ts)
       allPass = and . map not . map fst $ ls
       cks = concat . map (either id snd) . concatMap snd $ ls
