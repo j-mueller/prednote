@@ -25,10 +25,14 @@ library
 
   exposed-modules:
       Data.Prednote.Pdct
+    , Data.Prednote.Expressions
+    , Data.Prednote.Expressions.Infix
+    , Data.Prednote.Expressions.RPN
     , Data.Prednote.TestTree
 
   build-depends:
       base >= 4.6 && < 5
+    , explicit-exception ==0.1.*
     , rainbow ==0.1.*
     , split ==0.2.*
     , text == 0.11.*
