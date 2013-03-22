@@ -49,11 +49,21 @@ module Data.Prednote.TestTree
   , Verbosity (..)
   , PassVerbosity
   , FailVerbosity
+  , GroupPred
+  , TestPred
+  , StopOnFail
+  , AllPassed
+  , EvalEnv (..)
+  , evalTree
+  , runAllTests
+  , runUntilFailure
   , showTestTree
-  , evalTestTree
   ) where
 
+import Data.Either (rights)
 import Data.Maybe (isJust)
+import Data.List (unfoldr)
+import Data.Monoid ((<>))
 import qualified Data.Text as X
 import Data.Text (Text)
 import qualified Data.List.Split as Sp
@@ -94,6 +104,7 @@ test n t = TestTree n (Test t)
 type PassVerbosity = Verbosity
 type FailVerbosity = Verbosity
 
+-- TODO verbosity must be used when showing trees
 data Verbosity
   = Silent
   -- ^ Show nothing at all
@@ -219,6 +230,16 @@ indent amt lvl t = R.plain txt
     txt = X.concat [spaces, t, "\n"]
     spaces = X.replicate (amt * lvl) " "
 
+skip :: Text -> Pt.IndentAmt -> Pt.Level -> Text -> [R.Chunk]
+skip lbl amt lvl t =
+  [ R.plain (X.replicate (amt * lvl) " ")
+  , R.plain "["
+  , R.plain ("skip " <> lbl) +.+ R.f_yellow
+  , R.plain "] "
+  , R.plain t
+  , R.plain "\n"
+  ]
+
 -- | Shows a tree, without evaluating it.
 showTestTree
   :: Pt.IndentAmt
@@ -231,18 +252,58 @@ showTestTree amt l (TestTree n p) = indent amt l n : children
       Group ts -> concatMap (showTestTree amt l) ts
       Test _ -> []
 
-evalTestTree
-  :: Pt.IndentAmt
+type GroupPred = Name -> Bool
+type TestPred = Name -> Bool
+type StopOnFail = Bool
+
+data EvalEnv a = EvalEnv
+  { eeIndentAmt :: Pt.IndentAmt
+  , eePassVerbosity :: PassVerbosity
+  , eeFailVerbosity :: FailVerbosity
+  , eeGroupPred :: GroupPred
+  , eeTestPred :: TestPred
+  , eeSubjects :: [a]
+  , eeStopOnFail :: StopOnFail
+  }
+
+
+type ShortCircuit = Bool
+
+evalTree
+  :: EvalEnv a
   -> Pt.Level
-  -> PassVerbosity
-  -> FailVerbosity
-  -> [a]
   -> TestTree a
-  -> [Either R.Chunk (Pass, [R.Chunk])]
-evalTestTree i l pv fv as (TestTree n p) = case p of
-  Test f -> [Right $ f i pv fv as l]
-  Group ts -> Left (indent i l n)
-              : concatMap (evalTestTree i (l + 1) pv fv as) ts
+  -> (ShortCircuit, [Either [R.Chunk] (Pass, [R.Chunk])])
+evalTree ee l (TestTree n p) = case p of
+  Group ts -> evalGroup ee n l ts
+  Test f -> evalTest ee n l f
+
+evalGroup
+  :: EvalEnv a
+  -> Name
+  -> Pt.Level
+  -> [TestTree a]
+  -> (ShortCircuit, [Either [R.Chunk] (Pass, [R.Chunk])])
+evalGroup ee n l ts = if eeGroupPred ee n
+  then let ls = unfoldr (unfoldList ee l) (False, ts)
+           stop = any not . map fst $ ls
+           rslts = concat . map snd $ ls
+        in (stop, rslts)
+  else (False, [Left $ skip "group" (eeIndentAmt ee) l n])
+
+evalTest
+  :: EvalEnv a
+  -> Name
+  -> Pt.Level
+  -> TestFunc a
+  -> (ShortCircuit, [Either [R.Chunk] (Pass, [R.Chunk])])
+evalTest ee n l tf = if eeTestPred ee n
+  then (not p, [Right (p, cs)])
+  else (False, [Left $ skip "test" (eeIndentAmt ee) l n])
+  where
+    (p, cs) = tf (eeIndentAmt ee) (eePassVerbosity ee)
+              (eeFailVerbosity ee) (eeSubjects ee) l
+
 
 --
 -- Running a group of tests
@@ -256,12 +317,22 @@ type NFailed = Int
 runAllTests
   :: Pt.IndentAmt
   -> Pt.Level
+  -> GroupPred
+  -> TestPred
   -> PassVerbosity
   -> FailVerbosity
   -> [a]
   -> [TestTree a]
   -> ([R.Chunk], NPassed, NFailed)
-runAllTests = undefined
+runAllTests i l gp tp pv fv ss ts =
+  let ee = EvalEnv i pv fv gp tp ss False
+      rs = concatMap snd . map (evalTree ee l) $ ts
+      testRs = rights rs
+      passed = length . filter id . map fst $ testRs
+      failed = length . filter (not . id) . map fst $ testRs
+      cks = concat . map (either id snd) $ rs
+  in (cks, passed, failed)
+
 
 type AllPassed = Bool
 
@@ -270,9 +341,35 @@ type AllPassed = Bool
 runUntilFailure
   :: Pt.IndentAmt
   -> Pt.Level
+  -> GroupPred
+  -> TestPred
   -> PassVerbosity
   -> FailVerbosity
   -> [a]
   -> [TestTree a]
   -> ([R.Chunk], AllPassed)
-runUntilFailure = undefined
+runUntilFailure i l gp tp pv fv ss ts =
+  let ee = EvalEnv i pv fv gp tp ss True
+      ls = unfoldr (unfoldList ee l) (False, ts)
+      allPass = and . map not . map fst $ ls
+      cks = concat . map (either id snd) . concatMap snd $ ls
+  in (cks, allPass)
+
+unfoldList
+  :: EvalEnv a
+  -> Pt.Level
+  -> (ShortCircuit, [TestTree a])
+  -> Maybe ( (ShortCircuit, [Either [R.Chunk] (Pass, [R.Chunk])])
+           , (ShortCircuit, [TestTree a]))
+unfoldList ee l (seenFalse, is) =
+  if seenFalse && eeStopOnFail ee
+  then Nothing
+  else case is of
+        [] -> Nothing
+        (TestTree n p):xs ->
+          let (short, results) = case p of
+                Group ts -> evalGroup ee n (l + 1) ts
+                Test tf -> evalTest ee n (l + 1) tf
+          in Just ((short, results), (short, xs))
+
+
