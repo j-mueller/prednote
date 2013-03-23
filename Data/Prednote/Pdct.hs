@@ -122,15 +122,13 @@ operand t = Pdct t . Operand . fmap Just
 
 -- | Turns an existing Pdct to one that never says False. If the
 -- underlying predicate returns Just True, the new Pdct also returns
--- Just True. Otherwise, the Pdct returns Nothing.  Has no effect on
--- non-Operand Pdct.
+-- Just True. Otherwise, the Pdct returns Nothing.
 neverFalse :: Pdct a -> Pdct a
 neverFalse = Pdct "never False" . NeverFalse
 
 -- | Turns an existing Pdct to one that never says True. If the
 -- underlying predicate returns Just False, the new Pdct also returns
--- Just False. Otherwise, the Pdct returns Nothing.  Has no effect on
--- non-Operand Pdct.
+-- Just False. Otherwise, the Pdct returns Nothing.
 neverTrue :: Pdct a -> Pdct a
 neverTrue = Pdct "never True" . NeverTrue
 
