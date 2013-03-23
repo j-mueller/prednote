@@ -56,11 +56,16 @@ pushToken ts t = case t of
   TokOperand p -> return $ pushOperand p ts
   TokOperator o -> pushOperator o ts
 
-pushTokens
+
+-- | Parses an RPN expression and returns the resulting Pdct. Fails if
+-- there are no operands left on the stack or if there are multiple
+-- operands left on the stack; the stack must contain exactly one
+-- operand in order to succeed.
+parseRPN
   :: Fdbl.Foldable f
   => f (RPNToken a)
   -> Ex.Exceptional Error (P.Pdct a)
-pushTokens ts = do
+parseRPN ts = do
   trees <- Fdbl.foldlM pushToken [] ts
   case trees of
     [] -> Ex.throw $ "bad expression: no operands left on the stack\n"

@@ -6,28 +6,35 @@
 -- want to import this module qualified.
 
 module Data.Prednote.Pdct
-  ( Pdct(..)
-  , Label
+  ( -- * The Pdct tree
+    Label
+  , Pdct(..)
   , Node(..)
+  , rename
   , always
   , never
+
+  -- * Creating operands
+  , operand
+
+  -- * Creating Pdct from other Pdct
   , and
   , or
   , not
-  , operand
   , neverFalse
   , neverTrue
   , (&&&)
   , (|||)
+  , boxPdct
+  , boxNode
+
+  -- * Showing and evaluating Pdct
   , Level
   , IndentAmt
   , ShowDiscards
   , showPdct
-  , rename
   , eval
   , evaluate
-  , boxPdct
-  , boxNode
   ) where
 
 import Control.Applicative ((<*>))
@@ -72,6 +79,9 @@ data Node a
   -- ^ Just False if the child is Just False; Nothing otherwise.
 
   | Operand (a -> Maybe Bool)
+  -- ^ An operand may return Just True or Just False to indicate
+  -- success or failure. It may also return Nothing to indicate a
+  -- discard.
 
 -- | Given a function that un-boxes values of type b, changes a Node
 -- from type a to type b.
@@ -133,15 +143,22 @@ always = Pdct "always True" (Operand (const (Just True)))
 never :: Pdct a
 never = Pdct "always False" (Operand (const (Just False)))
 
+-- | Forms a Pdct using 'and'.
 (&&&) :: Pdct a -> Pdct a -> Pdct a
 (&&&) x y = Pdct "and" (And [x, y])
 infixr 3 &&&
 
+-- | Forms a Pdct using 'or'.
 (|||) :: Pdct a -> Pdct a -> Pdct a
 (|||) x y = Pdct "or" (Or [x, y])
 infixr 2 |||
 
+-- | How many levels of indentation to use. Typically you will start
+-- this at zero. It is incremented by one for each level as functions
+-- descend through the tree.
 type Level = Int
+
+-- | The number of spaces to use for each level of indentation.
 type IndentAmt = Int
 
 -- | Indents text, and adds a newline to the end.
@@ -151,6 +168,7 @@ indent amt lvl cs = idt : (cs ++ [nl])
     idt = R.plain (X.replicate (lvl * amt) " ")
     nl = R.plain (X.singleton '\n')
 
+-- | Shows a Pdct tree without evaluating it.
 showPdct :: IndentAmt -> Level -> Pdct a -> [R.Chunk]
 showPdct amt lvl (Pdct l pd) = case pd of
   And ls -> indent amt lvl [R.plain l]
@@ -210,8 +228,9 @@ evaluate
   -- ^ The subject to evaluate
 
   -> Level
-  -- ^ How many levels deep in the tree we are. Start at level 0. This
-  -- determines the level of indentation.
+  -- ^ How many levels deep in the tree we are. Typically you will
+  -- start at level 0. This determines the level of indentation.
+
   -> Pdct a
   -> (Maybe Bool, [R.Chunk])
 evaluate i sd a lvl (Pdct l pd) = case pd of

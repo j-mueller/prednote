@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+
+-- | Handles parsing of both infix and RPN Pdct expressions.
 module Data.Prednote.Expressions
   ( ExprDesc(..)
   , Error
@@ -23,24 +25,31 @@ import qualified Control.Monad.Exception.Synchronous as Ex
 newtype Token a = Token { unToken :: I.InfixToken a }
 type Error = X.Text
 
+-- | Creates Operands from Pdct.
 operand :: P.Pdct a -> Token a
 operand p = Token (I.TokRPN (R.TokOperand p))
 
+-- | The And operator
 opAnd :: Token a
 opAnd = Token (I.TokRPN (R.TokOperator R.OpAnd))
 
+-- | The Or operator
 opOr :: Token a
 opOr = Token (I.TokRPN (R.TokOperator R.OpOr))
 
+-- | The Not operator
 opNot :: Token a
 opNot = Token (I.TokRPN (R.TokOperator R.OpNot))
 
+-- | Open parentheses
 openParen :: Token a
 openParen = Token (I.TokParen I.Open)
 
+-- | Close parentheses
 closeParen :: Token a
 closeParen = Token (I.TokParen I.Close)
 
+-- | Is this an infix or RPN expression?
 data ExprDesc
   = Infix
   | RPN
@@ -55,6 +64,10 @@ toksToRPN toks
         ([], xs) -> return xs
         _ -> Nothing
 
+-- | Parses expressions. Fails if the expression is nonsensical in
+-- some way (for example, unbalanced parentheses, parentheses in an
+-- RPN expression, or multiple stack values remaining.) Works by first
+-- changing infix expressions to RPN ones.
 parseExpression
   :: ExprDesc
   -> [Token a]
@@ -67,4 +80,4 @@ parseExpression e toks = do
              $ toks
     RPN -> Ex.fromMaybe "parentheses in an RPN expression\n"
            $ toksToRPN toks
-  R.pushTokens rpnToks
+  R.parseRPN rpnToks
