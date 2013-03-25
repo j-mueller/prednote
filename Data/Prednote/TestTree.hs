@@ -317,9 +317,10 @@ data TestOpts a = TestOpts
     -- ^ Tests are run only if this predicate returns True.
 
   , tShowSkippedTests :: Bool
-    -- ^ Some tests might be skipped; see 'tGroupPred' and
-    -- 'tTestPred'. This controls whether you want to see a
-    -- notification of tests that were skipped.
+    -- ^ Some tests might be skipped; see 'tTestPred'. This controls
+    -- whether you want to see a notification of tests that were
+    -- skipped. (Does not affect skipped groups; see 'tGroupVerbosity'
+    -- for that.)
 
   , tGroupVerbosity :: GroupVerbosity
     -- ^ Show group names? Even if you do not show the names of
