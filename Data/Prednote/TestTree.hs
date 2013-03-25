@@ -453,10 +453,8 @@ unfoldList ee l (seenFalse, is) =
   then Nothing
   else case is of
         [] -> Nothing
-        (TestTree n p):xs ->
-          let (short, results) = case p of
-                Group ts -> evalGroup ee n (l + 1) ts
-                Test tf -> evalTest ee n (l + 1) tf
+        t:xs ->
+          let (short, results) = evalTree ee l t
           in Just ((short, results), (short, xs))
 
 
