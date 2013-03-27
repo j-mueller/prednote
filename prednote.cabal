@@ -1,5 +1,5 @@
 name:                prednote
-version:             0.1.0.0
+version:             0.2.0.0
 synopsis:            Build and evaluate trees of predicates
 description:
   Build and evaluate trees of predicates. For example, you might build
@@ -20,6 +20,10 @@ copyright:           2013 Omari Norman
 category:            Data
 build-type:          Simple
 cabal-version:       >=1.8
+
+source-repository head
+    type: git
+    location: git://github.com/massysett/prednote.git
 
 library
 
