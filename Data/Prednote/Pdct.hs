@@ -35,6 +35,7 @@ module Data.Prednote.Pdct
   , showPdct
   , eval
   , evaluate
+  , filter
 
   -- * Helpers for building common Pdct
   -- ** Non-overloaded
@@ -66,7 +67,7 @@ import qualified Data.Text as X
 import Data.Monoid ((<>), mconcat, mempty)
 import qualified System.Console.Rainbow as R
 import System.Console.Rainbow ((+.+))
-import Prelude hiding (not, and, or, compare)
+import Prelude hiding (not, and, or, compare, filter)
 import qualified Prelude
 
 type Label = Text
@@ -324,6 +325,49 @@ evalOr i sd a l ts = (foundTrue, txt)
       else let (res, cTxt) = evaluate i sd a l x
                fnd' = fromMaybe False res
            in go xs (fnd', acc <> cTxt)
+
+-- | Filters a list of items by including only the ones for which the
+-- Pdct returns Just True. Also, renames each top-level Pdct so that
+-- the textual results include a description of the item being
+-- evaluated.
+filter
+  :: IndentAmt
+  -- ^ Indent each level by this many spaces.
+
+  -> ShowDiscards
+  -- ^ If True, show discarded test results; otherwise, hide
+  -- them.
+
+  -> Level
+  -- ^ How many levels deep in the tree we are. Typically you will
+  -- start at level 0. This determines the level of indentation.
+
+  -> (a -> Text)
+  -- ^ How to show each item. This is used to add a description of
+  -- each item to the verbose output. This Text should be a one-line
+  -- description, without any newlines.
+
+  -> Pdct a
+  -- ^ Use this Pdct to filter
+
+  -> [a]
+  -- ^ The list to filter
+
+  -> ([a], [R.Chunk])
+  -- ^ The results of the filtering, and the verbose output indicating
+  -- what was kept and discarded and why
+
+filter ident sd lvl swr pdct items =
+  let pds = map mkPd items
+      mkPd a = rename (\x -> mconcat [x, " - ", swr a]) pdct
+      results = zipWith mkResult pds items
+      mkResult p i = (evaluate ident sd i lvl p, i)
+      folder ((maybeBool, cks), i) (as, cksOld) = (as', cks ++ cksOld)
+        where
+          as' = if fromMaybe False maybeBool
+                then i:as
+                else as
+  in foldr folder ([], []) results
 
 --
 -- Helpers
