@@ -40,13 +40,13 @@ module Data.Prednote.Pdct
   -- * Helpers for building common Pdct
   -- ** Non-overloaded
   , compareBy
+  , compareByMaybe
   , greaterBy
   , lessBy
   , equalBy
   , greaterEqBy
   , lessEqBy
   , notEqBy
-  , parseComparerBy
 
   -- ** Overloaded
   , compare
@@ -76,7 +76,10 @@ type Label = Text
 data Pdct a = Pdct Label (Node a)
 
 instance Show (Pdct a) where
-  show _ = "predicate"
+  show = X.unpack
+         . X.concat
+         . map R.chunkText
+         . showPdct 2 0
 
 -- | Renames the top level of the Pdct. The function you pass will be
 -- applied to the old name.
@@ -402,22 +405,55 @@ compareBy itemDesc typeDesc cmp ord = Pdct l (Operand f)
       EQ -> "equal to"
     f subj = Just $ cmp subj == ord
 
+-- | Like 'compareBy' but allows the comparison of items that may fail
+-- to return an ordering.
+compareByMaybe
+  :: Text
+  -- ^ How to show the item being compared; used to describe the Pdct
+
+  -> Text
+  -- ^ Description of the type of thing that is being matched
+
+  -> (a -> Maybe Ordering)
+  -- ^ How to compare an item against the right hand side. Return Just
+  -- LT if the item is less than the right hand side; Just GT if
+  -- greater; Just EQ if equal to the right hand side. Return Nothing
+  -- if the item cannot return an item to be compared. The result of
+  -- the evaluation of the Pdct will then be Nothing.
+
+  -> Ordering
+  -- ^ When subjects are compared, this ordering must be the result in
+  -- order for the Pdct to be Just True; otherwise it is Just False,
+  -- or Nothing if the subject does not return an ordering. The
+  -- subject will be on the left hand side.
+
+  -> Pdct a
+
+compareByMaybe itemDesc typeDesc cmp ord = Pdct l (Operand f)
+  where
+    l = typeDesc <> " is " <> cmpDesc <> " " <> itemDesc
+    cmpDesc = case ord of
+      LT -> "less than"
+      GT -> "greater than"
+      EQ -> "equal to"
+    f subj = maybe Nothing (Just . (== ord)) $ cmp subj
+
 -- | Overloaded version of 'compareBy'.
 compare
   :: (Show a, Ord a)
   => Text
   -- ^ Description of the type of thing being matched
 
+  -> a
+  -- ^ The right hand side of the comparison.
+
   -> Ordering
   -- ^ When subjects are compared, this ordering must be the result in
   -- order for the Pdct to be Just True; otherwise it is Just
   -- False. The subject will be on the left hand side.
 
-  -> a
-  -- ^ The right hand side of the comparison.
-
   -> Pdct a
-compare typeDesc ord a = compareBy itemDesc typeDesc cmp ord
+compare typeDesc a ord = compareBy itemDesc typeDesc cmp ord
   where
     itemDesc = X.pack . show $ a
     cmp item = Prelude.compare item a
@@ -431,7 +467,7 @@ greater
   -- ^ The right hand side of the comparison.
 
   -> Pdct a
-greater d = compare d GT
+greater d a = compare d a GT
 
 less
   :: (Show a, Ord a)
@@ -442,7 +478,7 @@ less
   -- ^ The right hand side of the comparison.
 
   -> Pdct a
-less d = compare d LT
+less d a = compare d a LT
 
 equal
   :: (Show a, Ord a)
@@ -453,7 +489,7 @@ equal
   -- ^ The right hand side of the comparison.
 
   -> Pdct a
-equal d = compare d EQ
+equal d a = compare d a EQ
 
 greaterEq
   :: (Show a, Ord a)
@@ -486,7 +522,7 @@ notEq
   -- ^ The right hand side of the comparison.
 
   -> Pdct a
-notEq d = not . equal d
+notEq d a = not $ equal d a
 
 greaterBy
   :: Text
@@ -575,35 +611,23 @@ notEqBy iD tD cmp =
 
 -- | Parses a string to find the correct comparer; returns the correct
 -- function to build a Pdct.
-parseComparerBy
+
+parseComparer
   :: Text
   -- ^ The string with the comparer to be parsed
-  -> Maybe (Text -> Text -> (a -> Ordering) -> Pdct a)
-parseComparerBy t
-  | t == ">" = Just greaterBy
-  | t == "<" = Just lessBy
-  | t == "=" = Just equalBy
-  | t == "==" = Just equalBy
-  | t == ">=" = Just greaterEqBy
-  | t == "<=" = Just lessEqBy
-  | t == "/=" = Just notEqBy
-  | t == "!=" = Just notEqBy
+  -> (Ordering -> Pdct a)
+  -- ^ A function that, when given an ordering, returns a Pdct
+  -> Maybe (Pdct a)
+  -- ^ If an invalid comparer string is given, Nothing; otherwise, the
+  -- Pdct.
+parseComparer t f
+  | t == ">" = Just (f GT)
+  | t == "<" = Just (f LT)
+  | t == "=" = Just (f EQ)
+  | t == "==" = Just (f EQ)
+  | t == ">=" = Just (f GT ||| f EQ)
+  | t == "<=" = Just (f LT ||| f EQ)
+  | t == "/=" = Just (not $ f EQ)
+  | t == "!=" = Just (not $ f EQ)
   | otherwise = Nothing
 
--- | Parses a string to find the correct comparer; returns the correct
--- function to build a Pdct.
-parseComparer
-  :: (Show a, Ord a)
-  => Text
-  -- ^ The string with the comparer to be parsed
-  -> Maybe (Text -> a -> Pdct a)
-parseComparer t
-  | t == ">" = Just greater
-  | t == "<" = Just less
-  | t == "=" = Just equal
-  | t == "==" = Just equal
-  | t == ">=" = Just greaterEq
-  | t == "<=" = Just lessEq
-  | t == "/=" = Just notEq
-  | t == "!=" = Just notEq
-  | otherwise = Nothing
