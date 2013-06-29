@@ -65,8 +65,8 @@ import Data.Maybe (fromMaybe, isJust, catMaybes)
 import Data.Text (Text)
 import qualified Data.Text as X
 import Data.Monoid ((<>), mconcat, mempty)
+import Data.String (fromString)
 import qualified System.Console.Rainbow as R
-import System.Console.Rainbow ((+.+))
 import Prelude hiding (not, and, or, compare, filter)
 import qualified Prelude
 
@@ -78,7 +78,7 @@ data Pdct a = Pdct Label (Node a)
 instance Show (Pdct a) where
   show = X.unpack
          . X.concat
-         . map R.chunkText
+         . map R._text
          . showPdct 2 0
 
 -- | Renames the top level of the Pdct. The function you pass will be
@@ -189,39 +189,43 @@ type IndentAmt = Int
 indent :: IndentAmt -> Level -> [R.Chunk] -> [R.Chunk]
 indent amt lvl cs = idt : (cs ++ [nl])
   where
-    idt = R.plain (X.replicate (lvl * amt) " ")
-    nl = R.plain (X.singleton '\n')
+    idt = fromString (replicate (lvl * amt) ' ')
+    nl = fromString "\n"
+
+-- | Creates a plain Chunk from a Text.
+plain :: Text -> R.Chunk
+plain = R.Chunk mempty
 
 -- | Shows a Pdct tree without evaluating it.
 showPdct :: IndentAmt -> Level -> Pdct a -> [R.Chunk]
 showPdct amt lvl (Pdct l pd) = case pd of
-  And ls -> indent amt lvl [R.plain l]
+  And ls -> indent amt lvl [plain l]
             <> mconcat (map (showPdct amt (lvl + 1)) ls)
-  Or ls -> indent amt lvl [R.plain l]
+  Or ls -> indent amt lvl [plain l]
            <> mconcat (map (showPdct amt (lvl + 1)) ls)
-  Not t -> indent amt lvl [R.plain l]
+  Not t -> indent amt lvl [plain l]
            <> showPdct amt (lvl + 1) t
-  NeverFalse t -> indent amt lvl [R.plain l]
+  NeverFalse t -> indent amt lvl [plain l]
                   <> showPdct amt (lvl + 1) t
-  NeverTrue t -> indent amt lvl [R.plain l]
+  NeverTrue t -> indent amt lvl [plain l]
                  <> showPdct amt (lvl + 1) t
-  Operand _ -> indent amt lvl [R.plain l]
+  Operand _ -> indent amt lvl [plain l]
 
 
 labelBool :: Text -> Maybe Bool -> [R.Chunk]
 labelBool t b = [open, trueFalse, close, blank, txt]
   where
     trueFalse = case b of
-      Nothing -> R.plain "discard" +.+ R.f_yellow
+      Nothing -> "discard" <> R.f_yellow
       Just bl -> if bl
-        then R.plain "TRUE" +.+ R.f_green
-        else R.plain "FALSE" +.+ R.f_red
-    open = R.plain "["
-    close = R.plain "]"
-    blank = R.plain (X.replicate blankLen " ")
+        then "TRUE" <> R.f_green
+        else "FALSE" <> R.f_red
+    open = "["
+    close = "]"
+    blank = plain (X.replicate blankLen " ")
     blankLen = X.length "discard"
-               - X.length (R.chunkText trueFalse) + 1
-    txt = R.plain t
+               - X.length (R._text trueFalse) + 1
+    txt = plain t
 
 type ShowDiscards = Bool
 
@@ -310,7 +314,7 @@ evalAnd i sd a l ts = (Prelude.not foundFalse, txt)
     go (x:xs) (fndFalse, acc) =
       if fndFalse
       then (fndFalse, acc <> indent i l
-                             [R.plain "(short circuit)"])
+                             [plain "(short circuit)"])
       else let (res, cTxt) = evaluate i sd a l x
                fndFalse' = maybe False Prelude.not res
            in go xs (fndFalse', acc <> cTxt)
@@ -324,7 +328,7 @@ evalOr i sd a l ts = (foundTrue, txt)
     go (x:xs) (fnd, acc) =
       if fnd
       then (fnd, acc <> indent i l
-                        [R.plain "(short circuit)"])
+                        [plain "(short circuit)"])
       else let (res, cTxt) = evaluate i sd a l x
                fnd' = fromMaybe False res
            in go xs (fnd', acc <> cTxt)

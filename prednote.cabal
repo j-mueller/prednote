@@ -1,5 +1,5 @@
 name:                prednote
-version:             0.8.0.0
+version:             0.10.0.0
 synopsis:            Build and evaluate trees of predicates
 description:
   Build and evaluate trees of predicates. For example, you might build
@@ -37,7 +37,7 @@ library
   build-depends:
       base >= 4.6 && < 5
     , explicit-exception ==0.1.*
-    , rainbow ==0.2.*
+    , rainbow ==0.4.*
     , split ==0.2.*
     , text == 0.11.*
 

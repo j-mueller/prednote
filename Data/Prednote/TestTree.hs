@@ -93,13 +93,12 @@ module Data.Prednote.TestTree
 import Data.Either (rights)
 import Data.Maybe (isJust)
 import Data.List (unfoldr)
-import Data.Monoid ((<>))
+import Data.Monoid ((<>), mempty)
 import qualified Data.Text as X
 import Data.Text (Text)
 import qualified Data.List.Split as Sp
 
 import qualified System.Console.Rainbow as R
-import System.Console.Rainbow ((+.+))
 import qualified Data.Prednote.Pdct as Pt
 
 --
@@ -206,19 +205,23 @@ isSubjectAndDiscardsShown v b = case v of
   Discards -> (True, True)
 
 
+-- | Creates a plain Chunk from a Text.
+plain :: X.Text -> R.Chunk
+plain = R.Chunk mempty
+
 showTestTitle :: Pt.IndentAmt -> Pt.Level -> Name -> Pass -> [R.Chunk]
 showTestTitle i l n p = [idt, open, passFail, close, blank, txt, nl]
   where
-    idt = R.plain (X.replicate (i * l) " ")
-    nl = R.plain "\n"
+    idt = plain (X.replicate (i * l) " ")
+    nl = plain "\n"
     passFail =
       if p
-      then R.plain "PASS" +.+ R.f_green
-      else R.plain "FAIL" +.+ R.f_red
-    open = R.plain "["
-    close = R.plain "]"
-    blank = R.plain (X.singleton ' ')
-    txt = R.plain n
+      then "PASS" <> R.f_green
+      else "FAIL" <> R.f_red
+    open = plain "["
+    close = plain "]"
+    blank = plain (X.singleton ' ')
+    txt = plain n
 
 isTrue :: Maybe Bool -> Bool
 isTrue = maybe False id
@@ -270,19 +273,19 @@ nSubjectsMustBeTrue n swr count p = TestTree n (Test tf)
           . concat $ resultList
 
 indent :: Pt.IndentAmt -> Pt.Level -> Text -> R.Chunk
-indent amt lvl t = R.plain txt
+indent amt lvl t = plain txt
   where
     txt = X.concat [spaces, t, "\n"]
     spaces = X.replicate (amt * lvl) " "
 
 skip :: Text -> Pt.IndentAmt -> Pt.Level -> Text -> [R.Chunk]
 skip lbl amt lvl t =
-  [ R.plain (X.replicate (amt * lvl) " ")
-  , R.plain "["
-  , R.plain ("skip " <> lbl) +.+ R.f_yellow
-  , R.plain "] "
-  , R.plain t
-  , R.plain "\n"
+  [ plain (X.replicate (amt * lvl) " ")
+  , plain "["
+  , plain ("skip " <> lbl) <> R.f_yellow
+  , plain "] "
+  , plain t
+  , plain "\n"
   ]
 
 -- | Shows a tree, without evaluating it.
@@ -379,11 +382,11 @@ evalGroup ee n l ts = if tGroupPred ee n
            rslts = concat . map snd $ ls
            groupNm = if tGroupVerbosity ee /= NoGroups
                      then indent (tIndentAmt ee) l n
-                     else R.plain ""
+                     else plain ""
         in (stop, Left [groupNm] : rslts)
   else let groupNm = if tGroupVerbosity ee == AllGroups
                      then skip "group" (tIndentAmt ee) l n
-                     else [R.plain ""]
+                     else [plain ""]
        in (False, [Left groupNm])
 
 
