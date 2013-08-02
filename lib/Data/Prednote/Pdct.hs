@@ -33,9 +33,7 @@ module Data.Prednote.Pdct
   , IndentAmt
   , ShowDiscards
   , showPdct
-  , eval
   , evaluate
-  , filter
 
   -- * Helpers for building common Pdct
   -- ** Non-overloaded
@@ -61,7 +59,7 @@ module Data.Prednote.Pdct
   ) where
 
 import Control.Applicative ((<*>))
-import Data.Maybe (fromMaybe, isJust, catMaybes)
+import Data.Maybe (fromMaybe, isJust, catMaybes, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as X
 import Data.Monoid ((<>), mconcat, mempty)
@@ -228,153 +226,6 @@ labelBool t b = [open, trueFalse, close, blank, txt]
     txt = plain t
 
 type ShowDiscards = Bool
-
--- | Evaluates a Pdct.
-eval :: Pdct a -> a -> Maybe Bool
-eval (Pdct _ n) a = case n of
-  And ps -> Just . Prelude.and . catMaybes $ [flip eval a] <*> ps
-  Or ps -> Just . Prelude.or . catMaybes $ [flip eval a] <*> ps
-  Not p -> fmap Prelude.not $ eval p a
-  NeverFalse p -> case eval p a of
-    Nothing -> Nothing
-    Just b -> if Prelude.not b then Nothing else Just b
-  NeverTrue p -> case eval p a of
-    Nothing -> Nothing
-    Just b -> if b then Nothing else Just b
-  Operand f -> f a
-
--- | Verbosely evaluates a Pdct.
-evaluate
-  :: IndentAmt
-  -- ^ Indent each level by this many spaces.
-
-  -> ShowDiscards
-  -- ^ If True, show discarded test results; otherwise, hide
-  -- them.
-
-  -> a
-  -- ^ The subject to evaluate
-
-  -> Level
-  -- ^ How many levels deep in the tree we are. Typically you will
-  -- start at level 0. This determines the level of indentation.
-
-  -> Pdct a
-
-  -> (Maybe Bool, [R.Chunk])
-evaluate i sd a lvl (Pdct l pd) = case pd of
-
-  And ps -> let (resBool, resTxt) = evalAnd i sd a (lvl + 1) ps
-                txt = indent i lvl (labelBool l (Just resBool))
-                        <> resTxt
-            in (Just resBool, txt)
-
-  Or ps -> let (resBool, resTxt) = evalOr i sd a (lvl + 1) ps
-               txt = indent i lvl (labelBool l (Just resBool))
-                        <> resTxt
-           in (Just resBool, txt)
-
-  Not p -> let (childMayBool, childTxt) = evaluate i sd a (lvl + 1) p
-               thisMayBool = fmap Prelude.not childMayBool
-               thisTxt = indent i lvl (labelBool l thisMayBool)
-               txt = if sd || isJust thisMayBool
-                     then thisTxt <> childTxt else mempty
-           in (thisMayBool, txt)
-
-  NeverFalse p ->
-    let (childMayBool, childTxt) = evaluate i sd a (lvl + 1) p
-        thisMayBool = case childMayBool of
-          Nothing -> Nothing
-          Just b -> if Prelude.not b then Nothing else Just b
-        thisTxt = indent i lvl (labelBool l thisMayBool)
-        txt = if sd || isJust thisMayBool
-              then thisTxt <> childTxt else mempty
-    in (thisMayBool, txt)
-
-  NeverTrue p ->
-    let (childMayBool, childTxt) = evaluate i sd a (lvl + 1) p
-        thisMayBool = case childMayBool of
-          Nothing -> Nothing
-          Just b -> if b then Nothing else Just b
-        thisTxt = indent i lvl (labelBool l thisMayBool)
-        txt = if sd || isJust thisMayBool
-              then thisTxt <> childTxt else mempty
-    in (thisMayBool, txt)
-
-  Operand p -> let res = p a
-                   txt = indent i lvl (labelBool l res)
-               in (res, if sd || isJust res then txt else mempty)
-
-evalAnd :: IndentAmt -> ShowDiscards -> a
-        -> Level -> [Pdct a] -> (Bool, [R.Chunk])
-evalAnd i sd a l ts = (Prelude.not foundFalse, txt)
-  where
-    (foundFalse, txt) = go ts (False, mempty)
-    go [] p = p
-    go (x:xs) (fndFalse, acc) =
-      if fndFalse
-      then (fndFalse, acc <> indent i l
-                             [plain "(short circuit)"])
-      else let (res, cTxt) = evaluate i sd a l x
-               fndFalse' = maybe False Prelude.not res
-           in go xs (fndFalse', acc <> cTxt)
-
-evalOr :: IndentAmt -> ShowDiscards -> a
-       -> Level -> [Pdct a] -> (Bool, [R.Chunk])
-evalOr i sd a l ts = (foundTrue, txt)
-  where
-    (foundTrue, txt) = go ts (False, mempty)
-    go [] p = p
-    go (x:xs) (fnd, acc) =
-      if fnd
-      then (fnd, acc <> indent i l
-                        [plain "(short circuit)"])
-      else let (res, cTxt) = evaluate i sd a l x
-               fnd' = fromMaybe False res
-           in go xs (fnd', acc <> cTxt)
-
--- | Filters a list of items by including only the ones for which the
--- Pdct returns Just True. Also, renames each top-level Pdct so that
--- the textual results include a description of the item being
--- evaluated.
-filter
-  :: IndentAmt
-  -- ^ Indent each level by this many spaces.
-
-  -> ShowDiscards
-  -- ^ If True, show discarded test results; otherwise, hide
-  -- them.
-
-  -> Level
-  -- ^ How many levels deep in the tree we are. Typically you will
-  -- start at level 0. This determines the level of indentation.
-
-  -> (a -> Text)
-  -- ^ How to show each item. This is used to add a description of
-  -- each item to the verbose output. This Text should be a one-line
-  -- description, without any newlines.
-
-  -> Pdct a
-  -- ^ Use this Pdct to filter
-
-  -> [a]
-  -- ^ The list to filter
-
-  -> ([a], [R.Chunk])
-  -- ^ The results of the filtering, and the verbose output indicating
-  -- what was kept and discarded and why
-
-filter ident sd lvl swr pdct items =
-  let pds = map mkPd items
-      mkPd a = rename (\x -> mconcat [x, " - ", swr a]) pdct
-      results = zipWith mkResult pds items
-      mkResult p i = (evaluate ident sd i lvl p, i)
-      folder ((maybeBool, cks), i) (as, cksOld) = (as', cks ++ cksOld)
-        where
-          as' = if fromMaybe False maybeBool
-                then i:as
-                else as
-  in foldr folder ([], []) results
 
 --
 -- Helpers
@@ -634,4 +485,181 @@ parseComparer t f
   | t == "/=" = Just (not $ f EQ)
   | t == "!=" = Just (not $ f EQ)
   | otherwise = Nothing
+
+--
+-- # Result
+--
+
+data NeverTrue = NTFalse | NTDiscard
+  deriving (Eq, Show, Ord)
+
+data NeverFalse = NFTrue | NFDiscard
+  deriving (Eq, Show, Ord)
+
+data Result = Result
+  { rLabel :: Label
+  , rNode :: RNode
+  } deriving (Eq, Show)
+
+data RNode
+  = RAnd Bool [Result]
+  | ROr Bool [Result]
+  | RNot (Maybe Bool) Result
+  | RNeverTrue NeverTrue Result
+  | RNeverFalse NeverFalse Result
+  | ROperand (Maybe Bool)
+  deriving (Eq, Show)
+
+isTrue :: RNode -> Bool
+isTrue n = case n of
+  RAnd b _ -> b
+  ROr b _ -> b
+  RNot mb _ -> fromMaybe False mb
+  RNeverTrue nt _ -> False
+  RNeverFalse nf _ -> nf == NFTrue
+  ROperand mb -> fromMaybe False mb
+
+isFalse :: RNode -> Bool
+isFalse n = case n of
+  RAnd b _ -> Prelude.not b
+  ROr b _ -> Prelude.not b
+  RNot mb _ -> Prelude.not $ fromMaybe False mb
+  RNeverTrue nt _ -> nt == NTFalse
+  RNeverFalse nf _ -> False
+  ROperand mb -> Prelude.not $ fromMaybe False mb
+
+isDiscard :: RNode -> Bool
+isDiscard n = case n of
+  RAnd _ _ -> False
+  ROr _ _ -> False
+  RNot x _ -> isNothing x
+  RNeverTrue nt _ -> nt == NTDiscard
+  RNeverFalse nf _ -> nf == NFDiscard
+  ROperand x -> isNothing x
+
+toMaybeBool :: RNode -> Maybe Bool
+toMaybeBool n
+  | isTrue n = Just True
+  | isFalse n = Just False
+  | otherwise = Nothing
+
+evaluate :: a -> Pdct a -> Result
+evaluate a (Pdct l n) = Result l n'
+  where
+    n' = evaluateNode a n
+
+evaluateNode
+  :: a
+  -> Node a
+  -> RNode
+evaluateNode a n = case n of
+  And ps -> let r = evalAnd a ps in RAnd (fst r) (snd r)
+  Or ps -> let r = evalOr a ps in ROr (fst r) (snd r)
+  Not p -> let r = evalNot a p in RNot (fst r) (snd r)
+  NeverFalse p -> let r = evalNeverFalse a p
+                  in RNeverFalse (fst r) (snd r)
+  NeverTrue p -> let r = evalNeverTrue a p
+                 in RNeverTrue (fst r) (snd r)
+  Operand f -> ROperand (f a)
+
+evalAnd :: a -> [Pdct a] -> (Bool, [Result])
+evalAnd a ps =
+  let rs = map (evaluate a) ps
+      f (Result _ n) = case n of
+        RAnd b _ -> b
+        ROr b _ -> b
+        RNot mb _ -> fromMaybe True mb
+        RNeverTrue nt _ -> nt == NTDiscard
+        RNeverFalse _ _ -> True
+        ROperand mb -> fromMaybe True mb
+  in (all f rs, rs)
+
+evalOr :: a -> [Pdct a] -> (Bool, [Result])
+evalOr a ps =
+  let rs = map (evaluate a) ps
+      f (Result _ n) = case n of
+        RAnd b _ -> b
+        ROr b _ -> b
+        RNot mb _ -> fromMaybe False mb
+        RNeverTrue _ _ -> False
+        RNeverFalse nf _ -> nf == NFTrue
+        ROperand mb -> fromMaybe False mb
+  in (any f rs, rs)
+
+
+evalNot :: a -> Pdct a -> (Maybe Bool, Result)
+evalNot a p =
+  let r@(Result _ n) = evaluate a p
+      mb = case n of
+        RAnd b _ -> Just . Prelude.not $ b
+        ROr b _ -> Just . Prelude.not $ b
+        RNot m _ -> fmap Prelude.not m
+        RNeverTrue nt _ -> case nt of
+          NTDiscard -> Nothing
+          NTFalse -> Just True
+        RNeverFalse nf _ -> case nf of
+          NFDiscard -> Nothing
+          NFTrue -> Just False
+        ROperand m -> fmap Prelude.not m
+  in (mb, r)
+
+evalNeverFalse :: a -> Pdct a -> (NeverFalse, Result)
+evalNeverFalse a p =
+  let r@(Result _ n) = evaluate a p
+      mb = case n of
+        RAnd b _ -> if b then NFTrue else NFDiscard
+        ROr b _ -> if b then NFTrue else NFDiscard
+        RNot m _ -> maybe NFDiscard
+                    (\b -> if b then NFTrue else NFDiscard) m
+        RNeverTrue _ _ -> NFDiscard
+        RNeverFalse x _ -> x
+        ROperand m -> maybe NFDiscard
+                        (\b -> if b then NFTrue else NFDiscard) m
+  in (mb, r)
+
+evalNeverTrue :: a -> Pdct a -> (NeverTrue, Result)
+evalNeverTrue a p =
+  let r@(Result _ n) = evaluate a p
+      fromB b = if b then NTDiscard else NTFalse
+      mb = case n of
+        RAnd b _ -> fromB b
+        ROr b _ -> fromB b
+        RNot m _ -> maybe NTDiscard fromB m
+        RNeverTrue x _ -> x
+        RNeverFalse _ _ -> NTDiscard
+        ROperand m -> maybe NTDiscard fromB m
+  in (mb, r)
+
+evalOperand :: a -> (a -> Maybe Bool) -> Maybe Bool
+evalOperand = flip ($)
+
+showResult
+  :: IndentAmt
+  -> ShowDiscards
+  -> Level
+  -> Result
+  -> [R.Chunk]
+showResult i d lvl (Result lbl n)
+  | isDiscard n && Prelude.not d = []
+  | otherwise = indent i lvl chunks ++ rest
+  where
+    chunks = labelBool lbl (toMaybeBool n)
+    rest = case n of
+      RAnd _ rs -> concatMap (showResult i d (lvl + 1)) rs
+      ROr _ rs -> concatMap (showResult i d (lvl + 1)) rs
+      RNot _ r -> showResult i d (lvl + 1) r
+      RNeverTrue _ r -> showResult i d (lvl + 1) r
+      RNeverFalse _ r -> showResult i d (lvl + 1) r
+      ROperand _ -> []
+
+
+showTopResult
+  :: X.Text
+  -> IndentAmt
+  -> ShowDiscards
+  -> Result
+  -> [R.Chunk]
+showTopResult txt i sd r = showResult i sd 0 r'
+  where
+    r' = r { rLabel = rLabel r <> " - " <> txt }
 
