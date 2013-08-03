@@ -137,7 +137,7 @@ data Verbosity
 
   deriving (Eq, Ord, Show)
 
--- | Show hidden levels in the result trees?
+-- | Whether to show hidden levels in the 
 type ShowHidden = Bool
 
 -- | A test is a function of this type. The function must make chunks
