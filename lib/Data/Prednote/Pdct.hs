@@ -6,8 +6,10 @@
 -- want to import this module qualified.
 
 module Data.Prednote.Pdct
+
   ( -- * The Pdct tree
     Label
+  , Hide
   , Pdct(..)
   , Node(..)
   , rename
@@ -21,24 +23,31 @@ module Data.Prednote.Pdct
   , and
   , or
   , not
-  , neverFalse
-  , neverTrue
+  , hideAll
+  , showAll
+  , hideTrue
+  , hideFalse
   , (&&&)
   , (|||)
   , boxPdct
   , boxNode
 
-  -- * Showing and evaluating Pdct
-  , Level
-  , IndentAmt
-  , ShowDiscards
-  , showPdct
+  -- * Result
+  , Result(..)
+  , RNode(..)
   , evaluate
+  , evaluateNode
+  , IndentAmt
+  , Level
+  , showResult
+  , showTopResult
+
+  -- * Showing and evaluating Pdct
+  , showPdct
 
   -- * Helpers for building common Pdct
   -- ** Non-overloaded
   , compareBy
-  , compareByMaybe
   , greaterBy
   , lessBy
   , equalBy
@@ -58,8 +67,9 @@ module Data.Prednote.Pdct
 
   ) where
 
-import Control.Applicative ((<*>))
-import Data.Maybe (fromMaybe, isJust, catMaybes, isNothing)
+
+-- # Imports
+
 import Data.Text (Text)
 import qualified Data.Text as X
 import Data.Monoid ((<>), mconcat, mempty)
@@ -68,44 +78,75 @@ import qualified System.Console.Rainbow as R
 import Prelude hiding (not, and, or, compare, filter)
 import qualified Prelude
 
+-- # Pdct type
+
 type Label = Text
+type Hide = Bool
 
--- | A tree of predicates.
-data Pdct a = Pdct Label (Node a)
+data Pdct a = Pdct
+  { pLabel :: Label
+  , pHide :: (Bool -> Hide)
+  , pNode :: Node a
+  }
 
-instance Show (Pdct a) where
-  show = X.unpack
-         . X.concat
-         . map R._text
-         . showPdct 2 0
+data Node a
+  = And [Pdct a]
+  | Or [Pdct a]
+  | Not (Pdct a)
+  | Operand (a -> Bool)
 
 -- | Renames the top level of the Pdct. The function you pass will be
 -- applied to the old name.
 rename :: (Text -> Text) -> Pdct a -> Pdct a
-rename f (Pdct l n) = Pdct (f l) n
+rename f p = p { pLabel = f (pLabel p) }
 
-data Node a
-  = And [Pdct a]
-  -- ^ None of the Pdct in list may be Just False. An empty list or
-  -- list with only Nothing is Just True.
+always :: Pdct a
+always = Pdct "always True" (const False) (Operand (const True))
 
-  | Or [Pdct a]
-  -- ^ At least one of the Pdct in the list must be Just True. An
-  -- empty list or list with only Nothing is Just False.
+never :: Pdct a
+never = Pdct "always False" (const False) (Operand (const False))
 
-  | Not (Pdct a)
-  -- ^ Just True is Just False and vice versa; Nothing remains Nothing.
+operand :: Label -> (a -> Bool) -> Pdct a
+operand l = Pdct l (const False) . Operand
 
-  | NeverFalse (Pdct a)
-  -- ^ Just True if the child is Just True; Nothing otherwise.
+and :: [Pdct a] -> Pdct a
+and = Pdct "and" (const False) . And
 
-  | NeverTrue (Pdct a)
-  -- ^ Just False if the child is Just False; Nothing otherwise.
+or :: [Pdct a] -> Pdct a
+or = Pdct "or" (const False) . Or
 
-  | Operand (a -> Maybe Bool)
-  -- ^ An operand may return Just True or Just False to indicate
-  -- success or failure. It may also return Nothing to indicate a
-  -- discard.
+not :: Pdct a -> Pdct a
+not = Pdct "not" (const False) . Not
+
+hideAll :: Pdct a -> Pdct a
+hideAll p = p { pHide = const True }
+
+showAll :: Pdct a -> Pdct a
+showAll p = p { pHide = const False }
+
+hideTrue :: Pdct a -> Pdct a
+hideTrue p = p { pHide = id }
+
+hideFalse :: Pdct a -> Pdct a
+hideFalse p = p { pHide = Prelude.not }
+
+-- | Forms a Pdct using 'and'.
+(&&&) :: Pdct a -> Pdct a -> Pdct a
+(&&&) x y = Pdct "and" (const False) (And [x, y])
+infixr 3 &&&
+
+-- | Forms a Pdct using 'or'.
+(|||) :: Pdct a -> Pdct a -> Pdct a
+(|||) x y = Pdct "or" (const False) (Or [x, y])
+infixr 2 |||
+
+-- | Given a function that un-boxes values of type b, changes a Pdct
+-- from type a to type b.
+boxPdct
+  :: (b -> a)
+  -> Pdct a
+  -> Pdct b
+boxPdct f (Pdct l d n) = Pdct l d $ boxNode f n
 
 -- | Given a function that un-boxes values of type b, changes a Node
 -- from type a to type b.
@@ -117,71 +158,51 @@ boxNode f n = case n of
   And ls -> And $ map (boxPdct f) ls
   Or ls -> Or $ map (boxPdct f) ls
   Not o -> Not $ boxPdct f o
-  NeverFalse o -> NeverFalse $ boxPdct f o
-  NeverTrue o -> NeverTrue $ boxPdct f o
   Operand g -> Operand $ \b -> g (f b)
 
+-- # Result
 
--- | Given a function that un-boxes values of type b, changes a Pdct
--- from type a to type b.
-boxPdct
-  :: (b -> a)
-  -> Pdct a
-  -> Pdct b
-boxPdct f (Pdct l n) = Pdct l $ boxNode f n
+data Result = Result
+  { rLabel :: Label
+  , rBool :: Bool
+  , rHide :: Hide
+  , rNode :: RNode
+  } deriving (Eq, Show)
 
-and :: [Pdct a] -> Pdct a
-and = Pdct "and" . And
+data RNode
+  = RAnd [Result]
+  | ROr [Result]
+  | RNot Result
+  | ROperand Bool
+  deriving (Eq, Show)
 
-or :: [Pdct a] -> Pdct a
-or = Pdct "or" . Or
+evaluate :: a -> Pdct a -> Result
+evaluate a (Pdct l d n) = Result l r d' rn
+  where
+    rn = evaluateNode a n
+    r = case rn of
+      RAnd ls -> all rBool ls
+      ROr ls -> any rBool ls
+      RNot x -> Prelude.not . rBool $ x
+      ROperand b -> b
+    d' = d r
 
-not :: Pdct a -> Pdct a
-not = Pdct "not" . Not
+evaluateNode :: a -> Node a -> RNode
+evaluateNode a n = case n of
+  And ls -> RAnd (map (evaluate a) ls)
+  Or ls -> ROr (map (evaluate a) ls)
+  Not l -> RNot (evaluate a l)
+  Operand f -> ROperand (f a)
 
--- | Creates a new operand. The Pdct is Just True or Just False, never
--- Nothing.
-operand :: Text -> (a -> Bool) -> Pdct a
-operand t = Pdct t . Operand . fmap Just
+-- # Types and functions for showing
 
--- | Turns an existing Pdct to one that never says False. If the
--- underlying predicate returns Just True, the new Pdct also returns
--- Just True. Otherwise, the Pdct returns Nothing.
-neverFalse :: Pdct a -> Pdct a
-neverFalse = Pdct "never False" . NeverFalse
-
--- | Turns an existing Pdct to one that never says True. If the
--- underlying predicate returns Just False, the new Pdct also returns
--- Just False. Otherwise, the Pdct returns Nothing.
-neverTrue :: Pdct a -> Pdct a
-neverTrue = Pdct "never True" . NeverTrue
-
-
--- | Returns a tree that is always True.
-always :: Pdct a
-always = Pdct "always True" (Operand (const (Just True)))
-
--- | Returns a tree that is always False.
-never :: Pdct a
-never = Pdct "always False" (Operand (const (Just False)))
-
--- | Forms a Pdct using 'and'.
-(&&&) :: Pdct a -> Pdct a -> Pdct a
-(&&&) x y = Pdct "and" (And [x, y])
-infixr 3 &&&
-
--- | Forms a Pdct using 'or'.
-(|||) :: Pdct a -> Pdct a -> Pdct a
-(|||) x y = Pdct "or" (Or [x, y])
-infixr 2 |||
+-- | The number of spaces to use for each level of indentation.
+type IndentAmt = Int
 
 -- | How many levels of indentation to use. Typically you will start
 -- this at zero. It is incremented by one for each level as functions
 -- descend through the tree.
 type Level = Int
-
--- | The number of spaces to use for each level of indentation.
-type IndentAmt = Int
 
 -- | Indents text, and adds a newline to the end.
 indent :: IndentAmt -> Level -> [R.Chunk] -> [R.Chunk]
@@ -190,34 +211,36 @@ indent amt lvl cs = idt : (cs ++ [nl])
     idt = fromString (replicate (lvl * amt) ' ')
     nl = fromString "\n"
 
+-- # Showing Pdct
+
 -- | Creates a plain Chunk from a Text.
 plain :: Text -> R.Chunk
 plain = R.Chunk mempty
 
 -- | Shows a Pdct tree without evaluating it.
 showPdct :: IndentAmt -> Level -> Pdct a -> [R.Chunk]
-showPdct amt lvl (Pdct l pd) = case pd of
-  And ls -> indent amt lvl [plain l]
+showPdct amt lvl (Pdct l _ pd) = case pd of
+  And ls -> indent amt lvl [plain ("and - " <> l)]
             <> mconcat (map (showPdct amt (lvl + 1)) ls)
-  Or ls -> indent amt lvl [plain l]
+  Or ls -> indent amt lvl [plain ("or - " <> l)]
            <> mconcat (map (showPdct amt (lvl + 1)) ls)
-  Not t -> indent amt lvl [plain l]
+  Not t -> indent amt lvl [plain ("not - " <> l)]
            <> showPdct amt (lvl + 1) t
-  NeverFalse t -> indent amt lvl [plain l]
-                  <> showPdct amt (lvl + 1) t
-  NeverTrue t -> indent amt lvl [plain l]
-                 <> showPdct amt (lvl + 1) t
-  Operand _ -> indent amt lvl [plain l]
+  Operand _ -> indent amt lvl [plain ("operand - " <> l)]
 
+instance Show (Pdct a) where
+  show = X.unpack
+       . X.concat
+       . map R._text
+       . showPdct 2 0
 
-labelBool :: Text -> Maybe Bool -> [R.Chunk]
+-- # Showing Result
+
+labelBool :: Text -> Bool -> [R.Chunk]
 labelBool t b = [open, trueFalse, close, blank, txt]
   where
-    trueFalse = case b of
-      Nothing -> "discard" <> R.f_yellow
-      Just bl -> if bl
-        then "TRUE" <> R.f_green
-        else "FALSE" <> R.f_red
+    trueFalse = 
+      if b then "TRUE" <> R.f_green else "FALSE" <> R.f_red
     open = "["
     close = "]"
     blank = plain (X.replicate blankLen " ")
@@ -225,11 +248,54 @@ labelBool t b = [open, trueFalse, close, blank, txt]
                - X.length (R._text trueFalse) + 1
     txt = plain t
 
-type ShowDiscards = Bool
+type ShowAll = Bool
 
---
--- Helpers
---
+showResult
+  :: IndentAmt
+  -> ShowAll
+  -> Level
+  -> Result
+  -> [R.Chunk]
+showResult amt sa lvl (Result lbl rslt hide nd)
+  | hide && Prelude.not sa = []
+  | otherwise = firstLine ++ restLines
+  where
+    firstLine = indent amt lvl $ labelBool lbl rslt
+    restLines = case nd of
+      RAnd ls -> f False ls
+      ROr ls -> f True ls
+      RNot r -> showResult amt sa (lvl + 1) r
+      ROperand _ -> []
+    f stopOn ls = concatMap sr ls' ++ end
+      where
+        ls' = takeThrough ((== stopOn) . rBool) ls
+        sr = showResult amt sa (lvl + 1)
+        end = if ls' `shorter` ls
+              then indent amt (lvl + 1) ["(short circuit)"]
+              else []
+
+shorter :: [a] -> [a] -> Bool
+shorter [] [] = False
+shorter (_:_) [] = False
+shorter [] (_:_) = True
+shorter (_:xs) (_:ys) = shorter xs ys
+
+takeThrough :: (a -> Bool) -> [a] -> [a]
+takeThrough _ [] = []
+takeThrough f (x:xs) = x : if f x then [] else takeThrough f xs
+
+showTopResult
+  :: X.Text
+  -> IndentAmt
+  -> ShowAll
+  -> Result
+  -> [R.Chunk]
+showTopResult txt i sd r = showResult i sd 0 r'
+  where
+    r' = r { rLabel = rLabel r <> " - " <> txt }
+
+
+-- # Comparisons
 
 -- | Build a Pdct that compares items.
 compareBy
@@ -251,47 +317,14 @@ compareBy
 
   -> Pdct a
 
-compareBy itemDesc typeDesc cmp ord = Pdct l (Operand f)
+compareBy itemDesc typeDesc cmp ord = Pdct l (const False) (Operand f)
   where
     l = typeDesc <> " is " <> cmpDesc <> " " <> itemDesc
     cmpDesc = case ord of
       LT -> "less than"
       GT -> "greater than"
       EQ -> "equal to"
-    f subj = Just $ cmp subj == ord
-
--- | Like 'compareBy' but allows the comparison of items that may fail
--- to return an ordering.
-compareByMaybe
-  :: Text
-  -- ^ How to show the item being compared; used to describe the Pdct
-
-  -> Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> (a -> Maybe Ordering)
-  -- ^ How to compare an item against the right hand side. Return Just
-  -- LT if the item is less than the right hand side; Just GT if
-  -- greater; Just EQ if equal to the right hand side. Return Nothing
-  -- if the item cannot return an item to be compared. The result of
-  -- the evaluation of the Pdct will then be Nothing.
-
-  -> Ordering
-  -- ^ When subjects are compared, this ordering must be the result in
-  -- order for the Pdct to be Just True; otherwise it is Just False,
-  -- or Nothing if the subject does not return an ordering. The
-  -- subject will be on the left hand side.
-
-  -> Pdct a
-
-compareByMaybe itemDesc typeDesc cmp ord = Pdct l (Operand f)
-  where
-    l = typeDesc <> " is " <> cmpDesc <> " " <> itemDesc
-    cmpDesc = case ord of
-      LT -> "less than"
-      GT -> "greater than"
-      EQ -> "equal to"
-    f subj = maybe Nothing (Just . (== ord)) $ cmp subj
+    f subj = cmp subj == ord
 
 -- | Overloaded version of 'compareBy'.
 compare
@@ -460,10 +493,6 @@ notEqBy
 notEqBy iD tD cmp =
   not $ equalBy iD tD cmp
 
---
--- Comparer parsers
---
-
 -- | Parses a string to find the correct comparer; returns the correct
 -- function to build a Pdct.
 
@@ -485,181 +514,4 @@ parseComparer t f
   | t == "/=" = Just (not $ f EQ)
   | t == "!=" = Just (not $ f EQ)
   | otherwise = Nothing
-
---
--- # Result
---
-
-data NeverTrue = NTFalse | NTDiscard
-  deriving (Eq, Show, Ord)
-
-data NeverFalse = NFTrue | NFDiscard
-  deriving (Eq, Show, Ord)
-
-data Result = Result
-  { rLabel :: Label
-  , rNode :: RNode
-  } deriving (Eq, Show)
-
-data RNode
-  = RAnd Bool [Result]
-  | ROr Bool [Result]
-  | RNot (Maybe Bool) Result
-  | RNeverTrue NeverTrue Result
-  | RNeverFalse NeverFalse Result
-  | ROperand (Maybe Bool)
-  deriving (Eq, Show)
-
-isTrue :: RNode -> Bool
-isTrue n = case n of
-  RAnd b _ -> b
-  ROr b _ -> b
-  RNot mb _ -> fromMaybe False mb
-  RNeverTrue nt _ -> False
-  RNeverFalse nf _ -> nf == NFTrue
-  ROperand mb -> fromMaybe False mb
-
-isFalse :: RNode -> Bool
-isFalse n = case n of
-  RAnd b _ -> Prelude.not b
-  ROr b _ -> Prelude.not b
-  RNot mb _ -> Prelude.not $ fromMaybe False mb
-  RNeverTrue nt _ -> nt == NTFalse
-  RNeverFalse nf _ -> False
-  ROperand mb -> Prelude.not $ fromMaybe False mb
-
-isDiscard :: RNode -> Bool
-isDiscard n = case n of
-  RAnd _ _ -> False
-  ROr _ _ -> False
-  RNot x _ -> isNothing x
-  RNeverTrue nt _ -> nt == NTDiscard
-  RNeverFalse nf _ -> nf == NFDiscard
-  ROperand x -> isNothing x
-
-toMaybeBool :: RNode -> Maybe Bool
-toMaybeBool n
-  | isTrue n = Just True
-  | isFalse n = Just False
-  | otherwise = Nothing
-
-evaluate :: a -> Pdct a -> Result
-evaluate a (Pdct l n) = Result l n'
-  where
-    n' = evaluateNode a n
-
-evaluateNode
-  :: a
-  -> Node a
-  -> RNode
-evaluateNode a n = case n of
-  And ps -> let r = evalAnd a ps in RAnd (fst r) (snd r)
-  Or ps -> let r = evalOr a ps in ROr (fst r) (snd r)
-  Not p -> let r = evalNot a p in RNot (fst r) (snd r)
-  NeverFalse p -> let r = evalNeverFalse a p
-                  in RNeverFalse (fst r) (snd r)
-  NeverTrue p -> let r = evalNeverTrue a p
-                 in RNeverTrue (fst r) (snd r)
-  Operand f -> ROperand (f a)
-
-evalAnd :: a -> [Pdct a] -> (Bool, [Result])
-evalAnd a ps =
-  let rs = map (evaluate a) ps
-      f (Result _ n) = case n of
-        RAnd b _ -> b
-        ROr b _ -> b
-        RNot mb _ -> fromMaybe True mb
-        RNeverTrue nt _ -> nt == NTDiscard
-        RNeverFalse _ _ -> True
-        ROperand mb -> fromMaybe True mb
-  in (all f rs, rs)
-
-evalOr :: a -> [Pdct a] -> (Bool, [Result])
-evalOr a ps =
-  let rs = map (evaluate a) ps
-      f (Result _ n) = case n of
-        RAnd b _ -> b
-        ROr b _ -> b
-        RNot mb _ -> fromMaybe False mb
-        RNeverTrue _ _ -> False
-        RNeverFalse nf _ -> nf == NFTrue
-        ROperand mb -> fromMaybe False mb
-  in (any f rs, rs)
-
-
-evalNot :: a -> Pdct a -> (Maybe Bool, Result)
-evalNot a p =
-  let r@(Result _ n) = evaluate a p
-      mb = case n of
-        RAnd b _ -> Just . Prelude.not $ b
-        ROr b _ -> Just . Prelude.not $ b
-        RNot m _ -> fmap Prelude.not m
-        RNeverTrue nt _ -> case nt of
-          NTDiscard -> Nothing
-          NTFalse -> Just True
-        RNeverFalse nf _ -> case nf of
-          NFDiscard -> Nothing
-          NFTrue -> Just False
-        ROperand m -> fmap Prelude.not m
-  in (mb, r)
-
-evalNeverFalse :: a -> Pdct a -> (NeverFalse, Result)
-evalNeverFalse a p =
-  let r@(Result _ n) = evaluate a p
-      mb = case n of
-        RAnd b _ -> if b then NFTrue else NFDiscard
-        ROr b _ -> if b then NFTrue else NFDiscard
-        RNot m _ -> maybe NFDiscard
-                    (\b -> if b then NFTrue else NFDiscard) m
-        RNeverTrue _ _ -> NFDiscard
-        RNeverFalse x _ -> x
-        ROperand m -> maybe NFDiscard
-                        (\b -> if b then NFTrue else NFDiscard) m
-  in (mb, r)
-
-evalNeverTrue :: a -> Pdct a -> (NeverTrue, Result)
-evalNeverTrue a p =
-  let r@(Result _ n) = evaluate a p
-      fromB b = if b then NTDiscard else NTFalse
-      mb = case n of
-        RAnd b _ -> fromB b
-        ROr b _ -> fromB b
-        RNot m _ -> maybe NTDiscard fromB m
-        RNeverTrue x _ -> x
-        RNeverFalse _ _ -> NTDiscard
-        ROperand m -> maybe NTDiscard fromB m
-  in (mb, r)
-
-evalOperand :: a -> (a -> Maybe Bool) -> Maybe Bool
-evalOperand = flip ($)
-
-showResult
-  :: IndentAmt
-  -> ShowDiscards
-  -> Level
-  -> Result
-  -> [R.Chunk]
-showResult i d lvl (Result lbl n)
-  | isDiscard n && Prelude.not d = []
-  | otherwise = indent i lvl chunks ++ rest
-  where
-    chunks = labelBool lbl (toMaybeBool n)
-    rest = case n of
-      RAnd _ rs -> concatMap (showResult i d (lvl + 1)) rs
-      ROr _ rs -> concatMap (showResult i d (lvl + 1)) rs
-      RNot _ r -> showResult i d (lvl + 1) r
-      RNeverTrue _ r -> showResult i d (lvl + 1) r
-      RNeverFalse _ r -> showResult i d (lvl + 1) r
-      ROperand _ -> []
-
-
-showTopResult
-  :: X.Text
-  -> IndentAmt
-  -> ShowDiscards
-  -> Result
-  -> [R.Chunk]
-showTopResult txt i sd r = showResult i sd 0 r'
-  where
-    r' = r { rLabel = rLabel r <> " - " <> txt }
 

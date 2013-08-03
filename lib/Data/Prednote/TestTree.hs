@@ -117,14 +117,37 @@ data Payload a
   = Group [TestTree a]
   | Test (TestFunc a)
 
+-- | How verbose to be when reporting the results of tests. It would
+-- be possible to have many more knobs to control this behavior; this
+-- implementation is a compromise and hopefully provides enough
+-- verbosity settings without being too complex.
+data Verbosity
+
+  = Silent
+  -- ^ Show nothing at all
+
+  | PassFail
+  -- ^ Show only whether the test passed or failed
+
+  | FalseSubjects
+  -- ^ Show subjects that are False
+
+  | TrueSubjects
+  -- ^ Show subjects that are True
+
+  deriving (Eq, Ord, Show)
+
+-- | Show hidden levels in the result trees?
+type ShowHidden = Bool
+
 -- | A test is a function of this type. The function must make chunks
 -- in a manner that respects the applicable verbosity.
 type TestFunc a
   = Pt.IndentAmt
-  -> Verbosity
+  -> (Verbosity, ShowHidden)
   -- ^ Use this verbosity for tests that pass
 
-  -> Verbosity
+  -> (Verbosity, ShowHidden)
   -- ^ Use this verbosity for tests that fail
 
   -> [a]
@@ -139,36 +162,6 @@ group n = TestTree n . Group
 -- | Creates tests.
 test :: Name -> TestFunc a -> TestTree a
 test n = TestTree n . Test
-
--- | How verbose to be when reporting the results of tests. It would
--- be possible to have many more knobs to control this behavior; this
--- implementation is a compromise and hopefully provides enough
--- verbosity settings without being too complex.
-data Verbosity
-
-  = Silent
-  -- ^ Show nothing at all
-
-  | PassFail
-  -- ^ Show only whether the test passed or failed
-
-  | FalseSubjects
-  -- ^ Show subjects that are False. In addition, shows all evaluation
-  -- steps that led to the subject being False; however, does not show
-  -- discarded evaluation steps. Does not show True subjects at all.
-
-  | TrueSubjects
-  -- ^ Show subjects that are True. (This is cumulative, so False
-  -- subjects are shown too, as they would be using 'FalseSubjects'.)
-  -- Shows all evaluation steps that led to the subject being True;
-  -- however, does not show discarded evaluation steps.
-
-  | Discards
-  -- ^ Shows discarded subjects. Cumulative, so also does what
-  -- 'FalseSubjects' and 'TrueSubjects' do. Also shows all discarded
-  -- evaluation steps for all subjects.
-
-  deriving (Eq, Ord, Show)
 
 --
 -- Helper functions
