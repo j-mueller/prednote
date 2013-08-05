@@ -55,7 +55,9 @@
 -- >   printChunks t cks
 -- >   putStrLn $ "number of tests passed: " ++ show passed
 -- >   putStrLn $ "number of tests failed: " ++ show failed
-module Data.Prednote.TestTree
+module Data.Prednote.TestTree where
+
+{-
   (
   -- * The TestTree
     Name
@@ -89,7 +91,7 @@ module Data.Prednote.TestTree
   , evalTree
 
   ) where
-
+-}
 import Data.Either (rights)
 import Data.Maybe (isJust)
 import Data.List (unfoldr)
@@ -101,9 +103,26 @@ import qualified Data.List.Split as Sp
 import qualified System.Console.Rainbow as R
 import qualified Data.Prednote.Pdct as Pt
 
---
--- Types
---
+-- # Types
+
+data Verbosity
+  = HideAll
+  | ShowDefaults
+  | ShowAll
+  deriving (Eq, Show)
+
+type TrueVerbosity = Verbosity
+type FalseVerbosity = Verbosity
+
+data ShowTest
+  = HideTest
+  | ShowFirstLine TrueVerbosity FalseVerbosity
+  deriving (Eq, Show)
+
+data TestVerbosity = TestVerbosity
+  { onPass :: ShowTest
+  , onFail :: ShowTest
+  } deriving (Eq, Show)
 
 type Pass = Bool
 
@@ -117,43 +136,20 @@ data Payload a
   = Group [TestTree a]
   | Test (TestFunc a)
 
--- | How verbose to be when reporting the results of tests. It would
--- be possible to have many more knobs to control this behavior; this
--- implementation is a compromise and hopefully provides enough
--- verbosity settings without being too complex.
-data Verbosity
+data ResultTree a = ResultTree Name (ResultPayload a)
 
-  = Silent
-  -- ^ Show nothing at all
+data ResultPayload a
+  = ResultGroup [ResultTree a]
+  | ResultTest (TestResult a)
 
-  | PassFail
-  -- ^ Show only whether the test passed or failed
-
-  | FalseSubjects
-  -- ^ Show subjects that are False
-
-  | TrueSubjects
-  -- ^ Show subjects that are True
-
-  deriving (Eq, Ord, Show)
-
--- | Whether to show hidden levels in the 
-type ShowHidden = Bool
+data TestResult a = TestResult
+  { resultPass :: Pass
+  , resultSubjects :: [(a, Pt.Result)]
+  }
 
 -- | A test is a function of this type. The function must make chunks
 -- in a manner that respects the applicable verbosity.
-type TestFunc a
-  = Pt.IndentAmt
-  -> (Verbosity, ShowHidden)
-  -- ^ Use this verbosity for tests that pass
-
-  -> (Verbosity, ShowHidden)
-  -- ^ Use this verbosity for tests that fail
-
-  -> [a]
-  -> Pt.Level
-  -> (Pass, [R.Chunk])
-
+type TestFunc a = [a] -> (Pass, [Pt.Result])
 
 -- | Creates groups of tests.
 group :: Name -> [TestTree a] -> TestTree a
@@ -162,6 +158,34 @@ group n = TestTree n . Group
 -- | Creates tests.
 test :: Name -> TestFunc a -> TestTree a
 test n = TestTree n . Test
+
+-- # Showing tests
+
+-- | Creates a plain Chunk from a Text.
+plain :: X.Text -> R.Chunk
+plain = R.Chunk mempty
+
+showTestTitle :: Pt.IndentAmt -> Pt.Level -> Name -> Pass -> [R.Chunk]
+showTestTitle i l n p = [idt, open, passFail, close, blank, txt, nl]
+  where
+    idt = plain (X.replicate (i * l) " ")
+    nl = plain "\n"
+    passFail =
+      if p
+      then "PASS" <> R.f_green
+      else "FAIL" <> R.f_red
+    open = plain "["
+    close = plain "]"
+    blank = plain (X.singleton ' ')
+    txt = plain n
+
+
+
+{-
+
+-- | Whether to show hidden levels in the 
+type ShowHidden = Bool
+
 
 --
 -- Helper functions
@@ -197,24 +221,6 @@ isSubjectAndDiscardsShown v b = case v of
   TrueSubjects -> (isJust b, False)
   Discards -> (True, True)
 
-
--- | Creates a plain Chunk from a Text.
-plain :: X.Text -> R.Chunk
-plain = R.Chunk mempty
-
-showTestTitle :: Pt.IndentAmt -> Pt.Level -> Name -> Pass -> [R.Chunk]
-showTestTitle i l n p = [idt, open, passFail, close, blank, txt, nl]
-  where
-    idt = plain (X.replicate (i * l) " ")
-    nl = plain "\n"
-    passFail =
-      if p
-      then "PASS" <> R.f_green
-      else "FAIL" <> R.f_red
-    open = plain "["
-    close = plain "]"
-    blank = plain (X.singleton ' ')
-    txt = plain n
 
 isTrue :: Maybe Bool -> Bool
 isTrue = maybe False id
@@ -455,3 +461,4 @@ unfoldList ee l (seenFalse, is) =
           in Just ((short, results), (short, xs))
 
 
+-}
