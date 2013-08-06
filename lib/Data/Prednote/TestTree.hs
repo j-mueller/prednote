@@ -1,60 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Helps you build a tree of tests that run against a series of
--- items. This is best illustrated with an example.
---
--- Let's say that you have a list of Int. You want to make sure that
--- every Int in the list is odd and that every Int is greater than
--- zero. You also want to make sure that at least 5 Ints in the list
--- are greater than 20.
---
--- 'Pdct' from "Data.Prednote.Pdct" will help you, but only so much: a
--- 'Pdct' can test individual Int, but by itself it will not help you
--- run a check against a whole list of Int. Of course you can build
--- such a test fairly easily with 'any' and 'all', but what if you
--- want to view the results of the tests verbosely? That's where this
--- module comes in.
---
--- > {-# LANGUAGE OverloadedStrings #-}
--- > import System.Console.Rainbow
--- > import Data.Prednote.TestTree
--- > import Data.Prednote.Pdct
--- >
--- > isOdd :: Pdct Int
--- > isOdd = operand "is odd" odd
--- >
--- > greaterThan0 :: Pdct Int
--- > greaterThan0 = operand "greater than zero" (> 0)
--- >
--- > greaterThan20 :: Pdct Int
--- > greaterThan20 = operand "greater than 20" (> 20)
--- >
--- > myOpts :: TestOpts Int
--- > myOpts = TestOpts
--- >   { tIndentAmt = 2
--- >   , tPassVerbosity = TrueSubjects
--- >   , tFailVerbosity = TrueSubjects
--- >   , tGroupPred = const True
--- >   , tTestPred = const True
--- >   , tShowSkippedTests = True
--- >   , tGroupVerbosity = AllGroups
--- >   , tSubjects = mySubjects
--- >   , tStopOnFail = False
--- >   }
--- >
--- > mySubjects :: [Int]
--- > mySubjects = [2, 4, 6, 8, 10, 18, 19, 20, 21, 22, 24, 26]
--- >
--- > tests :: [TestTree Int]
--- > tests = [ isOdd, greaterThan0, greaterThan20 ]
--- >
--- > main :: IO ()
--- > main = do
--- >   let (cks, passed, failed) = runTests myOpts 0 tests
--- >   t <- termFromEnv
--- >   printChunks t cks
--- >   putStrLn $ "number of tests passed: " ++ show passed
--- >   putStrLn $ "number of tests failed: " ++ show failed
+-- items.
 module Data.Prednote.TestTree
   (
   -- * Test data types
@@ -65,7 +12,6 @@ module Data.Prednote.TestTree
   , ShowTest(..)
   , TestVerbosity
   , Pass
-  , TestFunc
   , Test(..)
   , TestResult(..)
 
@@ -89,23 +35,45 @@ import qualified Data.Prednote.Pdct as Pt
 
 -- # Types
 
+-- | How verbose to be when showing the results of running a Pdct on a
+-- single subject.
 data Verbosity
   = HideAll
+  -- ^ Do not show any results from the Pdct
+
   | ShowDefaults
+  -- ^ Show results according to the default settings provided in the
+  -- Result itself
+
   | ShowAll
+  -- ^ Show all Result
   deriving (Eq, Show)
 
+-- | Use the verbosity for subjects that are True
 type TrueVerbosity = Verbosity
+
+-- | Use this verbosity for subjects that are False
 type FalseVerbosity = Verbosity
 
+-- | Determines whether to show any of the results from a single test.
 data ShowTest
   = HideTest
+  -- ^ Do not show any results from this test
+
   | ShowFirstLine TrueVerbosity FalseVerbosity
+  -- ^ Show the first line, which indicates whether the test passed or
+  -- failed and gives the label for the test. Whether to show
+  -- individual subjects is determined by the TrueVerbosity and
+  -- FalseVerbosity.
+
   deriving (Eq, Show)
 
+-- | Determines which ShowTest to use for a particular test.
 data TestVerbosity = TestVerbosity
   { onPass :: ShowTest
+    -- ^ Use this ShowTest when the test passes
   , onFail :: ShowTest
+    -- ^ Use this ShowTest when the test fails
   } deriving (Eq, Show)
 
 type Pass = Bool
@@ -116,7 +84,15 @@ type Name = Text
 -- | A single test.
 data Test a = Test
   { testName :: Name
-  , testFunc :: TestFunc a
+  , testPass :: [Pt.Result] -> Pass
+  -- ^ Applied to the results of all applications of testFunc;
+  -- determines whether the test passes or fails.
+
+  , testFunc :: a -> Pt.Result
+  -- ^ This function is applied to each subject.
+
+  , testVerbosity :: TestVerbosity
+  -- ^ Default verbosity for the test.
   }
 
 data TestResult a = TestResult
@@ -125,10 +101,6 @@ data TestResult a = TestResult
   , resultSubjects :: [(a, Pt.Result)]
   , resultDefaultVerbosity :: TestVerbosity
   }
-
--- | A test is a function of this type. The function must make chunks
--- in a manner that respects the applicable verbosity.
-type TestFunc a = [a] -> (Pass, [(a, Pt.Result)], TestVerbosity)
 
 -- # Showing tests
 
@@ -149,16 +121,30 @@ showTestTitle n p = [open, passFail, close, blank, txt, nl]
     blank = plain (X.singleton ' ')
     txt = plain n
 
+-- | Evaluates a test for a given list of subjects.
 evalTest :: Test a -> [a] -> TestResult a
-evalTest (Test n f) ls = TestResult n p ss v
+evalTest (Test n fPass fSubj vy) ls = TestResult n p ss vy
   where
-    (p, ss, v) = f ls
+    p = fPass results
+    results = map fSubj ls
+    ss = zip ls results
 
+-- | Shows a result with indenting.
 showResult
   :: Pt.IndentAmt
+  -- ^ Indent each level by this many spaces
+
   -> (a -> Text)
+  -- ^ Shows each subject. The function should return a single-line
+  -- text without a trailing newline.
+
   -> Maybe TestVerbosity
+  -- ^ If Just, use this TestVerbosity when showing the test. If
+  -- Nothing, use the default verbosity.
+
   -> TestResult a
+  -- ^ The result to show
+
   -> [R.Chunk]
 showResult amt swr mayVb (TestResult n p ss dfltVb) =
   let vb = fromMaybe dfltVb mayVb
@@ -187,23 +173,29 @@ showSubject p amt swr (tv, fv) (a, r) =
 
 -- # Pre-built tests
 
-eachSubjectMustBeTrue :: Pt.Pdct a -> TestFunc a
-eachSubjectMustBeTrue pd ls = (pass, subjs, vy)
+-- | The test passes if each subject returns True.
+eachSubjectMustBeTrue :: Pt.Pdct a -> Name -> Test a
+eachSubjectMustBeTrue pd nm = Test nm pass f vy
   where
     vy = TestVerbosity
       { onPass = ShowFirstLine HideAll HideAll
       , onFail = ShowFirstLine HideAll ShowDefaults }
-    rs = map (flip Pt.evaluate pd) ls
-    subjs = zip ls rs
-    pass = all Pt.rBool rs
+    pass = all Pt.rBool
+    f = flip Pt.evaluate pd
 
 
-nSubjectsMustBeTrue :: Pt.Pdct a -> Int -> TestFunc a
-nSubjectsMustBeTrue pd i ls = (pass, subjs, vy)
+-- | The test passes if at least a given number of subjects are True.
+nSubjectsMustBeTrue
+  :: Pt.Pdct a
+  -> Name
+  -> Int
+  -- ^ The number of subjects that must be True. This should be a
+  -- positive number.
+  -> Test a
+nSubjectsMustBeTrue pd nm i = Test nm pass f vy
   where
-    pass = atLeast i . filter Pt.rBool $ rs
-    rs = map (flip Pt.evaluate pd) ls
-    subjs = zip ls rs
+    pass = atLeast i . filter Pt.rBool
+    f = flip Pt.evaluate pd
     vy = TestVerbosity
       { onPass = ShowFirstLine HideAll HideAll
       , onFail = ShowFirstLine HideAll HideAll }

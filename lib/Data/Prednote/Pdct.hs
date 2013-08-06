@@ -12,13 +12,10 @@ module Data.Prednote.Pdct
   , Hide
   , Pdct(..)
   , Node(..)
-  , rename
-
-  -- * Creating operands
-  , operand
 
   -- * Creating Pdct.
   -- | All functions create Pdct that are shown by default.
+  , operand
   , and
   , or
   , not
@@ -35,17 +32,20 @@ module Data.Prednote.Pdct
   , hideTrue
   , hideFalse
 
+  -- * Renaming Pdct
+  , rename
+
   -- * Result
   , Result(..)
   , RNode(..)
+
+  -- * Showing and evaluating Pdct
   , evaluate
   , evaluateNode
   , IndentAmt
   , Level
   , showResult
   , showTopResult
-
-  -- * Showing and evaluating Pdct
   , showPdct
 
   -- * Helpers for building common Pdct
@@ -78,7 +78,7 @@ import qualified Data.Text as X
 import Data.Monoid ((<>), mconcat, mempty)
 import Data.String (fromString)
 import qualified System.Console.Rainbow as R
-import Prelude hiding (not, and, or, compare, filter)
+import Prelude hiding (not, and, or, compare, filter, show)
 import qualified Prelude
 
 -- # Pdct type
@@ -150,21 +150,24 @@ not = Pdct "not" (const False) . Not
 hide :: Pdct a -> Pdct a
 hide p = p { pHide = const True }
 
-showAll :: Pdct a -> Pdct a
-showAll p = p { pHide = const False }
+-- | Changes a Pdct so it is always shown by default.
+show :: Pdct a -> Pdct a
+show p = p { pHide = const False }
 
+-- | Changes a Pdct so that it is hidden if its result is True.
 hideTrue :: Pdct a -> Pdct a
 hideTrue p = p { pHide = id }
 
+-- | Changes a Pdct so that it is hidden if its result is False.
 hideFalse :: Pdct a -> Pdct a
 hideFalse p = p { pHide = Prelude.not }
 
--- | Forms a Pdct using 'and'.
+-- | Forms a Pdct using 'and'; assigns a generic label.
 (&&&) :: Pdct a -> Pdct a -> Pdct a
 (&&&) x y = Pdct "and" (const False) (And [x, y])
 infixr 3 &&&
 
--- | Forms a Pdct using 'or'.
+-- | Forms a Pdct using 'or'; assigns a generic label.
 (|||) :: Pdct a -> Pdct a -> Pdct a
 (|||) x y = Pdct "or" (const False) (Or [x, y])
 infixr 2 |||
@@ -191,10 +194,21 @@ boxNode f n = case n of
 
 -- # Result
 
+-- | The result from evaluating a Pdct.
 data Result = Result
   { rLabel :: Label
+  -- ^ The label from the original Pdct
+
   , rBool :: Bool
+  -- ^ The boolean result from evaluating the node. If the node is an
+  -- operand, this is the result of applying the operand function to
+  -- the subject. Otherwise, this is the result of application of the
+  -- appropriate boolean operation to the child nodes.
+
   , rHide :: Hide
+  -- ^ Is this result hidden in the result by default? Hiding only
+  -- affects presentation; it does not affect how this Pdct affects
+  -- any parent Pdct.
   , rNode :: RNode
   } deriving (Eq, Show)
 
@@ -205,6 +219,7 @@ data RNode
   | ROperand Bool
   deriving (Eq, Show)
 
+-- | Applies a Pdct to a particular value, known as the subject.
 evaluate :: a -> Pdct a -> Result
 evaluate a (Pdct l d n) = Result l r d' rn
   where
@@ -279,14 +294,25 @@ labelBool t b = [open, trueFalse, close, blank, txt]
 
 type ShowAll = Bool
 
+-- | Shows a Result in a pretty way with colors and indentation.
 showResult
   :: IndentAmt
+  -- ^ Indent each level by this many spaces
+
   -> ShowAll
+  -- ^ If True, shows all Pdct, even ones where 'rHide' is
+  -- True. Otherwise, respects 'rHide' and does not show hidden Pdct.
+
   -> Level
+  -- ^ How deep in the tree we are; this increments by one for each
+  -- level of descent.
+
   -> Result
+  -- ^ The result to show
+
   -> [R.Chunk]
-showResult amt sa lvl (Result lbl rslt hide nd)
-  | hide && Prelude.not sa = []
+showResult amt sa lvl (Result lbl rslt hd nd)
+  | hd && Prelude.not sa = []
   | otherwise = firstLine ++ restLines
   where
     firstLine = indent amt lvl $ labelBool lbl rslt
@@ -303,21 +329,33 @@ showResult amt sa lvl (Result lbl rslt hide nd)
               then indent amt (lvl + 1) ["(short circuit)"]
               else []
 
+-- | @shorter x y@ is True if list x is shorter than list y. Lazier
+-- than taking the length of each list and comparing the results.
 shorter :: [a] -> [a] -> Bool
 shorter [] [] = False
 shorter (_:_) [] = False
 shorter [] (_:_) = True
 shorter (_:xs) (_:ys) = shorter xs ys
 
+-- | For instance,
+-- > takeThrough odd [2,4,6,7,8] == [2,4,6,7]
 takeThrough :: (a -> Bool) -> [a] -> [a]
 takeThrough _ [] = []
 takeThrough f (x:xs) = x : if f x then [] else takeThrough f xs
 
+-- | Shows the top of a Result tree and all the child Results. Adds a
+-- short label at the top of the tree.
 showTopResult
   :: X.Text
+  -- ^ Label to add to the top of the tree.
   -> IndentAmt
+  -- ^ Indent each level by this many spaces
   -> ShowAll
+  -- ^ If True, shows all Pdct, even ones where 'rHide' is
+  -- True. Otherwise, respects 'rHide' and does not show hidden Pdct.
+
   -> Result
+  -- ^ The result to show
   -> [R.Chunk]
 showTopResult txt i sd r = showResult i sd 0 r'
   where
@@ -341,8 +379,8 @@ compareBy
 
   -> Ordering
   -- ^ When subjects are compared, this ordering must be the result in
-  -- order for the Pdct to be Just True; otherwise it is Just
-  -- False. The subject will be on the left hand side.
+  -- order for the Pdct to be True; otherwise it is False. The subject
+  -- will be on the left hand side.
 
   -> Pdct a
 
@@ -366,13 +404,13 @@ compare
 
   -> Ordering
   -- ^ When subjects are compared, this ordering must be the result in
-  -- order for the Pdct to be Just True; otherwise it is Just
-  -- False. The subject will be on the left hand side.
+  -- order for the Pdct to be True; otherwise it is False. The subject
+  -- will be on the left hand side.
 
   -> Pdct a
 compare typeDesc a ord = compareBy itemDesc typeDesc cmp ord
   where
-    itemDesc = X.pack . show $ a
+    itemDesc = X.pack . Prelude.show $ a
     cmp item = Prelude.compare item a
 
 greater
