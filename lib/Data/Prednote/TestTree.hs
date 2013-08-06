@@ -10,7 +10,7 @@ module Data.Prednote.TestTree
   , TrueVerbosity
   , FalseVerbosity
   , ShowTest(..)
-  , TestVerbosity
+  , TestVerbosity(..)
   , Pass
   , Test(..)
   , TestResult(..)
@@ -49,7 +49,7 @@ data Verbosity
   -- ^ Show all Result
   deriving (Eq, Show)
 
--- | Use the verbosity for subjects that are True
+-- | Use this verbosity for subjects that are True
 type TrueVerbosity = Verbosity
 
 -- | Use this verbosity for subjects that are False

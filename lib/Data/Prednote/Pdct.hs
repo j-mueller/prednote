@@ -44,6 +44,7 @@ module Data.Prednote.Pdct
   , evaluateNode
   , IndentAmt
   , Level
+  , ShowAll
   , showResult
   , showTopResult
   , showPdct
