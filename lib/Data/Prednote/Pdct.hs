@@ -13,24 +13,27 @@ module Data.Prednote.Pdct
   , Pdct(..)
   , Node(..)
   , rename
-  , always
-  , never
 
   -- * Creating operands
   , operand
 
-  -- * Creating Pdct from other Pdct
+  -- * Creating Pdct.
+  -- | All functions create Pdct that are shown by default.
   , and
   , or
   , not
-  , hideAll
-  , showAll
-  , hideTrue
-  , hideFalse
   , (&&&)
   , (|||)
+  , always
+  , never
   , boxPdct
   , boxNode
+
+  -- * Controlling whether Pdct are shown in the results
+  , hide
+  , show
+  , hideTrue
+  , hideFalse
 
   -- * Result
   , Result(..)
@@ -81,45 +84,71 @@ import qualified Prelude
 -- # Pdct type
 
 type Label = Text
+
+-- | Determines whether a result is shown by default.
 type Hide = Bool
 
+-- | A predicate. Each Pdct contains a tree of Node.
 data Pdct a = Pdct
   { pLabel :: Label
+  -- ^ Label used when showing the results
+
   , pHide :: (Bool -> Hide)
+  -- ^ As results are computed, this function is applied to the
+  -- result. If this function returns False, then this Pdct will not
+  -- be shown by default in the results.
+
   , pNode :: Node a
+
   }
 
 data Node a
   = And [Pdct a]
+  -- ^ Conjunction. If any Pdct in the list is False, the result is
+  -- False. If the list is empty, the result is True.
+
   | Or [Pdct a]
+  -- ^ Disjunction. If at least one Pdct in the list is True, the
+  -- result it True. If the list is empty, the result is False.
+
   | Not (Pdct a)
+  -- ^ Negation
+
   | Operand (a -> Bool)
+  -- ^ Most basic building block.
 
 -- | Renames the top level of the Pdct. The function you pass will be
 -- applied to the old name.
 rename :: (Text -> Text) -> Pdct a -> Pdct a
 rename f p = p { pLabel = f (pLabel p) }
 
+-- | Always True
 always :: Pdct a
 always = Pdct "always True" (const False) (Operand (const True))
 
+-- | Always False
 never :: Pdct a
 never = Pdct "always False" (const False) (Operand (const False))
 
+-- | Creates and labels operands.
 operand :: Label -> (a -> Bool) -> Pdct a
 operand l = Pdct l (const False) . Operand
 
+-- | Creates And Pdct using a generic name
 and :: [Pdct a] -> Pdct a
 and = Pdct "and" (const False) . And
 
+-- | Creates Or Pdct using a generic name
 or :: [Pdct a] -> Pdct a
 or = Pdct "or" (const False) . Or
 
+-- | Creates Not Pdct using a generic name
 not :: Pdct a -> Pdct a
 not = Pdct "not" (const False) . Not
 
-hideAll :: Pdct a -> Pdct a
-hideAll p = p { pHide = const True }
+-- | Changes a Pdct so it is always hidden by default.
+hide :: Pdct a -> Pdct a
+hide p = p { pHide = const True }
 
 showAll :: Pdct a -> Pdct a
 showAll p = p { pHide = const False }
