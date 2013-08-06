@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Helps you build a tree of tests that run against a series of
--- items.
-module Data.Prednote.TestTree
+-- | Helps you build tests that run against a series of items.
+module Data.Prednote.Test
   (
   -- * Test data types
     Name
