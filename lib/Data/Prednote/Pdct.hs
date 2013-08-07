@@ -364,6 +364,8 @@ showTopResult
   -- ^ Label to add to the top of the tree.
   -> IndentAmt
   -- ^ Indent each level by this many spaces
+  -> Level
+  -- ^ Indent the top by this many levels
   -> ShowAll
   -- ^ If True, shows all Pdct, even ones where 'rHide' is
   -- True. Otherwise, respects 'rHide' and does not show hidden Pdct.
@@ -371,7 +373,7 @@ showTopResult
   -> Result
   -- ^ The result to show
   -> [R.Chunk]
-showTopResult txt i sd r = showResult i sd 0 r'
+showTopResult txt i lvl sd r = showResult i sd lvl r'
   where
     r' = r { rLabel = rLabel r <> " - " <> txt }
 
@@ -398,7 +400,7 @@ verboseFilter desc amt sa pd as = (chks, as')
   where
     rs = map (flip evaluate pd) as
     subjAndRslts = zip as rs
-    mkChks (subj, rslt) = showTopResult (desc subj) amt sa rslt
+    mkChks (subj, rslt) = showTopResult (desc subj) amt 0 sa rslt
     chks = concatMap mkChks subjAndRslts
     as' = map fst . Prelude.filter (rBool . snd) $ subjAndRslts
 

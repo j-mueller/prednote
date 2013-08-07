@@ -167,8 +167,8 @@ showSubject p amt swr (tv, fv) (a, r) =
       vb = if p then tv else fv
   in case vb of
       HideAll -> []
-      ShowDefaults -> Pt.showTopResult txt amt False r
-      ShowAll -> Pt.showTopResult txt amt True r
+      ShowDefaults -> Pt.showTopResult txt amt 1 False r
+      ShowAll -> Pt.showTopResult txt amt 1 True r
 
 -- # Pre-built tests
 
