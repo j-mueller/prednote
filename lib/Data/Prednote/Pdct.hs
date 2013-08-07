@@ -48,10 +48,13 @@ module Data.Prednote.Pdct
   , showResult
   , showTopResult
   , showPdct
+  , filter
+  , verboseFilter
 
   -- * Helpers for building common Pdct
   -- ** Non-overloaded
   , compareBy
+  , compareByMaybe
   , greaterBy
   , lessBy
   , equalBy
@@ -279,6 +282,16 @@ instance Show (Pdct a) where
        . map R._text
        . showPdct 2 0
 
+
+filter :: Pdct a -> [a] -> [a]
+filter pd as
+  = map fst
+  . Prelude.filter (rBool . snd)
+  . zip as
+  . map (flip evaluate pd)
+  $ as
+
+
 -- # Showing Result
 
 labelBool :: Text -> Bool -> [R.Chunk]
@@ -363,6 +376,32 @@ showTopResult txt i sd r = showResult i sd 0 r'
     r' = r { rLabel = rLabel r <> " - " <> txt }
 
 
+-- | Filters a list. Also returns chunks describing the process.
+verboseFilter
+  :: (a -> X.Text)
+  -- ^ How to describe each subject
+
+  -> IndentAmt
+  -- ^ Indent each level by this many spaces
+
+  -> ShowAll
+  -- ^ If True, shows all Pdct, even ones where 'rHide' is
+  -- True. Otherwise, respects 'rHide' and does not show hidden Pdct.
+
+  -> Pdct a
+  -- ^ Used to perform the filtering
+
+  -> [a]
+  -> ([R.Chunk], [a])
+
+verboseFilter desc amt sa pd as = (chks, as')
+  where
+    rs = map (flip evaluate pd) as
+    subjAndRslts = zip as rs
+    mkChks (subj, rslt) = showTopResult (desc subj) amt sa rslt
+    chks = concatMap mkChks subjAndRslts
+    as' = map fst . Prelude.filter (rBool . snd) $ subjAndRslts
+
 -- # Comparisons
 
 -- | Build a Pdct that compares items.
@@ -413,6 +452,35 @@ compare typeDesc a ord = compareBy itemDesc typeDesc cmp ord
   where
     itemDesc = X.pack . Prelude.show $ a
     cmp item = Prelude.compare item a
+
+-- | Builds a Pdct for items that might fail to return a comparison.
+compareByMaybe
+  :: Text
+  -- ^ How to show the item being compared
+
+  -> Text
+  -- ^ Description of type of thing being matched
+
+  -> (a -> Maybe Ordering)
+  -- ^ How to compare against right hand side. If Nothing, a Pdct that
+  -- always returns False is returned.
+
+  -> Ordering
+  -- ^ Ordering that must result for the Pdct to be True
+
+  -> Pdct a
+
+compareByMaybe itemDesc typeDesc cmp ord =
+  Pdct l (const False) (Operand f)
+  where
+    l = typeDesc <> " is " <> cmpDesc <> " " <> itemDesc
+    cmpDesc = case ord of
+      LT -> "less than"
+      GT -> "greater than"
+      EQ -> "equal to"
+    f subj = case cmp subj of
+      Nothing -> False
+      Just ord' -> ord == ord'
 
 greater
   :: (Show a, Ord a)
