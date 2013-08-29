@@ -6,7 +6,6 @@
 -- where @and@ and @or@ are binary and @not@ is unary.
 module Data.Prednote.Expressions.RPN where
 
-import qualified Control.Monad.Exception.Synchronous as Ex
 import qualified Data.Foldable as Fdbl
 import qualified Data.Prednote.Pdct as P
 import Data.Prednote.Pdct ((&&&), (|||))
@@ -33,17 +32,17 @@ pushOperand p ts = p : ts
 pushOperator
   :: Operator
   -> [P.Pdct a]
-  -> Ex.Exceptional Error [P.Pdct a]
+  -> Either Error [P.Pdct a]
 pushOperator o ts = case o of
   OpAnd -> case ts of
     x:y:zs -> return $ (y &&& x) : zs
-    _ -> Ex.throw $ err "and"
+    _ -> Left $ err "and"
   OpOr -> case ts of
     x:y:zs -> return $ (y ||| x) : zs
-    _ -> Ex.throw $ err "or"
+    _ -> Left $ err "or"
   OpNot -> case ts of
     x:zs -> return $ P.not x : zs
-    _ -> Ex.throw $ err "not"
+    _ -> Left $ err "not"
   where
     err x = "insufficient operands to apply \"" <> x
             <> "\" operator\n"
@@ -51,7 +50,7 @@ pushOperator o ts = case o of
 pushToken
   :: [P.Pdct a]
   -> RPNToken a
-  -> Ex.Exceptional Error [P.Pdct a]
+  -> Either Error [P.Pdct a]
 pushToken ts t = case t of
   TokOperand p -> return $ pushOperand p ts
   TokOperator o -> pushOperator o ts
@@ -64,13 +63,13 @@ pushToken ts t = case t of
 parseRPN
   :: Fdbl.Foldable f
   => f (RPNToken a)
-  -> Ex.Exceptional Error (P.Pdct a)
+  -> Either Error (P.Pdct a)
 parseRPN ts = do
   trees <- Fdbl.foldlM pushToken [] ts
   case trees of
-    [] -> Ex.throw $ "bad expression: no operands left on the stack\n"
+    [] -> Left $ "bad expression: no operands left on the stack\n"
     x:[] -> return x
-    xs -> Ex.throw
+    xs -> Left
       $ "bad expression: multiple operands left on the stack:\n"
       <> ( X.concat
            . map C._text

@@ -19,7 +19,6 @@ import qualified Data.Text as X
 import qualified Data.Prednote.Expressions.Infix as I
 import qualified Data.Prednote.Expressions.RPN as R
 import qualified Data.Prednote.Pdct as P
-import qualified Control.Monad.Exception.Synchronous as Ex
 
 -- | A single type for both RPN tokens and infix tokens.
 newtype Token a = Token { unToken :: I.InfixToken a }
@@ -71,13 +70,13 @@ toksToRPN toks
 parseExpression
   :: ExprDesc
   -> [Token a]
-  -> Ex.Exceptional Error (P.Pdct a)
+  -> Either Error (P.Pdct a)
 parseExpression e toks = do
   rpnToks <- case e of
-    Infix -> Ex.fromMaybe "unbalanced parentheses\n"
+    Infix -> maybe (Left "unbalanced parentheses\n") Right
              . I.createRPN
              . map unToken
              $ toks
-    RPN -> Ex.fromMaybe "parentheses in an RPN expression\n"
+    RPN -> maybe (Left "parentheses in an RPN expression\n") Right
            $ toksToRPN toks
   R.parseRPN rpnToks
