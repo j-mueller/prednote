@@ -35,7 +35,7 @@ library
     , Data.Prednote.Test
 
   build-depends:
-      base >= 4.6 && < 5
+      base >= 4.6.*
     , rainbow ==0.4.*
     , split ==0.2.*
     , text == 0.11.*
