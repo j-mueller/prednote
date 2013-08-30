@@ -52,7 +52,10 @@ executable prednote-test
   -- build-dependencies in any build, even non-test builds.
   if flag(test)
     build-depends:
-        QuickCheck ==2.6.*
+        base ==4.6.*
+      , QuickCheck ==2.6.*
+      , rainbow ==0.4.*
+      , text ==0.11.*
   else
     buildable: False
 
