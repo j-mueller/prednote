@@ -72,7 +72,7 @@ parseRPN ts = do
     xs -> Left
       $ "bad expression: multiple operands left on the stack:\n"
       <> ( X.concat
-           . map C._text
+           . map C.text
            . concatMap (P.showPdct 4 0)
            $ xs )
 

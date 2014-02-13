@@ -279,7 +279,7 @@ showPdct amt lvl (Pdct l _ pd) = case pd of
 instance Show (Pdct a) where
   show = X.unpack
        . X.concat
-       . map R._text
+       . map R.text
        . showPdct 2 0
 
 
@@ -303,7 +303,7 @@ labelBool t b = [open, trueFalse, close, blank, txt]
     close = "]"
     blank = plain (X.replicate blankLen " ")
     blankLen = X.length "discard"
-               - X.length (R._text trueFalse) + 1
+               - X.length (R.text trueFalse) + 1
     txt = plain t
 
 type ShowAll = Bool
