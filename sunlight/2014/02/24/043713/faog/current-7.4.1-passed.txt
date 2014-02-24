@@ -1,0 +1,1194 @@
+Current time: 2014-02-24 04:37:13.583324 UTC
+ghc-7.4.1 ["--version"] succeeded with exit code 0
+Standard output:
+The Glorious Glasgow Haskell Compilation System, version 7.4.1
+
+Standard error:
+<empty>
+
+ghc-pkg-7.4.1 ["--version"] succeeded with exit code 0
+Standard output:
+GHC package manager version 7.4.1
+
+Standard error:
+<empty>
+
+cabal ["--version"] succeeded with exit code 0
+Standard output:
+cabal-install version 1.18.0.2
+using version 1.18.1 of the Cabal library 
+
+Standard error:
+<empty>
+
+ghc-7.4.1 ["--make","-outputdir","/home/massysett/prednote/sunlight-27776","-o","/home/massysett/prednote/sunlight-27776/Setup","Setup.hs"] succeeded with exit code 0
+Standard output:
+[1 of 1] Compiling Main             ( Setup.hs, /home/massysett/prednote/sunlight-27776/Main.o )
+Linking /home/massysett/prednote/sunlight-27776/Setup ...
+
+Standard error:
+<empty>
+
+/home/massysett/prednote/sunlight-27776/Setup ["sdist","--output-directory=/home/massysett/prednote/sunlight-27776/distDeps"] succeeded with exit code 0
+Standard output:
+Building source dist for prednote-0.18.0.4...
+Source directory created: /home/massysett/prednote/sunlight-27776/distDeps
+
+Standard error:
+Warning: Cannot run preprocessors. Run 'configure' command first.
+
+/home/massysett/prednote/sunlight-27776/Setup ["sdist","--output-directory=/home/massysett/prednote/sunlight-27776/distPkg"] succeeded with exit code 0
+Standard output:
+Building source dist for prednote-0.18.0.4...
+Source directory created: /home/massysett/prednote/sunlight-27776/distPkg
+
+Standard error:
+Warning: Cannot run preprocessors. Run 'configure' command first.
+
+ghc-pkg-7.4.1 ["init","/home/massysett/prednote/sunlight-27776/db"] succeeded with exit code 0
+Standard output:
+<empty>
+
+Standard error:
+<empty>
+
+cabal ["install","--verbose=2","--with-compiler=ghc-7.4.1","--with-hc-pkg=ghc-pkg-7.4.1","--prefix=/home/massysett/prednote/sunlight-27776/prefix","--disable-library-profiling","--disable-executable-profiling","--package-db=clear","--package-db=global","--package-db=/home/massysett/prednote/sunlight-27776/db","--enable-tests","--disable-documentation","--only-dependencies"] succeeded with exit code 0
+Standard output:
+Reading available packages...
+Choosing modular solver.
+Resolving dependencies...
+Ready to install random-1.0.1.1
+Ready to install split-0.2.2
+Ready to install terminfo-0.4.0.0
+Ready to install text-1.1.0.0
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/random/1.0.1.1/random-1.0.1.1.tar.gz
+to /tmp/random-1.0.1.1-29061...
+Updating random.cabal with the latest revision from the index.
+Configuring random-1.0.1.1...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency time ==1.4: using time-1.4
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/prednote/sunlight-27776/prefix
+Binaries installed in: /home/massysett/prednote/sunlight-27776/prefix/bin
+Libraries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/random-1.0.1.1
+Private binaries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/libexec
+Data files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/x86_64-linux-ghc-7.4.1/random-1.0.1.1
+Documentation installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/random-1.0.1.1
+Configuration files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/etc
+Using alex found on system at: /home/massysett/.cabal/bin/alex
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.3 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+No hpc found
+No hsc2hs found
+Using hscolour version 1.20 found on system at:
+/home/massysett/.cabal/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building random-1.0.1.1...
+Preprocessing library random-1.0.1.1...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name random-1.0.1.1 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id time-1.4-96b42dcaca5cdbc30bab9dcc07384b8d -XHaskell98 -XCPP System.Random -O2
+[1 of 1] Compiling System.Random    ( System/Random.hs, dist/build/System/Random.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSrandom-1.0.1.1.a dist/build/System/Random.o
+In-place registering random-1.0.1.1...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/random does exist: False
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/random-1.0.1.1
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1
+creating /home/massysett/prednote/sunlight-27776/prefix/share/doc
+creating /home/massysett/prednote/sunlight-27776/prefix/share
+creating /home/massysett/prednote/sunlight-27776/prefix/share/doc
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/random-1.0.1.1
+Installing LICENSE to
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/random-1.0.1.1/LICENSE
+Installing library in
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/random-1.0.1.1
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/random-1.0.1.1/System
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/random-1.0.1.1
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1
+creating /home/massysett/prednote/sunlight-27776/prefix/lib
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/random-1.0.1.1
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/random-1.0.1.1/System
+Installing dist/build/System/Random.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/random-1.0.1.1/System/Random.hi
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/random-1.0.1.1
+Installing dist/build/libHSrandom-1.0.1.1.a to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/random-1.0.1.1/libHSrandom-1.0.1.1.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'random-1.0.1.1' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/prednote/sunlight-27776/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'time-1.4-96b42dcaca5cdbc30bab9dcc07384b8d' '-XHaskell98' '-XCPP' 'System.Random' '-O2'
+Registering random-1.0.1.1...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db'
+Installed random-1.0.1.1
+Ready to install QuickCheck-2.6
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/split/0.2.2/split-0.2.2.tar.gz
+to /tmp/split-0.2.2-29061...
+Updating split.cabal with the latest revision from the index.
+Configuring split-0.2.2...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/prednote/sunlight-27776/prefix
+Binaries installed in: /home/massysett/prednote/sunlight-27776/prefix/bin
+Libraries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2
+Private binaries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/libexec
+Data files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/x86_64-linux-ghc-7.4.1/split-0.2.2
+Documentation installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/split-0.2.2
+Configuration files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/etc
+Using alex found on system at: /home/massysett/.cabal/bin/alex
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.3 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+No hpc found
+No hsc2hs found
+Using hscolour version 1.20 found on system at:
+/home/massysett/.cabal/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building split-0.2.2...
+Preprocessing library split-0.2.2...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name split-0.2.2 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -XHaskell2010 Data.List.Split Data.List.Split.Internals -Wall
+[1 of 2] Compiling Data.List.Split.Internals ( src/Data/List/Split/Internals.hs, dist/build/Data/List/Split/Internals.o )
+[2 of 2] Compiling Data.List.Split  ( src/Data/List/Split.hs, dist/build/Data/List/Split.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSsplit-0.2.2.a dist/build/Data/List/Split.o dist/build/Data/List/Split/Internals.o
+In-place registering split-0.2.2...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/split does exist: False
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/split-0.2.2
+Installing LICENSE to
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/split-0.2.2/LICENSE
+Installing library in
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2/Data/List
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2/Data
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2/Data
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2/Data/List
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2/Data/List/Split
+Installing dist/build/Data/List/Split.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2/Data/List/Split.hi
+Installing dist/build/Data/List/Split/Internals.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2/Data/List/Split/Internals.hi
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2
+Installing dist/build/libHSsplit-0.2.2.a to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/split-0.2.2/libHSsplit-0.2.2.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-isrc' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'split-0.2.2' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/prednote/sunlight-27776/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-XHaskell2010' 'Data.List.Split' 'Data.List.Split.Internals' '-Wall'
+Registering split-0.2.2...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db'
+Installed split-0.2.2
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/terminfo/0.4.0.0/terminfo-0.4.0.0.tar.gz
+to /tmp/terminfo-0.4.0.0-29061...
+Updating terminfo.cabal with the latest revision from the index.
+Configuring terminfo-0.4.0.0...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/prednote/sunlight-27776/prefix
+Binaries installed in: /home/massysett/prednote/sunlight-27776/prefix/bin
+Libraries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0
+Private binaries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/libexec
+Data files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0
+Documentation installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0
+Configuration files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/etc
+Using alex found on system at: /home/massysett/.cabal/bin/alex
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.3 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+No hpc found
+No hsc2hs found
+Using hscolour version 1.20 found on system at:
+/home/massysett/.cabal/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+sh ./configure --with-compiler=ghc-7.4.1 --with-hc-pkg=ghc-pkg-7.4.1 --prefix=/home/massysett/prednote/sunlight-27776/prefix --bindir=/home/massysett/prednote/sunlight-27776/prefix/bin --libdir=/home/massysett/prednote/sunlight-27776/prefix/lib --libexecdir=/home/massysett/prednote/sunlight-27776/prefix/libexec --datadir=/home/massysett/prednote/sunlight-27776/prefix/share --sysconfdir=/home/massysett/prednote/sunlight-27776/prefix/etc --with-gcc=/usr/bin/gcc
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether we are using the GNU C compiler... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to accept ISO C89... none needed
+checking how to run the C preprocessor... gcc -E
+checking for grep that handles long lines and -e... /bin/grep
+checking for egrep... /bin/grep -E
+checking for ANSI C header files... yes
+checking for sys/types.h... yes
+checking for sys/stat.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for memory.h... yes
+checking for strings.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for unistd.h... yes
+checking ncurses.h usability... yes
+checking ncurses.h presence... yes
+checking for ncurses.h... yes
+checking for setupterm in -ltinfo... yes
+configure: creating ./config.status
+config.status: creating terminfo.buildinfo
+Reading parameters from ./terminfo.buildinfo
+Reading parameters from ./terminfo.buildinfo
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building terminfo-0.4.0.0...
+Preprocessing library terminfo-0.4.0.0...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name terminfo-0.4.0.0 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -XHaskell2010 System.Console.Terminfo System.Console.Terminfo.Base System.Console.Terminfo.Cursor System.Console.Terminfo.Color System.Console.Terminfo.Edit System.Console.Terminfo.Effects System.Console.Terminfo.Keys -Wall
+[1 of 7] Compiling System.Console.Terminfo.Base ( System/Console/Terminfo/Base.hs, dist/build/System/Console/Terminfo/Base.o )
+[2 of 7] Compiling System.Console.Terminfo.Keys ( System/Console/Terminfo/Keys.hs, dist/build/System/Console/Terminfo/Keys.o )
+[3 of 7] Compiling System.Console.Terminfo.Cursor ( System/Console/Terminfo/Cursor.hs, dist/build/System/Console/Terminfo/Cursor.o )
+[4 of 7] Compiling System.Console.Terminfo.Effects ( System/Console/Terminfo/Effects.hs, dist/build/System/Console/Terminfo/Effects.o )
+[5 of 7] Compiling System.Console.Terminfo.Edit ( System/Console/Terminfo/Edit.hs, dist/build/System/Console/Terminfo/Edit.o )
+[6 of 7] Compiling System.Console.Terminfo.Color ( System/Console/Terminfo/Color.hs, dist/build/System/Console/Terminfo/Color.o )
+[7 of 7] Compiling System.Console.Terminfo ( System/Console/Terminfo.hs, dist/build/System/Console/Terminfo.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSterminfo-0.4.0.0.a dist/build/System/Console/Terminfo.o dist/build/System/Console/Terminfo/Base.o dist/build/System/Console/Terminfo/Cursor.o dist/build/System/Console/Terminfo/Color.o dist/build/System/Console/Terminfo/Edit.o dist/build/System/Console/Terminfo/Effects.o dist/build/System/Console/Terminfo/Keys.o
+In-place registering terminfo-0.4.0.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db' '--package-conf=dist/package.conf.inplace'
+Reading parameters from ./terminfo.buildinfo
+directory dist/doc/html/terminfo does exist: False
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0
+Installing LICENSE to
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/LICENSE
+Installing library in
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console/Terminfo
+Installing dist/build/System/Console/Terminfo.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console/Terminfo.hi
+Installing dist/build/System/Console/Terminfo/Base.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console/Terminfo/Base.hi
+Installing dist/build/System/Console/Terminfo/Cursor.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console/Terminfo/Cursor.hi
+Installing dist/build/System/Console/Terminfo/Color.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console/Terminfo/Color.hi
+Installing dist/build/System/Console/Terminfo/Edit.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console/Terminfo/Edit.hi
+Installing dist/build/System/Console/Terminfo/Effects.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console/Terminfo/Effects.hi
+Installing dist/build/System/Console/Terminfo/Keys.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/System/Console/Terminfo/Keys.hi
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0
+Installing dist/build/libHSterminfo-0.4.0.0.a to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/terminfo-0.4.0.0/libHSterminfo-0.4.0.0.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'terminfo-0.4.0.0' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/prednote/sunlight-27776/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-XHaskell2010' 'System.Console.Terminfo' 'System.Console.Terminfo.Base' 'System.Console.Terminfo.Cursor' 'System.Console.Terminfo.Color' 'System.Console.Terminfo.Edit' 'System.Console.Terminfo.Effects' 'System.Console.Terminfo.Keys' '-Wall'
+Registering terminfo-0.4.0.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db'
+Installed terminfo-0.4.0.0
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/text/1.1.0.0/text-1.1.0.0.tar.gz
+to /tmp/text-1.1.0.0-29061...
+Updating text.cabal with the latest revision from the index.
+Configuring text-1.1.0.0...
+Flags chosen: integer-simple=False, developer=False
+Dependency array ==0.4.0.0: using array-0.4.0.0
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency bytestring ==0.9.2.1: using bytestring-0.9.2.1
+Dependency deepseq ==1.3.0.0: using deepseq-1.3.0.0
+Dependency ghc-prim ==0.2.0.0: using ghc-prim-0.2.0.0
+Dependency integer-gmp ==0.4.0.0: using integer-gmp-0.4.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/prednote/sunlight-27776/prefix
+Binaries installed in: /home/massysett/prednote/sunlight-27776/prefix/bin
+Libraries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Private binaries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/libexec
+Data files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Documentation installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Configuration files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/etc
+Using alex found on system at: /home/massysett/.cabal/bin/alex
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.3 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+No hpc found
+No hsc2hs found
+Using hscolour version 1.20 found on system at:
+/home/massysett/.cabal/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building text-1.1.0.0...
+Preprocessing library text-1.1.0.0...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -Iinclude -optP-DHAVE_DEEPSEQ -optP-DINTEGER_GMP -optP-include -optPdist/build/autogen/cabal_macros.h -package-name text-1.1.0.0 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-conf dist/package.conf.inplace -package-id array-0.4.0.0-59d1cc0e7979167b002f021942d60f46 -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376 -package-id deepseq-1.3.0.0-a73ec930018135e0dc0a1a3d29c74c88 -package-id ghc-prim-0.2.0.0-c2ff696e5b8ec4d4b2bc2e42085fe471 -package-id integer-gmp-0.4.0.0-3cccac07aef8e27023f605c1f45bdf74 -XHaskell98 Data.Text Data.Text.Array Data.Text.Encoding Data.Text.Encoding.Error Data.Text.Foreign Data.Text.IO Data.Text.Internal Data.Text.Internal.Builder Data.Text.Internal.Builder.Functions Data.Text.Internal.Builder.Int.Digits Data.Text.Internal.Builder.RealFloat.Functions Data.Text.Internal.Encoding.Fusion Data.Text.Internal.Encoding.Fusion.Common Data.Text.Internal.Encoding.Utf16 Data.Text.Internal.Encoding.Utf32 Data.Text.Internal.Encoding.Utf8 Data.Text.Internal.Functions Data.Text.Internal.Fusion Data.Text.Internal.Fusion.CaseMapping Data.Text.Internal.Fusion.Common Data.Text.Internal.Fusion.Size Data.Text.Internal.Fusion.Types Data.Text.Internal.IO Data.Text.Internal.Lazy Data.Text.Internal.Lazy.Encoding.Fusion Data.Text.Internal.Lazy.Fusion Data.Text.Internal.Lazy.Search Data.Text.Internal.Private Data.Text.Internal.Search Data.Text.Internal.Unsafe Data.Text.Internal.Unsafe.Char Data.Text.Internal.Unsafe.Shift Data.Text.Lazy Data.Text.Lazy.Builder Data.Text.Lazy.Builder.Int Data.Text.Lazy.Builder.RealFloat Data.Text.Lazy.Encoding Data.Text.Lazy.IO Data.Text.Lazy.Internal Data.Text.Lazy.Read Data.Text.Read Data.Text.Unsafe -Wall -fwarn-tabs -funbox-strict-fields -O2
+[ 1 of 42] Compiling Data.Text.Internal.Encoding.Utf32 ( Data/Text/Internal/Encoding/Utf32.hs, dist/build/Data/Text/Internal/Encoding/Utf32.o )
+[ 2 of 42] Compiling Data.Text.Internal.Fusion.Size ( Data/Text/Internal/Fusion/Size.hs, dist/build/Data/Text/Internal/Fusion/Size.o )
+[ 3 of 42] Compiling Data.Text.Internal.Builder.RealFloat.Functions ( Data/Text/Internal/Builder/RealFloat/Functions.hs, dist/build/Data/Text/Internal/Builder/RealFloat/Functions.o )
+[ 4 of 42] Compiling Data.Text.Internal.Builder.Int.Digits ( Data/Text/Internal/Builder/Int/Digits.hs, dist/build/Data/Text/Internal/Builder/Int/Digits.o )
+[ 5 of 42] Compiling Data.Text.Internal.Fusion.Types ( Data/Text/Internal/Fusion/Types.hs, dist/build/Data/Text/Internal/Fusion/Types.o )
+[ 6 of 42] Compiling Data.Text.Internal.Fusion.CaseMapping ( Data/Text/Internal/Fusion/CaseMapping.hs, dist/build/Data/Text/Internal/Fusion/CaseMapping.o )
+[ 7 of 42] Compiling Data.Text.Encoding.Error ( Data/Text/Encoding/Error.hs, dist/build/Data/Text/Encoding/Error.o )
+[ 8 of 42] Compiling Data.Text.Internal.Unsafe.Shift ( Data/Text/Internal/Unsafe/Shift.hs, dist/build/Data/Text/Internal/Unsafe/Shift.o )
+[ 9 of 42] Compiling Data.Text.Internal.Encoding.Utf16 ( Data/Text/Internal/Encoding/Utf16.hs, dist/build/Data/Text/Internal/Encoding/Utf16.o )
+[10 of 42] Compiling Data.Text.Internal.Functions ( Data/Text/Internal/Functions.hs, dist/build/Data/Text/Internal/Functions.o )
+[11 of 42] Compiling Data.Text.Internal.Unsafe ( Data/Text/Internal/Unsafe.hs, dist/build/Data/Text/Internal/Unsafe.o )
+[12 of 42] Compiling Data.Text.Internal.Fusion.Common ( Data/Text/Internal/Fusion/Common.hs, dist/build/Data/Text/Internal/Fusion/Common.o )
+[13 of 42] Compiling Data.Text.Array  ( Data/Text/Array.hs, dist/build/Data/Text/Array.o )
+[14 of 42] Compiling Data.Text.Internal.Unsafe.Char ( Data/Text/Internal/Unsafe/Char.hs, dist/build/Data/Text/Internal/Unsafe/Char.o )
+[15 of 42] Compiling Data.Text.Internal ( Data/Text/Internal.hs, dist/build/Data/Text/Internal.o )
+[16 of 42] Compiling Data.Text.Unsafe ( Data/Text/Unsafe.hs, dist/build/Data/Text/Unsafe.o )
+[17 of 42] Compiling Data.Text.Internal.Private ( Data/Text/Internal/Private.hs, dist/build/Data/Text/Internal/Private.o )
+[18 of 42] Compiling Data.Text.Internal.Fusion ( Data/Text/Internal/Fusion.hs, dist/build/Data/Text/Internal/Fusion.o )
+[19 of 42] Compiling Data.Text.Internal.Encoding.Fusion.Common ( Data/Text/Internal/Encoding/Fusion/Common.hs, dist/build/Data/Text/Internal/Encoding/Fusion/Common.o )
+[20 of 42] Compiling Data.Text.Internal.Encoding.Utf8 ( Data/Text/Internal/Encoding/Utf8.hs, dist/build/Data/Text/Internal/Encoding/Utf8.o )
+[21 of 42] Compiling Data.Text.Internal.Encoding.Fusion ( Data/Text/Internal/Encoding/Fusion.hs, dist/build/Data/Text/Internal/Encoding/Fusion.o )
+[22 of 42] Compiling Data.Text.Internal.Lazy.Encoding.Fusion ( Data/Text/Internal/Lazy/Encoding/Fusion.hs, dist/build/Data/Text/Internal/Lazy/Encoding/Fusion.o )
+[23 of 42] Compiling Data.Text.Internal.Search ( Data/Text/Internal/Search.hs, dist/build/Data/Text/Internal/Search.o )
+[24 of 42] Compiling Data.Text        ( Data/Text.hs, dist/build/Data/Text.o )
+[25 of 42] Compiling Data.Text.Encoding ( Data/Text/Encoding.hs, dist/build/Data/Text/Encoding.o )
+[26 of 42] Compiling Data.Text.Foreign ( Data/Text/Foreign.hs, dist/build/Data/Text/Foreign.o )
+[27 of 42] Compiling Data.Text.Internal.IO ( Data/Text/Internal/IO.hs, dist/build/Data/Text/Internal/IO.o )
+[28 of 42] Compiling Data.Text.IO     ( Data/Text/IO.hs, dist/build/Data/Text/IO.o )
+[29 of 42] Compiling Data.Text.Internal.Lazy ( Data/Text/Internal/Lazy.hs, dist/build/Data/Text/Internal/Lazy.o )
+[30 of 42] Compiling Data.Text.Internal.Lazy.Fusion ( Data/Text/Internal/Lazy/Fusion.hs, dist/build/Data/Text/Internal/Lazy/Fusion.o )
+[31 of 42] Compiling Data.Text.Internal.Lazy.Search ( Data/Text/Internal/Lazy/Search.hs, dist/build/Data/Text/Internal/Lazy/Search.o )
+[32 of 42] Compiling Data.Text.Lazy.Internal ( Data/Text/Lazy/Internal.hs, dist/build/Data/Text/Lazy/Internal.o )
+[33 of 42] Compiling Data.Text.Lazy   ( Data/Text/Lazy.hs, dist/build/Data/Text/Lazy.o )
+[34 of 42] Compiling Data.Text.Internal.Builder ( Data/Text/Internal/Builder.hs, dist/build/Data/Text/Internal/Builder.o )
+[35 of 42] Compiling Data.Text.Lazy.Builder ( Data/Text/Lazy/Builder.hs, dist/build/Data/Text/Lazy/Builder.o )
+[36 of 42] Compiling Data.Text.Internal.Builder.Functions ( Data/Text/Internal/Builder/Functions.hs, dist/build/Data/Text/Internal/Builder/Functions.o )
+[37 of 42] Compiling Data.Text.Lazy.Builder.Int ( Data/Text/Lazy/Builder/Int.hs, dist/build/Data/Text/Lazy/Builder/Int.o )
+[38 of 42] Compiling Data.Text.Lazy.Encoding ( Data/Text/Lazy/Encoding.hs, dist/build/Data/Text/Lazy/Encoding.o )
+[39 of 42] Compiling Data.Text.Lazy.IO ( Data/Text/Lazy/IO.hs, dist/build/Data/Text/Lazy/IO.o )
+[40 of 42] Compiling Data.Text.Lazy.Read ( Data/Text/Lazy/Read.hs, dist/build/Data/Text/Lazy/Read.o )
+[41 of 42] Compiling Data.Text.Lazy.Builder.RealFloat ( Data/Text/Lazy/Builder/RealFloat.hs, dist/build/Data/Text/Lazy/Builder/RealFloat.o )
+[42 of 42] Compiling Data.Text.Read   ( Data/Text/Read.hs, dist/build/Data/Text/Read.o )
+Building C Sources...
+creating dist/build
+/usr/local/bin/ghc-7.4.1 -c -odir dist/build -Idist/build/autogen -Idist/build -Iinclude -optc-O2 -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-conf dist/package.conf.inplace -package-id array-0.4.0.0-59d1cc0e7979167b002f021942d60f46 -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376 -package-id deepseq-1.3.0.0-a73ec930018135e0dc0a1a3d29c74c88 -package-id ghc-prim-0.2.0.0-c2ff696e5b8ec4d4b2bc2e42085fe471 -package-id integer-gmp-0.4.0.0-3cccac07aef8e27023f605c1f45bdf74 cbits/cbits.c
+Linking...
+/usr/bin/ar -r dist/build/libHStext-1.1.0.0.a dist/build/Data/Text.o dist/build/Data/Text/Array.o dist/build/Data/Text/Encoding.o dist/build/Data/Text/Encoding/Error.o dist/build/Data/Text/Foreign.o dist/build/Data/Text/IO.o dist/build/Data/Text/Internal.o dist/build/Data/Text/Internal/Builder.o dist/build/Data/Text/Internal/Builder/Functions.o dist/build/Data/Text/Internal/Builder/Int/Digits.o dist/build/Data/Text/Internal/Builder/RealFloat/Functions.o dist/build/Data/Text/Internal/Encoding/Fusion.o dist/build/Data/Text/Internal/Encoding/Fusion/Common.o dist/build/Data/Text/Internal/Encoding/Utf16.o dist/build/Data/Text/Internal/Encoding/Utf32.o dist/build/Data/Text/Internal/Encoding/Utf8.o dist/build/Data/Text/Internal/Functions.o dist/build/Data/Text/Internal/Fusion.o dist/build/Data/Text/Internal/Fusion/CaseMapping.o dist/build/Data/Text/Internal/Fusion/Common.o dist/build/Data/Text/Internal/Fusion/Size.o dist/build/Data/Text/Internal/Fusion/Types.o dist/build/Data/Text/Internal/IO.o dist/build/Data/Text/Internal/Lazy.o dist/build/Data/Text/Internal/Lazy/Encoding/Fusion.o dist/build/Data/Text/Internal/Lazy/Fusion.o dist/build/Data/Text/Internal/Lazy/Search.o dist/build/Data/Text/Internal/Private.o dist/build/Data/Text/Internal/Search.o dist/build/Data/Text/Internal/Unsafe.o dist/build/Data/Text/Internal/Unsafe/Char.o dist/build/Data/Text/Internal/Unsafe/Shift.o dist/build/Data/Text/Lazy.o dist/build/Data/Text/Lazy/Builder.o dist/build/Data/Text/Lazy/Builder/Int.o dist/build/Data/Text/Lazy/Builder/RealFloat.o dist/build/Data/Text/Lazy/Encoding.o dist/build/Data/Text/Lazy/IO.o dist/build/Data/Text/Lazy/Internal.o dist/build/Data/Text/Lazy/Read.o dist/build/Data/Text/Read.o dist/build/Data/Text/Unsafe.o dist/build/cbits/cbits.o
+In-place registering text-1.1.0.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/text does exist: False
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Installing LICENSE to
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/text-1.1.0.0/LICENSE
+Installing library in
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Encoding
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/Int
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/RealFloat
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Fusion
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Encoding
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Encoding
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Unsafe
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Builder
+Installing dist/build/Data/Text.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text.hi
+Installing dist/build/Data/Text/Array.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Array.hi
+Installing dist/build/Data/Text/Encoding.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Encoding.hi
+Installing dist/build/Data/Text/Encoding/Error.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Encoding/Error.hi
+Installing dist/build/Data/Text/Foreign.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Foreign.hi
+Installing dist/build/Data/Text/IO.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/IO.hi
+Installing dist/build/Data/Text/Internal.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal.hi
+Installing dist/build/Data/Text/Internal/Builder.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder.hi
+Installing dist/build/Data/Text/Internal/Builder/Functions.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/Functions.hi
+Installing dist/build/Data/Text/Internal/Builder/Int/Digits.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/Int/Digits.hi
+Installing dist/build/Data/Text/Internal/Builder/RealFloat/Functions.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/RealFloat/Functions.hi
+Installing dist/build/Data/Text/Internal/Encoding/Fusion.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Fusion.hi
+Installing dist/build/Data/Text/Internal/Encoding/Fusion/Common.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Fusion/Common.hi
+Installing dist/build/Data/Text/Internal/Encoding/Utf16.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Utf16.hi
+Installing dist/build/Data/Text/Internal/Encoding/Utf32.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Utf32.hi
+Installing dist/build/Data/Text/Internal/Encoding/Utf8.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Utf8.hi
+Installing dist/build/Data/Text/Internal/Functions.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Functions.hi
+Installing dist/build/Data/Text/Internal/Fusion.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion.hi
+Installing dist/build/Data/Text/Internal/Fusion/CaseMapping.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion/CaseMapping.hi
+Installing dist/build/Data/Text/Internal/Fusion/Common.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion/Common.hi
+Installing dist/build/Data/Text/Internal/Fusion/Size.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion/Size.hi
+Installing dist/build/Data/Text/Internal/Fusion/Types.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion/Types.hi
+Installing dist/build/Data/Text/Internal/IO.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/IO.hi
+Installing dist/build/Data/Text/Internal/Lazy.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy.hi
+Installing dist/build/Data/Text/Internal/Lazy/Encoding/Fusion.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Encoding/Fusion.hi
+Installing dist/build/Data/Text/Internal/Lazy/Fusion.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Fusion.hi
+Installing dist/build/Data/Text/Internal/Lazy/Search.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Search.hi
+Installing dist/build/Data/Text/Internal/Private.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Private.hi
+Installing dist/build/Data/Text/Internal/Search.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Search.hi
+Installing dist/build/Data/Text/Internal/Unsafe.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Unsafe.hi
+Installing dist/build/Data/Text/Internal/Unsafe/Char.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Unsafe/Char.hi
+Installing dist/build/Data/Text/Internal/Unsafe/Shift.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Unsafe/Shift.hi
+Installing dist/build/Data/Text/Lazy.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy.hi
+Installing dist/build/Data/Text/Lazy/Builder.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Builder.hi
+Installing dist/build/Data/Text/Lazy/Builder/Int.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Builder/Int.hi
+Installing dist/build/Data/Text/Lazy/Builder/RealFloat.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Builder/RealFloat.hi
+Installing dist/build/Data/Text/Lazy/Encoding.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Encoding.hi
+Installing dist/build/Data/Text/Lazy/IO.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/IO.hi
+Installing dist/build/Data/Text/Lazy/Internal.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Internal.hi
+Installing dist/build/Data/Text/Lazy/Read.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Read.hi
+Installing dist/build/Data/Text/Read.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Read.hi
+Installing dist/build/Data/Text/Unsafe.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Unsafe.hi
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Installing dist/build/libHStext-1.1.0.0.a to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/libHStext-1.1.0.0.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-Iinclude' '-optP-DHAVE_DEEPSEQ' '-optP-DINTEGER_GMP' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'text-1.1.0.0' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/prednote/sunlight-27776/db' '-package-id' 'array-0.4.0.0-59d1cc0e7979167b002f021942d60f46' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376' '-package-id' 'deepseq-1.3.0.0-a73ec930018135e0dc0a1a3d29c74c88' '-package-id' 'ghc-prim-0.2.0.0-c2ff696e5b8ec4d4b2bc2e42085fe471' '-package-id' 'integer-gmp-0.4.0.0-3cccac07aef8e27023f605c1f45bdf74' '-XHaskell98' 'Data.Text' 'Data.Text.Array' 'Data.Text.Encoding' 'Data.Text.Encoding.Error' 'Data.Text.Foreign' 'Data.Text.IO' 'Data.Text.Internal' 'Data.Text.Internal.Builder' 'Data.Text.Internal.Builder.Functions' 'Data.Text.Internal.Builder.Int.Digits' 'Data.Text.Internal.Builder.RealFloat.Functions' 'Data.Text.Internal.Encoding.Fusion' 'Data.Text.Internal.Encoding.Fusion.Common' 'Data.Text.Internal.Encoding.Utf16' 'Data.Text.Internal.Encoding.Utf32' 'Data.Text.Internal.Encoding.Utf8' 'Data.Text.Internal.Functions' 'Data.Text.Internal.Fusion' 'Data.Text.Internal.Fusion.CaseMapping' 'Data.Text.Internal.Fusion.Common' 'Data.Text.Internal.Fusion.Size' 'Data.Text.Internal.Fusion.Types' 'Data.Text.Internal.IO' 'Data.Text.Internal.Lazy' 'Data.Text.Internal.Lazy.Encoding.Fusion' 'Data.Text.Internal.Lazy.Fusion' 'Data.Text.Internal.Lazy.Search' 'Data.Text.Internal.Private' 'Data.Text.Internal.Search' 'Data.Text.Internal.Unsafe' 'Data.Text.Internal.Unsafe.Char' 'Data.Text.Internal.Unsafe.Shift' 'Data.Text.Lazy' 'Data.Text.Lazy.Builder' 'Data.Text.Lazy.Builder.Int' 'Data.Text.Lazy.Builder.RealFloat' 'Data.Text.Lazy.Encoding' 'Data.Text.Lazy.IO' 'Data.Text.Lazy.Internal' 'Data.Text.Lazy.Read' 'Data.Text.Read' 'Data.Text.Unsafe' '-Wall' '-fwarn-tabs' '-funbox-strict-fields' '-O2'
+Registering text-1.1.0.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db'
+Installed text-1.1.0.0
+Ready to install rainbow-0.6.0.4
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/QuickCheck/2.6/QuickCheck-2.6.tar.gz
+to /tmp/QuickCheck-2.6-29061...
+Updating QuickCheck.cabal with the latest revision from the index.
+Configuring QuickCheck-2.6...
+Flags chosen: templatehaskell=True, base4=True, base3=True
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency random ==1.0.1.1: using random-1.0.1.1
+Dependency template-haskell ==2.7.0.0: using template-haskell-2.7.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/prednote/sunlight-27776/prefix
+Binaries installed in: /home/massysett/prednote/sunlight-27776/prefix/bin
+Libraries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6
+Private binaries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/libexec
+Data files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/x86_64-linux-ghc-7.4.1/QuickCheck-2.6
+Documentation installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/QuickCheck-2.6
+Configuration files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/etc
+Using alex found on system at: /home/massysett/.cabal/bin/alex
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.3 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+No hpc found
+No hsc2hs found
+Using hscolour version 1.20 found on system at:
+/home/massysett/.cabal/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building QuickCheck-2.6...
+Preprocessing library QuickCheck-2.6...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name QuickCheck-2.6 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id random-1.0.1.1-e3566210caf162aa256430e88f7b7640 -package-id template-haskell-2.7.0.0-133c0fdb189e05de22bd926d39f99fe3 -XHaskell98 -XCPP Test.QuickCheck Test.QuickCheck.Arbitrary Test.QuickCheck.Gen Test.QuickCheck.Monadic Test.QuickCheck.Modifiers Test.QuickCheck.Property Test.QuickCheck.Test Test.QuickCheck.Text Test.QuickCheck.Poly Test.QuickCheck.State Test.QuickCheck.Function Test.QuickCheck.All Test.QuickCheck.Exception
+[ 1 of 13] Compiling Test.QuickCheck.Exception ( Test/QuickCheck/Exception.hs, dist/build/Test/QuickCheck/Exception.o )
+[ 2 of 13] Compiling Test.QuickCheck.Text ( Test/QuickCheck/Text.hs, dist/build/Test/QuickCheck/Text.o )
+[ 3 of 13] Compiling Test.QuickCheck.State ( Test/QuickCheck/State.hs, dist/build/Test/QuickCheck/State.o )
+[ 4 of 13] Compiling Test.QuickCheck.Gen ( Test/QuickCheck/Gen.hs, dist/build/Test/QuickCheck/Gen.o )
+[ 5 of 13] Compiling Test.QuickCheck.Arbitrary ( Test/QuickCheck/Arbitrary.hs, dist/build/Test/QuickCheck/Arbitrary.o )
+[ 6 of 13] Compiling Test.QuickCheck.Poly ( Test/QuickCheck/Poly.hs, dist/build/Test/QuickCheck/Poly.o )
+[ 7 of 13] Compiling Test.QuickCheck.Function ( Test/QuickCheck/Function.hs, dist/build/Test/QuickCheck/Function.o )
+[ 8 of 13] Compiling Test.QuickCheck.Modifiers ( Test/QuickCheck/Modifiers.hs, dist/build/Test/QuickCheck/Modifiers.o )
+[ 9 of 13] Compiling Test.QuickCheck.Property ( Test/QuickCheck/Property.hs, dist/build/Test/QuickCheck/Property.o )
+[10 of 13] Compiling Test.QuickCheck.Test ( Test/QuickCheck/Test.hs, dist/build/Test/QuickCheck/Test.o )
+[11 of 13] Compiling Test.QuickCheck.All ( Test/QuickCheck/All.hs, dist/build/Test/QuickCheck/All.o )
+[12 of 13] Compiling Test.QuickCheck.Monadic ( Test/QuickCheck/Monadic.hs, dist/build/Test/QuickCheck/Monadic.o )
+[13 of 13] Compiling Test.QuickCheck  ( Test/QuickCheck.hs, dist/build/Test/QuickCheck.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSQuickCheck-2.6.a dist/build/Test/QuickCheck.o dist/build/Test/QuickCheck/Arbitrary.o dist/build/Test/QuickCheck/Gen.o dist/build/Test/QuickCheck/Monadic.o dist/build/Test/QuickCheck/Modifiers.o dist/build/Test/QuickCheck/Property.o dist/build/Test/QuickCheck/Test.o dist/build/Test/QuickCheck/Text.o dist/build/Test/QuickCheck/Poly.o dist/build/Test/QuickCheck/State.o dist/build/Test/QuickCheck/Function.o dist/build/Test/QuickCheck/All.o dist/build/Test/QuickCheck/Exception.o
+In-place registering QuickCheck-2.6...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/QuickCheck does exist: False
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/QuickCheck-2.6
+Installing LICENSE to
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/LICENSE
+Installing library in
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck
+Installing dist/build/Test/QuickCheck.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck.hi
+Installing dist/build/Test/QuickCheck/Arbitrary.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Arbitrary.hi
+Installing dist/build/Test/QuickCheck/Gen.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Gen.hi
+Installing dist/build/Test/QuickCheck/Monadic.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Monadic.hi
+Installing dist/build/Test/QuickCheck/Modifiers.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Modifiers.hi
+Installing dist/build/Test/QuickCheck/Property.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Property.hi
+Installing dist/build/Test/QuickCheck/Test.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Test.hi
+Installing dist/build/Test/QuickCheck/Text.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Text.hi
+Installing dist/build/Test/QuickCheck/Poly.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Poly.hi
+Installing dist/build/Test/QuickCheck/State.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/State.hi
+Installing dist/build/Test/QuickCheck/Function.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Function.hi
+Installing dist/build/Test/QuickCheck/All.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/All.hi
+Installing dist/build/Test/QuickCheck/Exception.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/Test/QuickCheck/Exception.hi
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6
+Installing dist/build/libHSQuickCheck-2.6.a to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/QuickCheck-2.6/libHSQuickCheck-2.6.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'QuickCheck-2.6' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/prednote/sunlight-27776/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'random-1.0.1.1-e3566210caf162aa256430e88f7b7640' '-package-id' 'template-haskell-2.7.0.0-133c0fdb189e05de22bd926d39f99fe3' '-XHaskell98' '-XCPP' 'Test.QuickCheck' 'Test.QuickCheck.Arbitrary' 'Test.QuickCheck.Gen' 'Test.QuickCheck.Monadic' 'Test.QuickCheck.Modifiers' 'Test.QuickCheck.Property' 'Test.QuickCheck.Test' 'Test.QuickCheck.Text' 'Test.QuickCheck.Poly' 'Test.QuickCheck.State' 'Test.QuickCheck.Function' 'Test.QuickCheck.All'
+Registering QuickCheck-2.6...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db'
+Installed QuickCheck-2.6
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/rainbow/0.6.0.4/rainbow-0.6.0.4.tar.gz
+to /tmp/rainbow-0.6.0.4-29061...
+Updating rainbow.cabal with the latest revision from the index.
+Configuring rainbow-0.6.0.4...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency terminfo ==0.4.0.0: using terminfo-0.4.0.0
+Dependency text ==1.1.0.0: using text-1.1.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/prednote/sunlight-27776/prefix
+Binaries installed in: /home/massysett/prednote/sunlight-27776/prefix/bin
+Libraries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4
+Private binaries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/libexec
+Data files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4
+Documentation installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4
+Configuration files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/etc
+Using alex found on system at: /home/massysett/.cabal/bin/alex
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.3 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+No hpc found
+No hsc2hs found
+Using hscolour version 1.20 found on system at:
+/home/massysett/.cabal/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building rainbow-0.6.0.4...
+Preprocessing library rainbow-0.6.0.4...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name rainbow-0.6.0.4 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id terminfo-0.4.0.0-45308cd3dfc947b721736fc16fce5d39 -package-id text-1.1.0.0-d290270f42bc0db499aa449b54b3f739 -XHaskell98 System.Console.Rainbow -Wall
+[1 of 1] Compiling System.Console.Rainbow ( System/Console/Rainbow.hs, dist/build/System/Console/Rainbow.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSrainbow-0.6.0.4.a dist/build/System/Console/Rainbow.o
+In-place registering rainbow-0.6.0.4...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/rainbow does exist: False
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4
+Installing LICENSE to
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4/LICENSE
+Installing library in
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4/System/Console
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4/System
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4/System
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4/System/Console
+Installing dist/build/System/Console/Rainbow.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4/System/Console/Rainbow.hi
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4
+Installing dist/build/libHSrainbow-0.6.0.4.a to
+/home/massysett/prednote/sunlight-27776/prefix/lib/x86_64-linux-ghc-7.4.1/rainbow-0.6.0.4/libHSrainbow-0.6.0.4.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'rainbow-0.6.0.4' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/prednote/sunlight-27776/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'terminfo-0.4.0.0-45308cd3dfc947b721736fc16fce5d39' '-package-id' 'text-1.1.0.0-d290270f42bc0db499aa449b54b3f739' '-XHaskell98' 'System.Console.Rainbow' '-Wall'
+Registering rainbow-0.6.0.4...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/prednote/sunlight-27776/db'
+Installed rainbow-0.6.0.4
+
+Standard error:
+Warning: cannot determine version of /home/massysett/.cabal/bin/alex :
+""
+Warning: cannot determine version of /home/massysett/.cabal/bin/cpphs :
+""
+/usr/bin/ar: creating dist/build/libHSrandom-1.0.1.1.a
+Warning: cannot determine version of /home/massysett/.cabal/bin/alex :
+""
+Warning: cannot determine version of /home/massysett/.cabal/bin/cpphs :
+""
+/usr/bin/ar: creating dist/build/libHSsplit-0.2.2.a
+Warning: cannot determine version of /home/massysett/.cabal/bin/alex :
+""
+Warning: cannot determine version of /home/massysett/.cabal/bin/cpphs :
+""
+configure: WARNING: unrecognized options: --with-compiler, --with-hc-pkg, --with-gcc
+configure: WARNING: unrecognized options: --with-compiler, --with-hc-pkg, --with-gcc
+/usr/bin/ar: creating dist/build/libHSterminfo-0.4.0.0.a
+Warning: cannot determine version of /home/massysett/.cabal/bin/alex :
+""
+Warning: cannot determine version of /home/massysett/.cabal/bin/cpphs :
+""
+/usr/bin/ar: creating dist/build/libHStext-1.1.0.0.a
+Warning: cannot determine version of /home/massysett/.cabal/bin/alex :
+""
+Warning: cannot determine version of /home/massysett/.cabal/bin/cpphs :
+""
+/usr/bin/ar: creating dist/build/libHSQuickCheck-2.6.a
+Warning: cannot determine version of /home/massysett/.cabal/bin/alex :
+""
+Warning: cannot determine version of /home/massysett/.cabal/bin/cpphs :
+""
+/usr/bin/ar: creating dist/build/libHSrainbow-0.6.0.4.a
+
+ghc-pkg-7.4.1 ["list","--global","--package-conf=/home/massysett/prednote/sunlight-27776/db"] succeeded with exit code 0
+Standard output:
+/opt/ghc/7.4.1/lib/ghc-7.4.1/package.conf.d:
+    Cabal-1.14.0
+    array-0.4.0.0
+    base-4.5.0.0
+    bin-package-db-0.0.0.0
+    binary-0.5.1.0
+    bytestring-0.9.2.1
+    containers-0.4.2.1
+    deepseq-1.3.0.0
+    directory-1.1.0.2
+    extensible-exceptions-0.1.1.4
+    filepath-1.3.0.0
+    (ghc-7.4.1)
+    ghc-prim-0.2.0.0
+    (haskell2010-1.1.0.1)
+    (haskell98-2.0.0.1)
+    hoopl-3.8.7.3
+    hpc-0.5.1.1
+    integer-gmp-0.4.0.0
+    old-locale-1.0.0.4
+    old-time-1.1.0.0
+    pretty-1.1.1.0
+    process-1.1.0.1
+    rts-1.0
+    template-haskell-2.7.0.0
+    time-1.4
+    unix-2.5.1.0
+
+/home/massysett/prednote/sunlight-27776/db:
+    QuickCheck-2.6
+    rainbow-0.6.0.4
+    random-1.0.1.1
+    split-0.2.2
+    terminfo-0.4.0.0
+    text-1.1.0.0
+
+
+Standard error:
+<empty>
+
+ghc ["--make","Setup.hs"] succeeded with exit code 0
+Standard output:
+[1 of 1] Compiling Main             ( Setup.hs, Setup.o )
+Linking Setup ...
+
+Standard error:
+<empty>
+
+./Setup ["configure","--verbose=2","--with-compiler=ghc-7.4.1","--with-hc-pkg=ghc-pkg-7.4.1","--prefix=/home/massysett/prednote/sunlight-27776/prefix","--package-db=clear","--package-db=global","--package-db=/home/massysett/prednote/sunlight-27776/db","--enable-tests"] succeeded with exit code 0
+Standard output:
+Configuring prednote-0.18.0.4...
+Dependency QuickCheck >=2.6: using QuickCheck-2.6
+Dependency base >=4.5.0.0 && <5: using base-4.5.0.0
+Dependency rainbow >=0.6.0.4: using rainbow-0.6.0.4
+Dependency split >=0.2.2: using split-0.2.2
+Dependency text >=0.11.2.0: using text-1.1.0.0
+Using Cabal-1.16.0 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/prednote/sunlight-27776/prefix
+Binaries installed in: /home/massysett/prednote/sunlight-27776/prefix/bin
+Libraries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1
+Private binaries installed in:
+/home/massysett/prednote/sunlight-27776/prefix/libexec
+Data files installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/prednote-0.18.0.4
+Documentation installed in:
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/prednote-0.18.0.4
+Using alex found on system at: /home/massysett/.cabal/bin/alex
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.3 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+No hpc found
+No hsc2hs found
+Using hscolour version 1.20 found on system at:
+/home/massysett/.cabal/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+
+Standard error:
+Warning: cannot determine version of /home/massysett/.cabal/bin/alex :
+""
+Warning: cannot determine version of /home/massysett/.cabal/bin/cpphs :
+""
+
+./Setup ["build","--verbose=2"] succeeded with exit code 0
+Standard output:
+creating dist/build
+creating dist/build/autogen
+Building prednote-0.18.0.4...
+Preprocessing test suite 'prednote-test' for prednote-0.18.0.4...
+Building test suite prednote-test...
+creating dist/build/prednote-test
+creating dist/build/prednote-test/prednote-test-tmp
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -odir dist/build/prednote-test/prednote-test-tmp -hidir dist/build/prednote-test/prednote-test-tmp -stubdir dist/build/prednote-test/prednote-test-tmp -i -idist/build/prednote-test/prednote-test-tmp -i. -ilib -idist/build/autogen -Idist/build/autogen -Idist/build/prednote-test/prednote-test-tmp -optP-include -optPdist/build/autogen/cabal_macros.h -hide-all-packages -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-conf dist/package.conf.inplace -package-id QuickCheck-2.6-1e35b3f675ae2b1b0abd61213e62c257 -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id rainbow-0.6.0.4-9137fb2e04c6dcf8eab1b7d921951c47 -package-id text-1.1.0.0-d290270f42bc0db499aa449b54b3f739 -XHaskell98 ./prednote-test.hs -o dist/build/prednote-test/prednote-test
+[1 of 2] Compiling Data.Prednote.Pdct ( lib/Data/Prednote/Pdct.hs, dist/build/prednote-test/prednote-test-tmp/Data/Prednote/Pdct.o )
+[2 of 2] Compiling Main             ( prednote-test.hs, dist/build/prednote-test/prednote-test-tmp/Main.o )
+Loading package ghc-prim ... linking ... done.
+Loading package integer-gmp ... linking ... done.
+Loading package base ... linking ... done.
+Loading package terminfo-0.4.0.0 ... linking ... done.
+Loading package array-0.4.0.0 ... linking ... done.
+Loading package bytestring-0.9.2.1 ... linking ... done.
+Loading package deepseq-1.3.0.0 ... linking ... done.
+Loading package text-1.1.0.0 ... linking ... done.
+Loading package rainbow-0.6.0.4 ... linking ... done.
+Loading package old-locale-1.0.0.4 ... linking ... done.
+Loading package time-1.4 ... linking ... done.
+Loading package random-1.0.1.1 ... linking ... done.
+Loading package containers-0.4.2.1 ... linking ... done.
+Loading package pretty-1.1.1.0 ... linking ... done.
+Loading package template-haskell ... linking ... done.
+Loading package QuickCheck-2.6 ... linking ... done.
+Linking dist/build/prednote-test/prednote-test ...
+Preprocessing library prednote-0.18.0.4...
+Building library...
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -ilib -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name prednote-0.18.0.4 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id rainbow-0.6.0.4-9137fb2e04c6dcf8eab1b7d921951c47 -package-id split-0.2.2-167c55f13259ee08ae384ee4b1716f17 -package-id text-1.1.0.0-d290270f42bc0db499aa449b54b3f739 -XHaskell98 Data.Prednote.Pdct Data.Prednote.Expressions Data.Prednote.Expressions.Infix Data.Prednote.Expressions.RPN Data.Prednote.Test -Wall
+[1 of 5] Compiling Data.Prednote.Pdct ( lib/Data/Prednote/Pdct.hs, dist/build/Data/Prednote/Pdct.o )
+[2 of 5] Compiling Data.Prednote.Expressions.RPN ( lib/Data/Prednote/Expressions/RPN.hs, dist/build/Data/Prednote/Expressions/RPN.o )
+[3 of 5] Compiling Data.Prednote.Expressions.Infix ( lib/Data/Prednote/Expressions/Infix.hs, dist/build/Data/Prednote/Expressions/Infix.o )
+[4 of 5] Compiling Data.Prednote.Expressions ( lib/Data/Prednote/Expressions.hs, dist/build/Data/Prednote/Expressions.o )
+[5 of 5] Compiling Data.Prednote.Test ( lib/Data/Prednote/Test.hs, dist/build/Data/Prednote/Test.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSprednote-0.18.0.4.a dist/build/Data/Prednote/Pdct.o dist/build/Data/Prednote/Expressions.o dist/build/Data/Prednote/Expressions/Infix.o dist/build/Data/Prednote/Expressions/RPN.o dist/build/Data/Prednote/Test.o
+/usr/bin/ld -x --hash-size=31 --reduce-memory-overheads -r -o dist/build/HSprednote-0.18.0.4.o dist/build/Data/Prednote/Pdct.o dist/build/Data/Prednote/Expressions.o dist/build/Data/Prednote/Expressions/Infix.o dist/build/Data/Prednote/Expressions/RPN.o dist/build/Data/Prednote/Test.o
+In-place registering prednote-0.18.0.4...
+/usr/local/bin/ghc-pkg-7.4.1 update - --global --no-user-package-conf --package-conf=/home/massysett/prednote/sunlight-27776/db --package-conf=dist/package.conf.inplace
+
+Standard error:
+/usr/bin/ar: creating dist/build/libHSprednote-0.18.0.4.a
+
+./Setup ["install","--verbose=2"] succeeded with exit code 0
+Standard output:
+directory dist/doc/html/prednote does exist: False
+creating
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/prednote-0.18.0.4
+Installing LICENSE to
+/home/massysett/prednote/sunlight-27776/prefix/share/doc/prednote-0.18.0.4/LICENSE
+Installing library in
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data/Prednote
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1
+creating /home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data/Prednote
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data/Prednote/Expressions
+Installing dist/build/Data/Prednote/Pdct.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data/Prednote/Pdct.hi
+Installing dist/build/Data/Prednote/Expressions.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data/Prednote/Expressions.hi
+Installing dist/build/Data/Prednote/Expressions/Infix.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data/Prednote/Expressions/Infix.hi
+Installing dist/build/Data/Prednote/Expressions/RPN.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data/Prednote/Expressions/RPN.hi
+Installing dist/build/Data/Prednote/Test.hi to
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/Data/Prednote/Test.hi
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1
+Installing dist/build/libHSprednote-0.18.0.4.a to
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/libHSprednote-0.18.0.4.a
+creating
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1
+Installing dist/build/HSprednote-0.18.0.4.o to
+/home/massysett/prednote/sunlight-27776/prefix/lib/prednote-0.18.0.4/ghc-7.4.1/HSprednote-0.18.0.4.o
+/usr/local/bin/ghc-7.4.1 --abi-hash -fbuilding-cabal-package -O -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -ilib -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name prednote-0.18.0.4 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/prednote/sunlight-27776/db -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id rainbow-0.6.0.4-9137fb2e04c6dcf8eab1b7d921951c47 -package-id split-0.2.2-167c55f13259ee08ae384ee4b1716f17 -package-id text-1.1.0.0-d290270f42bc0db499aa449b54b3f739 -XHaskell98 Data.Prednote.Pdct Data.Prednote.Expressions Data.Prednote.Expressions.Infix Data.Prednote.Expressions.RPN Data.Prednote.Test -Wall
+Registering prednote-0.18.0.4...
+/usr/local/bin/ghc-pkg-7.4.1 update - --global --no-user-package-conf --package-conf=/home/massysett/prednote/sunlight-27776/db
+
+Standard error:
+<empty>
+
+ghc-pkg-7.4.1 ["list","--global","--package-conf=/home/massysett/prednote/sunlight-27776/db"] succeeded with exit code 0
+Standard output:
+/opt/ghc/7.4.1/lib/ghc-7.4.1/package.conf.d:
+    Cabal-1.14.0
+    array-0.4.0.0
+    base-4.5.0.0
+    bin-package-db-0.0.0.0
+    binary-0.5.1.0
+    bytestring-0.9.2.1
+    containers-0.4.2.1
+    deepseq-1.3.0.0
+    directory-1.1.0.2
+    extensible-exceptions-0.1.1.4
+    filepath-1.3.0.0
+    (ghc-7.4.1)
+    ghc-prim-0.2.0.0
+    (haskell2010-1.1.0.1)
+    (haskell98-2.0.0.1)
+    hoopl-3.8.7.3
+    hpc-0.5.1.1
+    integer-gmp-0.4.0.0
+    old-locale-1.0.0.4
+    old-time-1.1.0.0
+    pretty-1.1.1.0
+    process-1.1.0.1
+    rts-1.0
+    template-haskell-2.7.0.0
+    time-1.4
+    unix-2.5.1.0
+
+/home/massysett/prednote/sunlight-27776/db:
+    QuickCheck-2.6
+    prednote-0.18.0.4
+    rainbow-0.6.0.4
+    random-1.0.1.1
+    split-0.2.2
+    terminfo-0.4.0.0
+    text-1.1.0.0
+
+
+Standard error:
+<empty>
+
+dist/build/prednote-test/prednote-test [] succeeded with exit code 0
+Standard output:
+=== prop_andCommutative from prednote-test.hs:33 ===
++++ OK, passed 100 tests.
+
+=== prop_andAssociative from prednote-test.hs:40 ===
++++ OK, passed 100 tests.
+
+=== prop_orCommutative from prednote-test.hs:47 ===
++++ OK, passed 100 tests.
+
+=== prop_orAssociative from prednote-test.hs:54 ===
++++ OK, passed 100 tests.
+
+=== prop_orWithTrue from prednote-test.hs:61 ===
++++ OK, passed 100 tests.
+
+=== prop_andWithFalse from prednote-test.hs:67 ===
++++ OK, passed 100 tests.
+
+=== prop_andDistributivity from prednote-test.hs:73 ===
++++ OK, passed 100 tests.
+
+=== prop_orDistributivity from prednote-test.hs:79 ===
++++ OK, passed 100 tests.
+
+
+Standard error:
+(0 tests)         (1 test)        (2 tests)         (3 tests)         (4 tests)         (5 tests)         (6 tests)         (7 tests)         (8 tests)         (9 tests)         (10 tests)          (11 tests)          (12 tests)          (13 tests)          (14 tests)          (15 tests)          (16 tests)          (17 tests)          (18 tests)          (19 tests)          (20 tests)          (21 tests)          (22 tests)          (23 tests)          (24 tests)          (25 tests)          (26 tests)          (27 tests)          (28 tests)          (29 tests)          (30 tests)          (31 tests)          (32 tests)          (33 tests)          (34 tests)          (35 tests)          (36 tests)          (37 tests)          (38 tests)          (39 tests)          (40 tests)          (41 tests)          (42 tests)          (43 tests)          (44 tests)          (45 tests)          (46 tests)          (47 tests)          (48 tests)          (49 tests)          (50 tests)          (51 tests)          (52 tests)          (53 tests)          (54 tests)          (55 tests)          (56 tests)          (57 tests)          (58 tests)          (59 tests)          (60 tests)          (61 tests)          (62 tests)          (63 tests)          (64 tests)          (65 tests)          (66 tests)          (67 tests)          (68 tests)          (69 tests)          (70 tests)          (71 tests)          (72 tests)          (73 tests)          (74 tests)          (75 tests)          (76 tests)          (77 tests)          (78 tests)          (79 tests)          (80 tests)          (81 tests)          (82 tests)          (83 tests)          (84 tests)          (85 tests)          (86 tests)          (87 tests)          (88 tests)          (89 tests)          (90 tests)          (91 tests)          (92 tests)          (93 tests)          (94 tests)          (95 tests)          (96 tests)          (97 tests)          (98 tests)          (99 tests)          (0 tests)         (1 test)        (2 tests)         (3 tests)         (4 tests)         (5 tests)         (6 tests)         (7 tests)         (8 tests)         (9 tests)         (10 tests)          (11 tests)          (12 tests)          (13 tests)          (14 tests)          (15 tests)          (16 tests)          (17 tests)          (18 tests)          (19 tests)          (20 tests)          (21 tests)          (22 tests)          (23 tests)          (24 tests)          (25 tests)          (26 tests)          (27 tests)          (28 tests)          (29 tests)          (30 tests)          (31 tests)          (32 tests)          (33 tests)          (34 tests)          (35 tests)          (36 tests)          (37 tests)          (38 tests)          (39 tests)          (40 tests)          (41 tests)          (42 tests)          (43 tests)          (44 tests)          (45 tests)          (46 tests)          (47 tests)          (48 tests)          (49 tests)          (50 tests)          (51 tests)          (52 tests)          (53 tests)          (54 tests)          (55 tests)          (56 tests)          (57 tests)          (58 tests)          (59 tests)          (60 tests)          (61 tests)          (62 tests)          (63 tests)          (64 tests)          (65 tests)          (66 tests)          (67 tests)          (68 tests)          (69 tests)          (70 tests)          (71 tests)          (72 tests)          (73 tests)          (74 tests)          (75 tests)          (76 tests)          (77 tests)          (78 tests)          (79 tests)          (80 tests)          (81 tests)          (82 tests)          (83 tests)          (84 tests)          (85 tests)          (86 tests)          (87 tests)          (88 tests)          (89 tests)          (90 tests)          (91 tests)          (92 tests)          (93 tests)          (94 tests)          (95 tests)          (96 tests)          (97 tests)          (98 tests)          (99 tests)          (0 tests)         (1 test)        (2 tests)         (3 tests)         (4 tests)         (5 tests)         (6 tests)         (7 tests)         (8 tests)         (9 tests)         (10 tests)          (11 tests)          (12 tests)          (13 tests)          (14 tests)          (15 tests)          (16 tests)          (17 tests)          (18 tests)          (19 tests)          (20 tests)          (21 tests)          (22 tests)          (23 tests)          (24 tests)          (25 tests)          (26 tests)          (27 tests)          (28 tests)          (29 tests)          (30 tests)          (31 tests)          (32 tests)          (33 tests)          (34 tests)          (35 tests)          (36 tests)          (37 tests)          (38 tests)          (39 tests)          (40 tests)          (41 tests)          (42 tests)          (43 tests)          (44 tests)          (45 tests)          (46 tests)          (47 tests)          (48 tests)          (49 tests)          (50 tests)          (51 tests)          (52 tests)          (53 tests)          (54 tests)          (55 tests)          (56 tests)          (57 tests)          (58 tests)          (59 tests)          (60 tests)          (61 tests)          (62 tests)          (63 tests)          (64 tests)          (65 tests)          (66 tests)          (67 tests)          (68 tests)          (69 tests)          (70 tests)          (71 tests)          (72 tests)          (73 tests)          (74 tests)          (75 tests)          (76 tests)          (77 tests)          (78 tests)          (79 tests)          (80 tests)          (81 tests)          (82 tests)          (83 tests)          (84 tests)          (85 tests)          (86 tests)          (87 tests)          (88 tests)          (89 tests)          (90 tests)          (91 tests)          (92 tests)          (93 tests)          (94 tests)          (95 tests)          (96 tests)          (97 tests)          (98 tests)          (99 tests)          (0 tests)         (1 test)        (2 tests)         (3 tests)         (4 tests)         (5 tests)         (6 tests)         (7 tests)         (8 tests)         (9 tests)         (10 tests)          (11 tests)          (12 tests)          (13 tests)          (14 tests)          (15 tests)          (16 tests)          (17 tests)          (18 tests)          (19 tests)          (20 tests)          (21 tests)          (22 tests)          (23 tests)          (24 tests)          (25 tests)          (26 tests)          (27 tests)          (28 tests)          (29 tests)          (30 tests)          (31 tests)          (32 tests)          (33 tests)          (34 tests)          (35 tests)          (36 tests)          (37 tests)          (38 tests)          (39 tests)          (40 tests)          (41 tests)          (42 tests)          (43 tests)          (44 tests)          (45 tests)          (46 tests)          (47 tests)          (48 tests)          (49 tests)          (50 tests)          (51 tests)          (52 tests)          (53 tests)          (54 tests)          (55 tests)          (56 tests)          (57 tests)          (58 tests)          (59 tests)          (60 tests)          (61 tests)          (62 tests)          (63 tests)          (64 tests)          (65 tests)          (66 tests)          (67 tests)          (68 tests)          (69 tests)          (70 tests)          (71 tests)          (72 tests)          (73 tests)          (74 tests)          (75 tests)          (76 tests)          (77 tests)          (78 tests)          (79 tests)          (80 tests)          (81 tests)          (82 tests)          (83 tests)          (84 tests)          (85 tests)          (86 tests)          (87 tests)          (88 tests)          (89 tests)          (90 tests)          (91 tests)          (92 tests)          (93 tests)          (94 tests)          (95 tests)          (96 tests)          (97 tests)          (98 tests)          (99 tests)          (0 tests)         (1 test)        (2 tests)         (3 tests)         (4 tests)         (5 tests)         (6 tests)         (7 tests)         (8 tests)         (9 tests)         (10 tests)          (11 tests)          (12 tests)          (13 tests)          (14 tests)          (15 tests)          (16 tests)          (17 tests)          (18 tests)          (19 tests)          (20 tests)          (21 tests)          (22 tests)          (23 tests)          (24 tests)          (25 tests)          (26 tests)          (27 tests)          (28 tests)          (29 tests)          (30 tests)          (31 tests)          (32 tests)          (33 tests)          (34 tests)          (35 tests)          (36 tests)          (37 tests)          (38 tests)          (39 tests)          (40 tests)          (41 tests)          (42 tests)          (43 tests)          (44 tests)          (45 tests)          (46 tests)          (47 tests)          (48 tests)          (49 tests)          (50 tests)          (51 tests)          (52 tests)          (53 tests)          (54 tests)          (55 tests)          (56 tests)          (57 tests)          (58 tests)          (59 tests)          (60 tests)          (61 tests)          (62 tests)          (63 tests)          (64 tests)          (65 tests)          (66 tests)          (67 tests)          (68 tests)          (69 tests)          (70 tests)          (71 tests)          (72 tests)          (73 tests)          (74 tests)          (75 tests)          (76 tests)          (77 tests)          (78 tests)          (79 tests)          (80 tests)          (81 tests)          (82 tests)          (83 tests)          (84 tests)          (85 tests)          (86 tests)          (87 tests)          (88 tests)          (89 tests)          (90 tests)          (91 tests)          (92 tests)          (93 tests)          (94 tests)          (95 tests)          (96 tests)          (97 tests)          (98 tests)          (99 tests)          (0 tests)         (1 test)        (2 tests)         (3 tests)         (4 tests)         (5 tests)         (6 tests)         (7 tests)         (8 tests)         (9 tests)         (10 tests)          (11 tests)          (12 tests)          (13 tests)          (14 tests)          (15 tests)          (16 tests)          (17 tests)          (18 tests)          (19 tests)          (20 tests)          (21 tests)          (22 tests)          (23 tests)          (24 tests)          (25 tests)          (26 tests)          (27 tests)          (28 tests)          (29 tests)          (30 tests)          (31 tests)          (32 tests)          (33 tests)          (34 tests)          (35 tests)          (36 tests)          (37 tests)          (38 tests)          (39 tests)          (40 tests)          (41 tests)          (42 tests)          (43 tests)          (44 tests)          (45 tests)          (46 tests)          (47 tests)          (48 tests)          (49 tests)          (50 tests)          (51 tests)          (52 tests)          (53 tests)          (54 tests)          (55 tests)          (56 tests)          (57 tests)          (58 tests)          (59 tests)          (60 tests)          (61 tests)          (62 tests)          (63 tests)          (64 tests)          (65 tests)          (66 tests)          (67 tests)          (68 tests)          (69 tests)          (70 tests)          (71 tests)          (72 tests)          (73 tests)          (74 tests)          (75 tests)          (76 tests)          (77 tests)          (78 tests)          (79 tests)          (80 tests)          (81 tests)          (82 tests)          (83 tests)          (84 tests)          (85 tests)          (86 tests)          (87 tests)          (88 tests)          (89 tests)          (90 tests)          (91 tests)          (92 tests)          (93 tests)          (94 tests)          (95 tests)          (96 tests)          (97 tests)          (98 tests)          (99 tests)          (0 tests)         (1 test)        (2 tests)         (3 tests)         (4 tests)         (5 tests)         (6 tests)         (7 tests)         (8 tests)         (9 tests)         (10 tests)          (11 tests)          (12 tests)          (13 tests)          (14 tests)          (15 tests)          (16 tests)          (17 tests)          (18 tests)          (19 tests)          (20 tests)          (21 tests)          (22 tests)          (23 tests)          (24 tests)          (25 tests)          (26 tests)          (27 tests)          (28 tests)          (29 tests)          (30 tests)          (31 tests)          (32 tests)          (33 tests)          (34 tests)          (35 tests)          (36 tests)          (37 tests)          (38 tests)          (39 tests)          (40 tests)          (41 tests)          (42 tests)          (43 tests)          (44 tests)          (45 tests)          (46 tests)          (47 tests)          (48 tests)          (49 tests)          (50 tests)          (51 tests)          (52 tests)          (53 tests)          (54 tests)          (55 tests)          (56 tests)          (57 tests)          (58 tests)          (59 tests)          (60 tests)          (61 tests)          (62 tests)          (63 tests)          (64 tests)          (65 tests)          (66 tests)          (67 tests)          (68 tests)          (69 tests)          (70 tests)          (71 tests)          (72 tests)          (73 tests)          (74 tests)          (75 tests)          (76 tests)          (77 tests)          (78 tests)          (79 tests)          (80 tests)          (81 tests)          (82 tests)          (83 tests)          (84 tests)          (85 tests)          (86 tests)          (87 tests)          (88 tests)          (89 tests)          (90 tests)          (91 tests)          (92 tests)          (93 tests)          (94 tests)          (95 tests)          (96 tests)          (97 tests)          (98 tests)          (99 tests)          (0 tests)         (1 test)        (2 tests)         (3 tests)         (4 tests)         (5 tests)         (6 tests)         (7 tests)         (8 tests)         (9 tests)         (10 tests)          (11 tests)          (12 tests)          (13 tests)          (14 tests)          (15 tests)          (16 tests)          (17 tests)          (18 tests)          (19 tests)          (20 tests)          (21 tests)          (22 tests)          (23 tests)          (24 tests)          (25 tests)          (26 tests)          (27 tests)          (28 tests)          (29 tests)          (30 tests)          (31 tests)          (32 tests)          (33 tests)          (34 tests)          (35 tests)          (36 tests)          (37 tests)          (38 tests)          (39 tests)          (40 tests)          (41 tests)          (42 tests)          (43 tests)          (44 tests)          (45 tests)          (46 tests)          (47 tests)          (48 tests)          (49 tests)          (50 tests)          (51 tests)          (52 tests)          (53 tests)          (54 tests)          (55 tests)          (56 tests)          (57 tests)          (58 tests)          (59 tests)          (60 tests)          (61 tests)          (62 tests)          (63 tests)          (64 tests)          (65 tests)          (66 tests)          (67 tests)          (68 tests)          (69 tests)          (70 tests)          (71 tests)          (72 tests)          (73 tests)          (74 tests)          (75 tests)          (76 tests)          (77 tests)          (78 tests)          (79 tests)          (80 tests)          (81 tests)          (82 tests)          (83 tests)          (84 tests)          (85 tests)          (86 tests)          (87 tests)          (88 tests)          (89 tests)          (90 tests)          (91 tests)          (92 tests)          (93 tests)          (94 tests)          (95 tests)          (96 tests)          (97 tests)          (98 tests)          (99 tests)          
