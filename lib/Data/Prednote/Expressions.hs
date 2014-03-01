@@ -15,6 +15,7 @@ module Data.Prednote.Expressions
   ) where
 
 import Data.Either (partitionEithers)
+import Data.Functor.Contravariant
 import qualified Data.Text as X
 import qualified Data.Prednote.Expressions.Infix as I
 import qualified Data.Prednote.Expressions.RPN as R
@@ -22,6 +23,10 @@ import qualified Data.Prednote.Pdct as P
 
 -- | A single type for both RPN tokens and infix tokens.
 newtype Token a = Token { unToken :: I.InfixToken a }
+
+instance Contravariant Token where
+  contramap f = Token . contramap f . unToken
+
 type Error = X.Text
 
 -- | Creates Operands from Pdct.

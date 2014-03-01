@@ -24,6 +24,8 @@ module Data.Prednote.Test
 
   ) where
 
+import Control.Arrow (first)
+import Data.Functor.Contravariant
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), mempty)
 import qualified Data.Text as X
@@ -94,12 +96,18 @@ data Test a = Test
   -- ^ Default verbosity for the test.
   }
 
+instance Contravariant Test where
+  contramap f t = t { testFunc = testFunc t . f }
+
 data TestResult a = TestResult
   { resultName :: Name
   , resultPass :: Pass
   , resultSubjects :: [(a, Pt.Result)]
   , resultDefaultVerbosity :: TestVerbosity
   }
+
+instance Functor TestResult where
+  fmap f t = t { resultSubjects = map (first f) . resultSubjects $ t }
 
 -- # Showing tests
 

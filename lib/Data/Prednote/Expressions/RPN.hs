@@ -6,6 +6,7 @@
 -- where @and@ and @or@ are binary and @not@ is unary.
 module Data.Prednote.Expressions.RPN where
 
+import Data.Functor.Contravariant
 import qualified Data.Foldable as Fdbl
 import qualified Data.Prednote.Pdct as P
 import Data.Prednote.Pdct ((&&&), (|||))
@@ -19,6 +20,11 @@ type Error = Text
 data RPNToken a
   = TokOperand (P.Pdct a)
   | TokOperator Operator
+
+instance Contravariant RPNToken where
+  contramap f t = case t of
+    TokOperand p -> TokOperand . contramap f $ p
+    TokOperator o -> TokOperator o
 
 data Operator
   = OpAnd

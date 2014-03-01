@@ -23,8 +23,6 @@ module Data.Prednote.Pdct
   , (|||)
   , always
   , never
-  , boxPdct
-  , boxNode
 
   -- * Controlling whether Pdct are shown in the results
   , hide
@@ -77,6 +75,7 @@ module Data.Prednote.Pdct
 
 -- # Imports
 
+import Data.Functor.Contravariant
 import Data.Text (Text)
 import qualified Data.Text as X
 import Data.Monoid ((<>), mconcat, mempty)
@@ -176,25 +175,15 @@ infixr 3 &&&
 (|||) x y = Pdct "or" (const False) (Or [x, y])
 infixr 2 |||
 
--- | Given a function that un-boxes values of type b, changes a Pdct
--- from type a to type b.
-boxPdct
-  :: (b -> a)
-  -> Pdct a
-  -> Pdct b
-boxPdct f (Pdct l d n) = Pdct l d $ boxNode f n
+instance Contravariant Pdct where
+  contramap f (Pdct l d n) = Pdct l d $ contramap f n
 
--- | Given a function that un-boxes values of type b, changes a Node
--- from type a to type b.
-boxNode
-  :: (b -> a)
-  -> Node a
-  -> Node b
-boxNode f n = case n of
-  And ls -> And $ map (boxPdct f) ls
-  Or ls -> Or $ map (boxPdct f) ls
-  Not o -> Not $ boxPdct f o
-  Operand g -> Operand $ \b -> g (f b)
+instance Contravariant Node where
+  contramap f n = case n of
+    And ls -> And $ map (contramap f) ls
+    Or ls -> Or $ map (contramap f) ls
+    Not o -> Not $ contramap f o
+    Operand g -> Operand $ \b -> g (f b)
 
 -- # Result
 

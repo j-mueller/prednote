@@ -4,12 +4,18 @@ module Data.Prednote.Expressions.Infix
   , createRPN
   ) where
 
+import Data.Functor.Contravariant
 import qualified Data.Prednote.Expressions.RPN as R
 import qualified Data.Foldable as Fdbl
 
 data InfixToken a
   = TokRPN (R.RPNToken a)
   | TokParen Paren
+
+instance Contravariant InfixToken where
+  contramap f t = case t of
+    TokRPN r -> TokRPN . contramap f $ r
+    TokParen p -> TokParen p
 
 data Paren = Open | Close
 

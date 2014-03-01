@@ -1,5 +1,5 @@
 name:                prednote
-version:             0.18.0.5
+version:             0.20.0.0
 synopsis:            Build and evaluate trees of predicates
 description:
   Build and evaluate trees of predicates. For example, you might build
@@ -41,6 +41,7 @@ library
 
   build-depends:
       base >= 4.5.0.0 && < 5
+    , contravariant >= 0.1.0
     , rainbow >=0.6.0.4
     , split >=0.2.2
     , text >= 0.11.2.0
@@ -53,9 +54,6 @@ Test-Suite prednote-test
   main-is: prednote-test.hs
   hs-source-dirs: . lib
 
-  -- Be sure the build-depends are listed within the if block;
-  -- otherwise, cabal install will always include these
-  -- build-dependencies in any build, even non-test builds.
   build-depends:
       base >=4.5.0.0 && < 5
     , QuickCheck >=2.6
