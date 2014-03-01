@@ -213,10 +213,10 @@ data RNode
   deriving (Eq, Show)
 
 -- | Applies a Pdct to a particular value, known as the subject.
-evaluate :: a -> Pdct a -> Result
-evaluate a (Pdct l d n) = Result l r d' rn
+evaluate :: Pdct a -> a -> Result
+evaluate (Pdct l d n) a = Result l r d' rn
   where
-    rn = evaluateNode a n
+    rn = evaluateNode n a
     r = case rn of
       RAnd ls -> all rBool ls
       ROr ls -> any rBool ls
@@ -224,11 +224,11 @@ evaluate a (Pdct l d n) = Result l r d' rn
       ROperand b -> b
     d' = d r
 
-evaluateNode :: a -> Node a -> RNode
-evaluateNode a n = case n of
-  And ls -> RAnd (map (evaluate a) ls)
-  Or ls -> ROr (map (evaluate a) ls)
-  Not l -> RNot (evaluate a l)
+evaluateNode :: Node a -> a -> RNode
+evaluateNode n a = case n of
+  And ls -> RAnd (map (flip evaluate a) ls)
+  Or ls -> ROr (map (flip evaluate a) ls)
+  Not l -> RNot (flip evaluate a l)
   Operand f -> ROperand (f a)
 
 -- # Types and functions for showing
@@ -277,7 +277,7 @@ filter pd as
   = map fst
   . Prelude.filter (rBool . snd)
   . zip as
-  . map (flip evaluate pd)
+  . map (evaluate pd)
   $ as
 
 
@@ -341,6 +341,7 @@ shorter [] (_:_) = True
 shorter (_:xs) (_:ys) = shorter xs ys
 
 -- | For instance,
+--
 -- > takeThrough odd [2,4,6,7,8] == [2,4,6,7]
 takeThrough :: (a -> Bool) -> [a] -> [a]
 takeThrough _ [] = []
@@ -387,7 +388,7 @@ verboseFilter
 
 verboseFilter desc amt sa pd as = (chks, as')
   where
-    rs = map (flip evaluate pd) as
+    rs = map (evaluate pd) as
     subjAndRslts = zip as rs
     mkChks (subj, rslt) = showTopResult (desc subj) amt 0 sa rslt
     chks = concatMap mkChks subjAndRslts

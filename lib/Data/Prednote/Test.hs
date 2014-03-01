@@ -188,7 +188,7 @@ eachSubjectMustBeTrue pd nm = Test nm pass f vy
       { onPass = ShowFirstLine HideAll HideAll
       , onFail = ShowFirstLine HideAll ShowDefaults }
     pass = all Pt.rBool
-    f = flip Pt.evaluate pd
+    f = Pt.evaluate pd
 
 
 -- | The test passes if at least a given number of subjects are True.
@@ -202,7 +202,7 @@ nSubjectsMustBeTrue
 nSubjectsMustBeTrue pd nm i = Test nm pass f vy
   where
     pass = atLeast i . filter Pt.rBool
-    f = flip Pt.evaluate pd
+    f = Pt.evaluate pd
     vy = TestVerbosity
       { onPass = ShowFirstLine HideAll HideAll
       , onFail = ShowFirstLine HideAll HideAll }
