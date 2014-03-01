@@ -5,17 +5,17 @@
 -- Exports names which conflict with Prelude names, so you probably
 -- want to import this module qualified.
 
-module Data.Prednote.Pdct
+module Data.Prednote.Predbox
 
-  ( -- * The Pdct tree
+  ( -- * The Predbox tree
     Label
   , Hide
-  , Pdct(..)
+  , Predbox(..)
   , Node(..)
 
-  -- * Creating Pdct.
-  -- | All functions create Pdct that are shown by default.
-  , operand
+  -- * Creating Predbox.
+  -- | All functions create Predbox that are shown by default.
+  , predicate
   , and
   , or
   , not
@@ -24,20 +24,20 @@ module Data.Prednote.Pdct
   , always
   , never
 
-  -- * Controlling whether Pdct are shown in the results
+  -- * Controlling whether Predbox are shown in the results
   , hide
   , show
   , hideTrue
   , hideFalse
 
-  -- * Renaming Pdct
+  -- * Renaming Predbox
   , rename
 
   -- * Result
   , Result(..)
   , RNode(..)
 
-  -- * Showing and evaluating Pdct
+  -- * Showing and evaluating Predbox
   , evaluate
   , evaluateNode
   , IndentAmt
@@ -45,11 +45,11 @@ module Data.Prednote.Pdct
   , ShowAll
   , showResult
   , showTopResult
-  , showPdct
+  , showPredbox
   , filter
   , verboseFilter
 
-  -- * Helpers for building common Pdct
+  -- * Helpers for building common Predbox
   -- ** Non-overloaded
   , compareBy
   , compareByMaybe
@@ -75,7 +75,7 @@ module Data.Prednote.Pdct
 
 -- # Imports
 
-import Data.Functor.Contravariant
+import Data.Functor.Contravariant hiding (Predicate)
 import Data.Text (Text)
 import qualified Data.Text as X
 import Data.Monoid ((<>), mconcat, mempty)
@@ -84,21 +84,21 @@ import qualified System.Console.Rainbow as R
 import Prelude hiding (not, and, or, compare, filter, show)
 import qualified Prelude
 
--- # Pdct type
+-- # Predbox type
 
 type Label = Text
 
 -- | Determines whether a result is shown by default.
 type Hide = Bool
 
--- | A predicate. Each Pdct contains a tree of Node.
-data Pdct a = Pdct
+-- | A predicate. Each Predbox contains a tree of Node.
+data Predbox a = Predbox
   { pLabel :: Label
   -- ^ Label used when showing the results
 
   , pHide :: (Bool -> Hide)
   -- ^ As results are computed, this function is applied to the
-  -- result. If this function returns False, then this Pdct will not
+  -- result. If this function returns False, then this Predbox will not
   -- be shown by default in the results.
 
   , pNode :: Node a
@@ -106,102 +106,102 @@ data Pdct a = Pdct
   }
 
 data Node a
-  = And [Pdct a]
-  -- ^ Conjunction. If any Pdct in the list is False, the result is
+  = And [Predbox a]
+  -- ^ Conjunction. If any Predbox in the list is False, the result is
   -- False. If the list is empty, the result is True.
 
-  | Or [Pdct a]
-  -- ^ Disjunction. If at least one Pdct in the list is True, the
+  | Or [Predbox a]
+  -- ^ Disjunction. If at least one Predbox in the list is True, the
   -- result it True. If the list is empty, the result is False.
 
-  | Not (Pdct a)
+  | Not (Predbox a)
   -- ^ Negation
 
-  | Operand (a -> Bool)
+  | Predicate (a -> Bool)
   -- ^ Most basic building block.
 
--- | Renames the top level of the Pdct. The function you pass will be
+-- | Renames the top level of the Predbox. The function you pass will be
 -- applied to the old name.
-rename :: (Text -> Text) -> Pdct a -> Pdct a
+rename :: (Text -> Text) -> Predbox a -> Predbox a
 rename f p = p { pLabel = f (pLabel p) }
 
 -- | Always True
-always :: Pdct a
-always = Pdct "always True" (const False) (Operand (const True))
+always :: Predbox a
+always = Predbox "always True" (const False) (Predicate (const True))
 
 -- | Always False
-never :: Pdct a
-never = Pdct "always False" (const False) (Operand (const False))
+never :: Predbox a
+never = Predbox "always False" (const False) (Predicate (const False))
 
--- | Creates and labels operands.
-operand :: Label -> (a -> Bool) -> Pdct a
-operand l = Pdct l (const False) . Operand
+-- | Creates and labels predicates.
+predicate :: Label -> (a -> Bool) -> Predbox a
+predicate l = Predbox l (const False) . Predicate
 
--- | Creates And Pdct using a generic name
-and :: [Pdct a] -> Pdct a
-and = Pdct "and" (const False) . And
+-- | Creates And Predbox using a generic name
+and :: [Predbox a] -> Predbox a
+and = Predbox "and" (const False) . And
 
--- | Creates Or Pdct using a generic name
-or :: [Pdct a] -> Pdct a
-or = Pdct "or" (const False) . Or
+-- | Creates Or Predbox using a generic name
+or :: [Predbox a] -> Predbox a
+or = Predbox "or" (const False) . Or
 
--- | Creates Not Pdct using a generic name
-not :: Pdct a -> Pdct a
-not = Pdct "not" (const False) . Not
+-- | Creates Not Predbox using a generic name
+not :: Predbox a -> Predbox a
+not = Predbox "not" (const False) . Not
 
--- | Changes a Pdct so it is always hidden by default.
-hide :: Pdct a -> Pdct a
+-- | Changes a Predbox so it is always hidden by default.
+hide :: Predbox a -> Predbox a
 hide p = p { pHide = const True }
 
--- | Changes a Pdct so it is always shown by default.
-show :: Pdct a -> Pdct a
+-- | Changes a Predbox so it is always shown by default.
+show :: Predbox a -> Predbox a
 show p = p { pHide = const False }
 
--- | Changes a Pdct so that it is hidden if its result is True.
-hideTrue :: Pdct a -> Pdct a
+-- | Changes a Predbox so that it is hidden if its result is True.
+hideTrue :: Predbox a -> Predbox a
 hideTrue p = p { pHide = id }
 
--- | Changes a Pdct so that it is hidden if its result is False.
-hideFalse :: Pdct a -> Pdct a
+-- | Changes a Predbox so that it is hidden if its result is False.
+hideFalse :: Predbox a -> Predbox a
 hideFalse p = p { pHide = Prelude.not }
 
--- | Forms a Pdct using 'and'; assigns a generic label.
-(&&&) :: Pdct a -> Pdct a -> Pdct a
-(&&&) x y = Pdct "and" (const False) (And [x, y])
+-- | Forms a Predbox using 'and'; assigns a generic label.
+(&&&) :: Predbox a -> Predbox a -> Predbox a
+(&&&) x y = Predbox "and" (const False) (And [x, y])
 infixr 3 &&&
 
--- | Forms a Pdct using 'or'; assigns a generic label.
-(|||) :: Pdct a -> Pdct a -> Pdct a
-(|||) x y = Pdct "or" (const False) (Or [x, y])
+-- | Forms a Predbox using 'or'; assigns a generic label.
+(|||) :: Predbox a -> Predbox a -> Predbox a
+(|||) x y = Predbox "or" (const False) (Or [x, y])
 infixr 2 |||
 
-instance Contravariant Pdct where
-  contramap f (Pdct l d n) = Pdct l d $ contramap f n
+instance Contravariant Predbox where
+  contramap f (Predbox l d n) = Predbox l d $ contramap f n
 
 instance Contravariant Node where
   contramap f n = case n of
     And ls -> And $ map (contramap f) ls
     Or ls -> Or $ map (contramap f) ls
     Not o -> Not $ contramap f o
-    Operand g -> Operand $ \b -> g (f b)
+    Predicate g -> Predicate $ \b -> g (f b)
 
 -- # Result
 
--- | The result from evaluating a Pdct.
+-- | The result from evaluating a Predbox.
 data Result = Result
   { rLabel :: Label
-  -- ^ The label from the original Pdct
+  -- ^ The label from the original Predbox
 
   , rBool :: Bool
   -- ^ The boolean result from evaluating the node. If the node is an
-  -- operand, this is the result of applying the operand function to
+  -- predicate, this is the result of applying the predicate function to
   -- the subject. Otherwise, this is the result of application of the
   -- appropriate boolean operation to the child nodes.
 
   , rHide :: Hide
   -- ^ Is this result hidden in the result by default? Hiding only
-  -- affects presentation; it does not affect how this Pdct affects
-  -- any parent Pdct.
+  -- affects presentation; it does not affect how this Predbox affects
+  -- any parent Predbox.
   , rNode :: RNode
   } deriving (Eq, Show)
 
@@ -209,19 +209,19 @@ data RNode
   = RAnd [Result]
   | ROr [Result]
   | RNot Result
-  | ROperand Bool
+  | RPredicate Bool
   deriving (Eq, Show)
 
--- | Applies a Pdct to a particular value, known as the subject.
-evaluate :: Pdct a -> a -> Result
-evaluate (Pdct l d n) a = Result l r d' rn
+-- | Applies a Predbox to a particular value, known as the subject.
+evaluate :: Predbox a -> a -> Result
+evaluate (Predbox l d n) a = Result l r d' rn
   where
     rn = evaluateNode n a
     r = case rn of
       RAnd ls -> all rBool ls
       ROr ls -> any rBool ls
       RNot x -> Prelude.not . rBool $ x
-      ROperand b -> b
+      RPredicate b -> b
     d' = d r
 
 evaluateNode :: Node a -> a -> RNode
@@ -229,7 +229,7 @@ evaluateNode n a = case n of
   And ls -> RAnd (map (flip evaluate a) ls)
   Or ls -> ROr (map (flip evaluate a) ls)
   Not l -> RNot (flip evaluate a l)
-  Operand f -> ROperand (f a)
+  Predicate f -> RPredicate (f a)
 
 -- # Types and functions for showing
 
@@ -248,31 +248,31 @@ indent amt lvl cs = idt : (cs ++ [nl])
     idt = fromString (replicate (lvl * amt) ' ')
     nl = fromString "\n"
 
--- # Showing Pdct
+-- # Showing Predbox
 
 -- | Creates a plain Chunk from a Text.
 plain :: Text -> R.Chunk
 plain = R.Chunk mempty
 
--- | Shows a Pdct tree without evaluating it.
-showPdct :: IndentAmt -> Level -> Pdct a -> [R.Chunk]
-showPdct amt lvl (Pdct l _ pd) = case pd of
+-- | Shows a Predbox tree without evaluating it.
+showPredbox :: IndentAmt -> Level -> Predbox a -> [R.Chunk]
+showPredbox amt lvl (Predbox l _ pd) = case pd of
   And ls -> indent amt lvl [plain ("and - " <> l)]
-            <> mconcat (map (showPdct amt (lvl + 1)) ls)
+            <> mconcat (map (showPredbox amt (lvl + 1)) ls)
   Or ls -> indent amt lvl [plain ("or - " <> l)]
-           <> mconcat (map (showPdct amt (lvl + 1)) ls)
+           <> mconcat (map (showPredbox amt (lvl + 1)) ls)
   Not t -> indent amt lvl [plain ("not - " <> l)]
-           <> showPdct amt (lvl + 1) t
-  Operand _ -> indent amt lvl [plain ("operand - " <> l)]
+           <> showPredbox amt (lvl + 1) t
+  Predicate _ -> indent amt lvl [plain ("predicate - " <> l)]
 
-instance Show (Pdct a) where
+instance Show (Predbox a) where
   show = X.unpack
        . X.concat
        . map R.text
-       . showPdct 2 0
+       . showPredbox 2 0
 
 
-filter :: Pdct a -> [a] -> [a]
+filter :: Predbox a -> [a] -> [a]
 filter pd as
   = map fst
   . Prelude.filter (rBool . snd)
@@ -303,8 +303,8 @@ showResult
   -- ^ Indent each level by this many spaces
 
   -> ShowAll
-  -- ^ If True, shows all Pdct, even ones where 'rHide' is
-  -- True. Otherwise, respects 'rHide' and does not show hidden Pdct.
+  -- ^ If True, shows all Predbox, even ones where 'rHide' is
+  -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
 
   -> Level
   -- ^ How deep in the tree we are; this increments by one for each
@@ -323,7 +323,7 @@ showResult amt sa lvl (Result lbl rslt hd nd)
       RAnd ls -> f False ls
       ROr ls -> f True ls
       RNot r -> showResult amt sa (lvl + 1) r
-      ROperand _ -> []
+      RPredicate _ -> []
     f stopOn ls = concatMap sr ls' ++ end
       where
         ls' = takeThrough ((== stopOn) . rBool) ls
@@ -357,8 +357,8 @@ showTopResult
   -> Level
   -- ^ Indent the top by this many levels
   -> ShowAll
-  -- ^ If True, shows all Pdct, even ones where 'rHide' is
-  -- True. Otherwise, respects 'rHide' and does not show hidden Pdct.
+  -- ^ If True, shows all Predbox, even ones where 'rHide' is
+  -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
 
   -> Result
   -- ^ The result to show
@@ -377,10 +377,10 @@ verboseFilter
   -- ^ Indent each level by this many spaces
 
   -> ShowAll
-  -- ^ If True, shows all Pdct, even ones where 'rHide' is
-  -- True. Otherwise, respects 'rHide' and does not show hidden Pdct.
+  -- ^ If True, shows all Predbox, even ones where 'rHide' is
+  -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
 
-  -> Pdct a
+  -> Predbox a
   -- ^ Used to perform the filtering
 
   -> [a]
@@ -396,10 +396,10 @@ verboseFilter desc amt sa pd as = (chks, as')
 
 -- # Comparisons
 
--- | Build a Pdct that compares items.
+-- | Build a Predbox that compares items.
 compareBy
   :: Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> Text
   -- ^ Description of the type of thing that is being matched
@@ -411,12 +411,12 @@ compareBy
 
   -> Ordering
   -- ^ When subjects are compared, this ordering must be the result in
-  -- order for the Pdct to be True; otherwise it is False. The subject
+  -- order for the Predbox to be True; otherwise it is False. The subject
   -- will be on the left hand side.
 
-  -> Pdct a
+  -> Predbox a
 
-compareBy itemDesc typeDesc cmp ord = Pdct l (const False) (Operand f)
+compareBy itemDesc typeDesc cmp ord = Predbox l (const False) (Predicate f)
   where
     l = typeDesc <> " is " <> cmpDesc <> " " <> itemDesc
     cmpDesc = case ord of
@@ -436,16 +436,16 @@ compare
 
   -> Ordering
   -- ^ When subjects are compared, this ordering must be the result in
-  -- order for the Pdct to be True; otherwise it is False. The subject
+  -- order for the Predbox to be True; otherwise it is False. The subject
   -- will be on the left hand side.
 
-  -> Pdct a
+  -> Predbox a
 compare typeDesc a ord = compareBy itemDesc typeDesc cmp ord
   where
     itemDesc = X.pack . Prelude.show $ a
     cmp item = Prelude.compare item a
 
--- | Builds a Pdct for items that might fail to return a comparison.
+-- | Builds a Predbox for items that might fail to return a comparison.
 compareByMaybe
   :: Text
   -- ^ How to show the item being compared
@@ -454,16 +454,16 @@ compareByMaybe
   -- ^ Description of type of thing being matched
 
   -> (a -> Maybe Ordering)
-  -- ^ How to compare against right hand side. If Nothing, a Pdct that
+  -- ^ How to compare against right hand side. If Nothing, a Predbox that
   -- always returns False is returned.
 
   -> Ordering
-  -- ^ Ordering that must result for the Pdct to be True
+  -- ^ Ordering that must result for the Predbox to be True
 
-  -> Pdct a
+  -> Predbox a
 
 compareByMaybe itemDesc typeDesc cmp ord =
-  Pdct l (const False) (Operand f)
+  Predbox l (const False) (Predicate f)
   where
     l = typeDesc <> " is " <> cmpDesc <> " " <> itemDesc
     cmpDesc = case ord of
@@ -477,72 +477,72 @@ compareByMaybe itemDesc typeDesc cmp ord =
 greater
   :: (Show a, Ord a)
   => Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> a
   -- ^ The right hand side of the comparison.
 
-  -> Pdct a
+  -> Predbox a
 greater d a = compare d a GT
 
 less
   :: (Show a, Ord a)
   => Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> a
   -- ^ The right hand side of the comparison.
 
-  -> Pdct a
+  -> Predbox a
 less d a = compare d a LT
 
 equal
   :: (Show a, Ord a)
   => Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> a
   -- ^ The right hand side of the comparison.
 
-  -> Pdct a
+  -> Predbox a
 equal d a = compare d a EQ
 
 greaterEq
   :: (Show a, Ord a)
   => Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> a
   -- ^ The right hand side of the comparison.
 
-  -> Pdct a
+  -> Predbox a
 greaterEq d a = greater d a ||| equal d a
 
 lessEq
   :: (Show a, Ord a)
   => Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> a
   -- ^ The right hand side of the comparison.
 
-  -> Pdct a
+  -> Predbox a
 lessEq d a = less d a ||| equal d a
 
 notEq
   :: (Show a, Ord a)
   => Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> a
   -- ^ The right hand side of the comparison.
 
-  -> Pdct a
+  -> Predbox a
 notEq d a = not $ equal d a
 
 greaterBy
   :: Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> Text
   -- ^ Description of the type of thing that is being matched
@@ -550,12 +550,12 @@ greaterBy
   -> (a -> Ordering)
   -- ^ How to compare two items
 
-  -> Pdct a
+  -> Predbox a
 greaterBy iD tD cmp = compareBy iD tD cmp GT
 
 lessBy
   :: Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> Text
   -- ^ Description of the type of thing that is being matched
@@ -563,12 +563,12 @@ lessBy
   -> (a -> Ordering)
   -- ^ How to compare two items
 
-  -> Pdct a
+  -> Predbox a
 lessBy iD tD cmp = compareBy iD tD cmp LT
 
 equalBy
   :: Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> Text
   -- ^ Description of the type of thing that is being matched
@@ -576,12 +576,12 @@ equalBy
   -> (a -> Ordering)
   -- ^ How to compare two items
 
-  -> Pdct a
+  -> Predbox a
 equalBy iD tD cmp = compareBy iD tD cmp EQ
 
 greaterEqBy
   :: Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> Text
   -- ^ Description of the type of thing that is being matched
@@ -589,13 +589,13 @@ greaterEqBy
   -> (a -> Ordering)
   -- ^ How to compare two items
 
-  -> Pdct a
+  -> Predbox a
 greaterEqBy iD tD cmp =
   greaterBy iD tD cmp ||| equalBy iD tD cmp
 
 lessEqBy
   :: Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> Text
   -- ^ Description of the type of thing that is being matched
@@ -603,13 +603,13 @@ lessEqBy
   -> (a -> Ordering)
   -- ^ How to compare two items
 
-  -> Pdct a
+  -> Predbox a
 lessEqBy iD tD cmp =
   lessBy iD tD cmp ||| equalBy iD tD cmp
 
 notEqBy
   :: Text
-  -- ^ How to show the item being compared; used to describe the Pdct
+  -- ^ How to show the item being compared; used to describe the Predbox
 
   -> Text
   -- ^ Description of the type of thing that is being matched
@@ -617,21 +617,21 @@ notEqBy
   -> (a -> Ordering)
   -- ^ How to compare two items
 
-  -> Pdct a
+  -> Predbox a
 notEqBy iD tD cmp =
   not $ equalBy iD tD cmp
 
 -- | Parses a string to find the correct comparer; returns the correct
--- function to build a Pdct.
+-- function to build a Predbox.
 
 parseComparer
   :: Text
   -- ^ The string with the comparer to be parsed
-  -> (Ordering -> Pdct a)
-  -- ^ A function that, when given an ordering, returns a Pdct
-  -> Maybe (Pdct a)
+  -> (Ordering -> Predbox a)
+  -- ^ A function that, when given an ordering, returns a Predbox
+  -> Maybe (Predbox a)
   -- ^ If an invalid comparer string is given, Nothing; otherwise, the
-  -- Pdct.
+  -- Predbox.
 parseComparer t f
   | t == ">" = Just (f GT)
   | t == "<" = Just (f LT)

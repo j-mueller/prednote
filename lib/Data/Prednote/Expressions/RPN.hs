@@ -8,8 +8,8 @@ module Data.Prednote.Expressions.RPN where
 
 import Data.Functor.Contravariant
 import qualified Data.Foldable as Fdbl
-import qualified Data.Prednote.Pdct as P
-import Data.Prednote.Pdct ((&&&), (|||))
+import qualified Data.Prednote.Predbox as P
+import Data.Prednote.Predbox ((&&&), (|||))
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as X
@@ -18,7 +18,7 @@ import qualified System.Console.Rainbow as C
 type Error = Text
 
 data RPNToken a
-  = TokOperand (P.Pdct a)
+  = TokOperand (P.Predbox a)
   | TokOperator Operator
 
 instance Contravariant RPNToken where
@@ -32,13 +32,13 @@ data Operator
   | OpNot
   deriving Show
 
-pushOperand :: P.Pdct a -> [P.Pdct a] -> [P.Pdct a]
+pushOperand :: P.Predbox a -> [P.Predbox a] -> [P.Predbox a]
 pushOperand p ts = p : ts
 
 pushOperator
   :: Operator
-  -> [P.Pdct a]
-  -> Either Error [P.Pdct a]
+  -> [P.Predbox a]
+  -> Either Error [P.Predbox a]
 pushOperator o ts = case o of
   OpAnd -> case ts of
     x:y:zs -> return $ (y &&& x) : zs
@@ -54,22 +54,22 @@ pushOperator o ts = case o of
             <> "\" operator\n"
 
 pushToken
-  :: [P.Pdct a]
+  :: [P.Predbox a]
   -> RPNToken a
-  -> Either Error [P.Pdct a]
+  -> Either Error [P.Predbox a]
 pushToken ts t = case t of
   TokOperand p -> return $ pushOperand p ts
   TokOperator o -> pushOperator o ts
 
 
--- | Parses an RPN expression and returns the resulting Pdct. Fails if
+-- | Parses an RPN expression and returns the resulting Predbox. Fails if
 -- there are no operands left on the stack or if there are multiple
 -- operands left on the stack; the stack must contain exactly one
 -- operand in order to succeed.
 parseRPN
   :: Fdbl.Foldable f
   => f (RPNToken a)
-  -> Either Error (P.Pdct a)
+  -> Either Error (P.Predbox a)
 parseRPN ts = do
   trees <- Fdbl.foldlM pushToken [] ts
   case trees of
@@ -79,6 +79,6 @@ parseRPN ts = do
       $ "bad expression: multiple operands left on the stack:\n"
       <> ( X.concat
            . map C.text
-           . concatMap (P.showPdct 4 0)
+           . concatMap (P.showPredbox 4 0)
            $ xs )
 

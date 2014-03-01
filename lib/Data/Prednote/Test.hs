@@ -8,7 +8,7 @@ module Data.Prednote.Test
   , Verbosity(..)
   , TrueVerbosity
   , FalseVerbosity
-  , ShowTest(..)
+  , TestVisibility(..)
   , TestVerbosity(..)
   , Pass
   , Test(..)
@@ -20,7 +20,7 @@ module Data.Prednote.Test
 
   -- * Running and showing tests
   , evalTest
-  , showResult
+  , showTestResult
 
   ) where
 
@@ -32,15 +32,15 @@ import qualified Data.Text as X
 import Data.Text (Text)
 
 import qualified System.Console.Rainbow as R
-import qualified Data.Prednote.Pdct as Pt
+import qualified Data.Prednote.Predbox as Pt
 
 -- # Types
 
--- | How verbose to be when showing the results of running a Pdct on a
+-- | How verbose to be when showing the results of running a Predbox on a
 -- single subject.
 data Verbosity
   = HideAll
-  -- ^ Do not show any results from the Pdct
+  -- ^ Do not show any results from the Predbox
 
   | ShowDefaults
   -- ^ Show results according to the default settings provided in the
@@ -57,7 +57,7 @@ type TrueVerbosity = Verbosity
 type FalseVerbosity = Verbosity
 
 -- | Determines whether to show any of the results from a single test.
-data ShowTest
+data TestVisibility
   = HideTest
   -- ^ Do not show any results from this test
 
@@ -69,12 +69,12 @@ data ShowTest
 
   deriving (Eq, Show)
 
--- | Determines which ShowTest to use for a particular test.
+-- | Determines which TestVisibility to use for a particular test.
 data TestVerbosity = TestVerbosity
-  { onPass :: ShowTest
-    -- ^ Use this ShowTest when the test passes
-  , onFail :: ShowTest
-    -- ^ Use this ShowTest when the test fails
+  { onPass :: TestVisibility
+    -- ^ Use this TestVisibility when the test passes
+  , onFail :: TestVisibility
+    -- ^ Use this TestVisibility when the test fails
   } deriving (Eq, Show)
 
 type Pass = Bool
@@ -137,7 +137,7 @@ evalTest (Test n fPass fSubj vy) ls = TestResult n p ss vy
     ss = zip ls results
 
 -- | Shows a result with indenting.
-showResult
+showTestResult
   :: Pt.IndentAmt
   -- ^ Indent each level by this many spaces
 
@@ -153,7 +153,7 @@ showResult
   -- ^ The result to show
 
   -> [R.Chunk]
-showResult amt swr mayVb (TestResult n p ss dfltVb) =
+showTestResult amt swr mayVb (TestResult n p ss dfltVb) =
   let vb = fromMaybe dfltVb mayVb
       tv = if p then onPass vb else onFail vb
       firstLine = showTestTitle n p
@@ -181,7 +181,7 @@ showSubject p amt swr (tv, fv) (a, r) =
 -- # Pre-built tests
 
 -- | The test passes if each subject returns True.
-eachSubjectMustBeTrue :: Pt.Pdct a -> Name -> Test a
+eachSubjectMustBeTrue :: Pt.Predbox a -> Name -> Test a
 eachSubjectMustBeTrue pd nm = Test nm pass f vy
   where
     vy = TestVerbosity
@@ -193,7 +193,7 @@ eachSubjectMustBeTrue pd nm = Test nm pass f vy
 
 -- | The test passes if at least a given number of subjects are True.
 nSubjectsMustBeTrue
-  :: Pt.Pdct a
+  :: Pt.Predbox a
   -> Name
   -> Int
   -- ^ The number of subjects that must be True. This should be a

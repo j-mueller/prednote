@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Handles parsing of both infix and RPN Pdct expressions.
+-- | Handles parsing of both infix and RPN Predbox expressions.
 module Data.Prednote.Expressions
   ( ExprDesc(..)
   , Error
@@ -19,7 +19,7 @@ import Data.Functor.Contravariant
 import qualified Data.Text as X
 import qualified Data.Prednote.Expressions.Infix as I
 import qualified Data.Prednote.Expressions.RPN as R
-import qualified Data.Prednote.Pdct as P
+import qualified Data.Prednote.Predbox as P
 
 -- | A single type for both RPN tokens and infix tokens.
 newtype Token a = Token { unToken :: I.InfixToken a }
@@ -29,8 +29,8 @@ instance Contravariant Token where
 
 type Error = X.Text
 
--- | Creates Operands from Pdct.
-operand :: P.Pdct a -> Token a
+-- | Creates Operands from Predbox.
+operand :: P.Predbox a -> Token a
 operand p = Token (I.TokRPN (R.TokOperand p))
 
 -- | The And operator
@@ -75,7 +75,7 @@ toksToRPN toks
 parseExpression
   :: ExprDesc
   -> [Token a]
-  -> Either Error (P.Pdct a)
+  -> Either Error (P.Predbox a)
 parseExpression e toks = do
   rpnToks <- case e of
     Infix -> maybe (Left "unbalanced parentheses\n") Right

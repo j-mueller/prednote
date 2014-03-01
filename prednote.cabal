@@ -33,7 +33,8 @@ source-repository head
 library
 
   exposed-modules:
-      Data.Prednote.Pdct
+      Data.Prednote
+    , Data.Prednote.Predbox
     , Data.Prednote.Expressions
     , Data.Prednote.Expressions.Infix
     , Data.Prednote.Expressions.RPN
