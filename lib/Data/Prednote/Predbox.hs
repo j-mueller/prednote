@@ -51,6 +51,22 @@ module Data.Prednote.Predbox
 
   -- * Helpers for building common Predbox
   -- ** Non-overloaded
+
+  -- | Each of these functions builds a Predbox that compares two
+  -- items.  The predicate in the Predbox is applied to an item that
+  -- is considered to be the left hand side of the comparison.  The
+  -- left hand side side can change; the right hand side is baked
+  -- into the Predbox.
+  --
+  -- For example, to build a Predbox that returns True if an item is
+  -- greater than 5:
+  --
+  -- >>> :set -XOverloadedStrings
+  -- >>> let p = compareBy "5" "integer" (`Prelude.compare` (5 :: Integer)) GT
+  -- >>> rBool . evaluate p $ 6
+  -- True
+  -- >>> rBool . evaluate p $ 4
+  -- False
   , compareBy
   , compareByMaybe
   , greaterBy

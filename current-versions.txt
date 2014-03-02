@@ -1,7 +1,7 @@
 This package was tested to work with these dependency
 versions and compiler version.
 These are the default versions fetched by cabal install.
-Tested as of: 2014-03-01 19:44:29.719081 UTC
+Tested as of: 2014-03-02 01:48:34.516774 UTC
 Path to compiler: ghc-7.6.3
 Compiler description: 7.6.3
 
@@ -32,10 +32,10 @@ Compiler description: 7.6.3
     time-1.4.0.1
     unix-2.6.0.1
 
-/home/massysett/prednote/sunlight-17262/db:
+/home/massysett/prednote/sunlight-20181/db:
     QuickCheck-2.6
     contravariant-0.4.4
-    prednote-0.20.0.0
+    prednote-0.22.0.0
     rainbow-0.6.0.4
     random-1.0.1.1
     split-0.2.2
