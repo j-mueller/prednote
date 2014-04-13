@@ -268,7 +268,7 @@ indent amt lvl cs = idt : (cs ++ [nl])
 
 -- | Creates a plain Chunk from a Text.
 plain :: Text -> R.Chunk
-plain = R.Chunk mempty
+plain = R.Chunk mempty . (:[])
 
 -- | Shows a Predbox tree without evaluating it.
 showPredbox :: IndentAmt -> Level -> Predbox a -> [R.Chunk]
@@ -284,6 +284,7 @@ showPredbox amt lvl (Predbox l _ pd) = case pd of
 instance Show (Predbox a) where
   show = X.unpack
        . X.concat
+       . concat
        . map R.text
        . showPredbox 2 0
 
@@ -308,7 +309,7 @@ labelBool t b = [open, trueFalse, close, blank, txt]
     close = "]"
     blank = plain (X.replicate blankLen " ")
     blankLen = X.length "discard"
-               - X.length (R.text trueFalse) + 1
+               - (sum . map X.length . R.text $ trueFalse) + 1
     txt = plain t
 
 type ShowAll = Bool

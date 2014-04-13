@@ -1,0 +1,5 @@
+0.22.0.2
+
+  * updates for new Rainbow API
+
+  * test with GHC 7.8.2

@@ -113,7 +113,7 @@ instance Functor TestResult where
 
 -- | Creates a plain Chunk from a Text.
 plain :: X.Text -> R.Chunk
-plain = R.Chunk mempty
+plain = R.Chunk mempty . (:[])
 
 showTestTitle :: Name -> Pass -> [R.Chunk]
 showTestTitle n p = [open, passFail, close, blank, txt, nl]
