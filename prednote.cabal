@@ -1,5 +1,5 @@
 name:                prednote
-version:             0.22.0.2
+version:             0.22.0.3
 synopsis:            Build and evaluate trees of predicates
 description:
   Build and evaluate trees of predicates. For example, you might build
