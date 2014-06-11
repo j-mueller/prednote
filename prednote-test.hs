@@ -6,8 +6,8 @@ import qualified Test.QuickCheck as Q
 import Test.QuickCheck.All (quickCheckAll)
 import Test.QuickCheck.Function
 import Test.QuickCheck (Arbitrary, Gen, arbitrary)
-import qualified Data.Prednote.Predbox as P
-import Data.Prednote.Predbox ((&&&), (|||))
+import qualified Prednote.Predbox as P
+import Prednote.Predbox ((&&&), (|||))
 import qualified Data.Text as X
 import qualified System.Exit as Exit
 

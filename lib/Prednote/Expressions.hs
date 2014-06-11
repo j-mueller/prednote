@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Handles parsing of both infix and RPN Predbox expressions.
-module Data.Prednote.Expressions
+module Prednote.Expressions
   ( ExprDesc(..)
   , Error
   , Token
@@ -17,9 +17,9 @@ module Data.Prednote.Expressions
 import Data.Either (partitionEithers)
 import Data.Functor.Contravariant
 import qualified Data.Text as X
-import qualified Data.Prednote.Expressions.Infix as I
-import qualified Data.Prednote.Expressions.RPN as R
-import qualified Data.Prednote.Predbox as P
+import qualified Prednote.Expressions.Infix as I
+import qualified Prednote.Expressions.RPN as R
+import qualified Prednote.Predbox as P
 
 -- | A single type for both RPN tokens and infix tokens.
 newtype Token a = Token { unToken :: I.InfixToken a }

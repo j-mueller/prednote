@@ -4,12 +4,12 @@
 -- This module parses RPN expressions where the operands are
 -- predicates and the operators are one of @and@, @or@, or @not@,
 -- where @and@ and @or@ are binary and @not@ is unary.
-module Data.Prednote.Expressions.RPN where
+module Prednote.Expressions.RPN where
 
 import Data.Functor.Contravariant
 import qualified Data.Foldable as Fdbl
-import qualified Data.Prednote.Predbox as P
-import Data.Prednote.Predbox ((&&&), (|||))
+import qualified Prednote.Predbox as P
+import Prednote.Predbox ((&&&), (|||))
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as X

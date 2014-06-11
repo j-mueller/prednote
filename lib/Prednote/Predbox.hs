@@ -5,7 +5,7 @@
 -- Exports names which conflict with Prelude names, so you probably
 -- want to import this module qualified.
 
-module Data.Prednote.Predbox
+module Prednote.Predbox
 
   ( -- * The Predbox tree
     Label

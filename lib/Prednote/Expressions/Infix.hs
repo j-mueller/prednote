@@ -1,11 +1,11 @@
-module Data.Prednote.Expressions.Infix
+module Prednote.Expressions.Infix
   ( InfixToken (..)
   , Paren(..)
   , createRPN
   ) where
 
 import Data.Functor.Contravariant
-import qualified Data.Prednote.Expressions.RPN as R
+import qualified Prednote.Expressions.RPN as R
 import qualified Data.Foldable as Fdbl
 
 data InfixToken a

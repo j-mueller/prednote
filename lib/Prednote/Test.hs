@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Helps you build tests that run against a series of items.
-module Data.Prednote.Test
+module Prednote.Test
   (
   -- * Test data types
     Name
@@ -32,7 +32,7 @@ import qualified Data.Text as X
 import Data.Text (Text)
 
 import qualified System.Console.Rainbow as R
-import qualified Data.Prednote.Predbox as Pt
+import qualified Prednote.Predbox as Pt
 
 -- # Types
 
