@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ExistentialQuantification #-}
 
 -- | Trees of predicates.
 --
@@ -19,6 +19,8 @@ module Prednote.Predbox
   , and
   , or
   , not
+  , fanand
+  , fanor
   , (&&&)
   , (|||)
   , always
@@ -133,6 +135,18 @@ data Node a
   | Not (Predbox a)
   -- ^ Negation
 
+  | forall b. Fanand (a -> [b]) (Predbox b)
+  -- ^ Fanout conjunction.  The given function is used to derive a
+  -- list of subjects from a single subject; then, the given 'Predbox'
+  -- is applied to each subject.  Each subject must be 'True' for the
+  -- resulting predicate to be 'True'.
+
+  | forall b. Fanor (a -> [b]) (Predbox b)
+  -- ^ Fanout disjunction.  The given function is used to derive a
+  -- list of subjects from a single subject; then, the given 'Predbox'
+  -- is applied to each subject.  At least one subject must be 'True'
+  -- for the resulting predicate to be 'True'.
+
   | Predicate (a -> Bool)
   -- ^ Most basic building block.
 
@@ -164,6 +178,34 @@ or = Predbox "or" (const False) . Or
 -- | Creates Not Predbox using a generic name
 not :: Predbox a -> Predbox a
 not = Predbox "not" (const False) . Not
+
+-- | Creates a 'Fanand' Predbox using a generic name.
+fanand
+  :: (a -> [b])
+  -- ^ This function is applied to every subject to derive a list of
+  -- new subjects.
+
+  -> Predbox b
+  -- ^ This Predbox is applied to each of the new subjects.  The
+  -- resulting predicate is 'True' if each of the new subjects is also
+  -- True.
+
+  -> Predbox a
+fanand f = Predbox "and" (const False) . Fanand f
+
+-- | Creates a 'Fanor' Predbox using a generic name.
+fanor
+  :: (a -> [b])
+  -- ^ This function is applied to every subject to derive a list of
+  -- new subjects.
+
+  -> Predbox b
+  -- ^ This Predbox is applied to each of the new subjects.  The
+  -- resulting predicate is 'True' if one of the new subjects is also
+  -- True.
+
+  -> Predbox a
+fanor f = Predbox "or" (const False) . Fanor f
 
 -- | Changes a Predbox so it is always hidden by default.
 hide :: Predbox a -> Predbox a
@@ -199,6 +241,8 @@ instance Contravariant Node where
     And ls -> And $ map (contramap f) ls
     Or ls -> Or $ map (contramap f) ls
     Not o -> Not $ contramap f o
+    Fanand g b -> Fanand (g . f) b
+    Fanor g b -> Fanor (g . f) b
     Predicate g -> Predicate $ \b -> g (f b)
 
 -- # Result
@@ -225,6 +269,8 @@ data RNode
   = RAnd [Result]
   | ROr [Result]
   | RNot Result
+  | RFanand [Result]
+  | RFanor [Result]
   | RPredicate Bool
   deriving (Eq, Show)
 
@@ -237,6 +283,8 @@ evaluate (Predbox l d n) a = Result l r d' rn
       RAnd ls -> all rBool ls
       ROr ls -> any rBool ls
       RNot x -> Prelude.not . rBool $ x
+      RFanand ls -> all rBool ls
+      RFanor ls -> any rBool ls
       RPredicate b -> b
     d' = d r
 
@@ -245,6 +293,8 @@ evaluateNode n a = case n of
   And ls -> RAnd (map (flip evaluate a) ls)
   Or ls -> ROr (map (flip evaluate a) ls)
   Not l -> RNot (flip evaluate a l)
+  Fanand f b -> RFanand (map (evaluate b) (f a))
+  Fanor f b -> RFanor (map (evaluate b) (f a))
   Predicate f -> RPredicate (f a)
 
 -- # Types and functions for showing
@@ -279,6 +329,10 @@ showPredbox amt lvl (Predbox l _ pd) = case pd of
            <> mconcat (map (showPredbox amt (lvl + 1)) ls)
   Not t -> indent amt lvl [plain ("not - " <> l)]
            <> showPredbox amt (lvl + 1) t
+  Fanand _ p -> indent amt lvl [plain ("and - " <> l)]
+    <> showPredbox amt (lvl + 1) p
+  Fanor _ p -> indent amt lvl [plain ("or - " <> l)]
+    <> showPredbox amt (lvl + 1) p
   Predicate _ -> indent amt lvl [plain ("predicate - " <> l)]
 
 instance Show (Predbox a) where
@@ -340,6 +394,8 @@ showResult amt sa lvl (Result lbl rslt hd nd)
       RAnd ls -> f False ls
       ROr ls -> f True ls
       RNot r -> showResult amt sa (lvl + 1) r
+      RFanand ls -> f False ls
+      RFanor ls -> f True ls
       RPredicate _ -> []
     f stopOn ls = concatMap sr ls' ++ end
       where
