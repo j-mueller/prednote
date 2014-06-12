@@ -9,7 +9,7 @@ module Prednote.Predbox
 
   ( -- * The Predbox tree
     Label
-  , Hide
+  , Visible
   , Predbox(..)
   , Node(..)
 
@@ -28,7 +28,7 @@ module Prednote.Predbox
 
   -- * Controlling whether Predbox are shown in the results
   , hide
-  , show
+  , visible
   , hideTrue
   , hideFalse
 
@@ -107,14 +107,14 @@ import qualified Prelude
 type Label = Text
 
 -- | Determines whether a result is shown by default.
-type Hide = Bool
+type Visible = Bool
 
 -- | A predicate. Each Predbox contains a tree of Node.
 data Predbox a = Predbox
   { pLabel :: Label
   -- ^ Label used when showing the results
 
-  , pHide :: (Bool -> Hide)
+  , pVisible :: (Bool -> Visible)
   -- ^ As results are computed, this function is applied to the
   -- result. If this function returns False, then this Predbox will not
   -- be shown by default in the results.
@@ -157,27 +157,27 @@ rename f p = p { pLabel = f (pLabel p) }
 
 -- | Always True
 always :: Predbox a
-always = Predbox "always True" (const False) (Predicate (const True))
+always = Predbox "always True" (const True) (Predicate (const True))
 
 -- | Always False
 never :: Predbox a
-never = Predbox "always False" (const False) (Predicate (const False))
+never = Predbox "always False" (const True) (Predicate (const False))
 
 -- | Creates and labels predicates.
 predicate :: Label -> (a -> Bool) -> Predbox a
-predicate l = Predbox l (const False) . Predicate
+predicate l = Predbox l (const True) . Predicate
 
 -- | Creates And Predbox using a generic name
 and :: [Predbox a] -> Predbox a
-and = Predbox "and" (const False) . And
+and = Predbox "and" (const True) . And
 
 -- | Creates Or Predbox using a generic name
 or :: [Predbox a] -> Predbox a
-or = Predbox "or" (const False) . Or
+or = Predbox "or" (const True) . Or
 
 -- | Creates Not Predbox using a generic name
 not :: Predbox a -> Predbox a
-not = Predbox "not" (const False) . Not
+not = Predbox "not" (const True) . Not
 
 -- | Creates a 'Fanand' Predbox using a generic name.
 fanand
@@ -191,7 +191,7 @@ fanand
   -- True.
 
   -> Predbox a
-fanand f = Predbox "and" (const False) . Fanand f
+fanand f = Predbox "and" (const True) . Fanand f
 
 -- | Creates a 'Fanor' Predbox using a generic name.
 fanor
@@ -205,32 +205,32 @@ fanor
   -- True.
 
   -> Predbox a
-fanor f = Predbox "or" (const False) . Fanor f
+fanor f = Predbox "or" (const True) . Fanor f
 
 -- | Changes a Predbox so it is always hidden by default.
 hide :: Predbox a -> Predbox a
-hide p = p { pHide = const True }
+hide p = p { pVisible = const False }
 
 -- | Changes a Predbox so it is always shown by default.
-show :: Predbox a -> Predbox a
-show p = p { pHide = const False }
+visible :: Predbox a -> Predbox a
+visible p = p { pVisible = const True }
 
 -- | Changes a Predbox so that it is hidden if its result is True.
 hideTrue :: Predbox a -> Predbox a
-hideTrue p = p { pHide = id }
+hideTrue p = p { pVisible = Prelude.not }
 
 -- | Changes a Predbox so that it is hidden if its result is False.
 hideFalse :: Predbox a -> Predbox a
-hideFalse p = p { pHide = Prelude.not }
+hideFalse p = p { pVisible = id }
 
 -- | Forms a Predbox using 'and'; assigns a generic label.
 (&&&) :: Predbox a -> Predbox a -> Predbox a
-(&&&) x y = Predbox "and" (const False) (And [x, y])
+(&&&) x y = Predbox "and" (const True) (And [x, y])
 infixr 3 &&&
 
 -- | Forms a Predbox using 'or'; assigns a generic label.
 (|||) :: Predbox a -> Predbox a -> Predbox a
-(|||) x y = Predbox "or" (const False) (Or [x, y])
+(|||) x y = Predbox "or" (const True) (Or [x, y])
 infixr 2 |||
 
 instance Contravariant Predbox where
@@ -258,8 +258,8 @@ data Result = Result
   -- the subject. Otherwise, this is the result of application of the
   -- appropriate boolean operation to the child nodes.
 
-  , rHide :: Hide
-  -- ^ Is this result hidden in the result by default? Hiding only
+  , rVisible :: Visible
+  -- ^ Is this result shown? Hiding only
   -- affects presentation; it does not affect how this Predbox affects
   -- any parent Predbox.
   , rNode :: RNode
@@ -362,7 +362,7 @@ labelBool t b = [open, trueFalse, close, blank, txt]
     open = "["
     close = "]"
     blank = plain (X.replicate blankLen " ")
-    blankLen = X.length "discard"
+    blankLen = X.length "FALSE"
                - (sum . map X.length . R.text $ trueFalse) + 1
     txt = plain t
 
@@ -385,8 +385,8 @@ showResult
   -- ^ The result to show
 
   -> [R.Chunk]
-showResult amt sa lvl (Result lbl rslt hd nd)
-  | hd && Prelude.not sa = []
+showResult amt sa lvl (Result lbl rslt shw nd)
+  | Prelude.not shw && Prelude.not sa = []
   | otherwise = firstLine ++ restLines
   where
     firstLine = indent amt lvl $ labelBool lbl rslt
@@ -450,8 +450,9 @@ verboseFilter
   -- ^ Indent each level by this many spaces
 
   -> ShowAll
-  -- ^ If True, shows all Predbox, even ones where 'rHide' is
-  -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
+  -- ^ If True, shows all Predbox, even ones where 'rVisible' is
+  -- True. Otherwise, respects 'rVisible' and shows only visible
+  -- 'Predbox'.
 
   -> Predbox a
   -- ^ Used to perform the filtering
