@@ -104,23 +104,20 @@ import qualified Prelude
 
 -- # Predbox type
 
-type Label = Text
-
--- | Determines whether a result is shown by default.
-type Visible = Bool
-
 -- | A predicate. Each Predbox contains a tree of Node.
 data Predbox a = Predbox
-  { pLabel :: Label
-  -- ^ Label used when showing the results
-
-  , pVisible :: (Bool -> Visible)
+  { pVisible :: (Bool -> Text)
   -- ^ As results are computed, this function is applied to the
   -- result. If this function returns False, then this Predbox will not
   -- be shown by default in the results.
 
   , pNode :: Node a
 
+  }
+
+data Labels a = Labels
+  { static :: Text
+  , runtime :: a -> Text
   }
 
 data Node a
@@ -135,53 +132,61 @@ data Node a
   | Not (Predbox a)
   -- ^ Negation
 
-  | forall b. Fanand (a -> [b]) (Predbox b)
+  | forall b. Fanand (Labels a) (a -> [b]) (Predbox b)
   -- ^ Fanout conjunction.  The given function is used to derive a
   -- list of subjects from a single subject; then, the given 'Predbox'
   -- is applied to each subject.  Each subject must be 'True' for the
   -- resulting predicate to be 'True'.
 
-  | forall b. Fanor (a -> [b]) (Predbox b)
+  | forall b. Fanor (Labels a) (a -> [b]) (Predbox b)
   -- ^ Fanout disjunction.  The given function is used to derive a
   -- list of subjects from a single subject; then, the given 'Predbox'
   -- is applied to each subject.  At least one subject must be 'True'
   -- for the resulting predicate to be 'True'.
 
-  | Predicate (a -> Bool)
+  | Predicate (Labels a) (a -> Bool)
   -- ^ Most basic building block.
-
--- | Renames the top level of the Predbox. The function you pass will be
--- applied to the old name.
-rename :: (Text -> Text) -> Predbox a -> Predbox a
-rename f p = p { pLabel = f (pLabel p) }
 
 -- | Always True
 always :: Predbox a
-always = Predbox "always True" (const True) (Predicate (const True))
+always = Predbox (const True) (Predicate lbl (const True))
+  where
+    lbl = Labels txt (const txt)
+    txt = "always True"
 
 -- | Always False
 never :: Predbox a
-never = Predbox "always False" (const True) (Predicate (const False))
+never = Predbox (const True) (Predicate lbl (const False))
+  where
+    lbl = Labels txt (const txt)
+    txt = "always False"
 
 -- | Creates and labels predicates.
-predicate :: Label -> (a -> Bool) -> Predbox a
-predicate l = Predbox l (const True) . Predicate
+predicate :: Text -> (a -> Text) -> (a -> Bool) -> Predbox a
+predicate st dy pd = Predbox (const True) $
+  Predicate (Labels st dy) pd
 
 -- | Creates And Predbox using a generic name
 and :: [Predbox a] -> Predbox a
-and = Predbox "and" (const True) . And
+and = Predbox (const True) . And
 
 -- | Creates Or Predbox using a generic name
 or :: [Predbox a] -> Predbox a
-or = Predbox "or" (const True) . Or
+or = Predbox (const True) . Or
 
 -- | Creates Not Predbox using a generic name
 not :: Predbox a -> Predbox a
-not = Predbox "not" (const True) . Not
+not = Predbox (const True) . Not
 
 -- | Creates a 'Fanand' Predbox using a generic name.
 fanand
-  :: (a -> [b])
+  :: Text
+  -- ^ Label to use for static tree
+
+  -> (a -> Text)
+  -- ^ Label to use when when using tree
+
+  -> (a -> [b])
   -- ^ This function is applied to every subject to derive a list of
   -- new subjects.
 
@@ -191,11 +196,17 @@ fanand
   -- True.
 
   -> Predbox a
-fanand f = Predbox "and" (const True) . Fanand f
+fanand st dy f = Predbox  (const True) $ Fanand (Labels st dy) f
 
 -- | Creates a 'Fanor' Predbox using a generic name.
 fanor
-  :: (a -> [b])
+  :: Text
+  -- ^ Label to use for static tree
+
+  -> (a -> Text)
+  -- ^ Label to use when when using tree
+
+  -> (a -> [b])
   -- ^ This function is applied to every subject to derive a list of
   -- new subjects.
 
@@ -205,7 +216,7 @@ fanor
   -- True.
 
   -> Predbox a
-fanor f = Predbox "or" (const True) . Fanor f
+fanor st dy f = Predbox "or" (const True) $ Fanor (Labels st dy) f
 
 -- | Changes a Predbox so it is always hidden by default.
 hide :: Predbox a -> Predbox a
@@ -225,16 +236,16 @@ hideFalse p = p { pVisible = id }
 
 -- | Forms a Predbox using 'and'; assigns a generic label.
 (&&&) :: Predbox a -> Predbox a -> Predbox a
-(&&&) x y = Predbox "and" (const True) (And [x, y])
+(&&&) x y = Predbox (const True) (And [x, y])
 infixr 3 &&&
 
 -- | Forms a Predbox using 'or'; assigns a generic label.
 (|||) :: Predbox a -> Predbox a -> Predbox a
-(|||) x y = Predbox "or" (const True) (Or [x, y])
+(|||) x y = Predbox (const True) (Or [x, y])
 infixr 2 |||
 
 instance Contravariant Predbox where
-  contramap f (Predbox l d n) = Predbox l d $ contramap f n
+  contramap f (Predbox l n) = Predbox l $ contramap f n
 
 instance Contravariant Node where
   contramap f n = case n of
