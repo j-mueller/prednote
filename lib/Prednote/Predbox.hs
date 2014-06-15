@@ -96,7 +96,7 @@ import Data.Text (Text)
 import qualified Data.Text as X
 import Data.Monoid ((<>), mconcat, mempty)
 import Data.String (fromString)
-import qualified System.Console.Rainbow as R
+import System.Console.Rainbow
 import Prelude hiding (not, and, or, compare, filter, show)
 import qualified Prelude
 
@@ -114,14 +114,12 @@ data Predbox a = Predbox
   }
 
 data Labels a = Labels
-  { static :: [R.Chunk]
-  , runtime :: a -> [R.Chunk]
+  { static :: [Chunk]
+  , runtime :: a -> [Chunk]
   }
 
-sameLabel :: Text -> Labels a
-sameLabel x = Labels ls (const ls)
-  where
-    ls = [R.fromText x]
+sameLabel :: [Chunk] -> Labels a
+sameLabel x = Labels x (const x)
 
 data Node a
   = And [Predbox a]
@@ -163,7 +161,7 @@ never = Predbox (const True) (Predicate (sameLabel l) (const False))
     l = "always False"
 
 -- | Creates and labels predicates.
-predicate :: Text -> (a -> Text) -> (a -> Bool) -> Predbox a
+predicate :: [Chunk] -> (a -> [Chunk]) -> (a -> Bool) -> Predbox a
 predicate st dy pd = Predbox (const True) $
   Predicate (Labels st dy) pd
 
@@ -193,7 +191,7 @@ fanand
   -> Predbox a
 fanand f = Predbox (const True) . Fanand (sameLabel l) f
   where
-    l = "split into children - each child must be True"
+    l = [fromText "split into children - each child must be True"]
 
 -- | Creates a 'Fanor' Predbox using a generic name.
 fanor
@@ -209,7 +207,7 @@ fanor
   -> Predbox a
 fanor f = Predbox (const True) . Fanor (sameLabel l) f
   where
-    l = "split into children - at least one child must be True"
+    l = [fromText "split into children - at least one child must be True"]
 
 -- | Changes a Predbox so it is always hidden by default.
 hide :: Predbox a -> Predbox a
@@ -270,9 +268,9 @@ data RNode
   = RAnd [Result]
   | ROr [Result]
   | RNot Result
-  | RFanand Text [Result]
-  | RFanor Text [Result]
-  | RPredicate Text Bool
+  | RFanand [Chunk] [Result]
+  | RFanor [Chunk] [Result]
+  | RPredicate [Chunk] Bool
   deriving (Eq, Show)
 
 -- | Applies a Predbox to a particular value, known as the subject.
@@ -293,22 +291,20 @@ evaluateNode n a = case n of
   And ls -> RAnd (map (flip evaluate a) ls)
   Or ls -> ROr (map (flip evaluate a) ls)
   Not l -> RNot (flip evaluate a l)
-  Fanand f b -> RFanand (map (evaluate b) (f a))
-  Fanor f b -> RFanor (map (evaluate b) (f a))
-  Predicate f -> RPredicate (f a)
+  Fanand (Labels _ rt) f b -> RFanand (rt a) (map (evaluate b) (f a))
+  Fanor (Labels _ rt) f b -> RFanor (rt a) (map (evaluate b) (f a))
+  Predicate (Labels _ rt) f -> RPredicate (rt a) (f a)
 
 -- # Types and functions for showing
 
--- | The number of spaces to use for each level of indentation.
-type IndentAmt = Int
-
--- | How many levels of indentation to use. Typically you will start
--- this at zero. It is incremented by one for each level as functions
--- descend through the tree.
-type Level = Int
-
 -- | Indents text, and adds a newline to the end.
-indent :: IndentAmt -> Level -> [R.Chunk] -> [R.Chunk]
+indent
+  :: Int
+  -- ^ Indent each level by this number of spaces
+  -> Int
+  -- ^ Number of levels
+  -> [Chunk]
+  -> [Chunk]
 indent amt lvl cs = idt : (cs ++ [nl])
   where
     idt = fromString (replicate (lvl * amt) ' ')
@@ -316,30 +312,26 @@ indent amt lvl cs = idt : (cs ++ [nl])
 
 -- # Showing Predbox
 
--- | Creates a plain Chunk from a Text.
-plain :: Text -> R.Chunk
-plain = R.fromText
-
 -- | Shows a Predbox tree without evaluating it.
-showPredbox :: IndentAmt -> Level -> Predbox a -> [R.Chunk]
+showPredbox :: IndentAmt -> Level -> Predbox a -> [Chunk]
 showPredbox amt lvl (Predbox _ pd) = case pd of
-  And ls -> indent amt lvl [plain "and"]
+  And ls -> indent amt lvl [fromText "and"]
             <> mconcat (map (showPredbox amt (lvl + 1)) ls)
-  Or ls -> indent amt lvl [plain "or"]
+  Or ls -> indent amt lvl [fromText "or"]
            <> mconcat (map (showPredbox amt (lvl + 1)) ls)
-  Not t -> indent amt lvl [plain "not"]
+  Not t -> indent amt lvl [fromText "not"]
            <> showPredbox amt (lvl + 1) t
-  Fanand (Labels l _) _ p -> indent amt lvl [plain l]
+  Fanand (Labels l _) _ p -> indent amt lvl l
     <> showPredbox amt (lvl + 1) p
-  Fanor (Labels l _) _ p -> indent amt lvl [plain l]
+  Fanor (Labels l _) _ p -> indent amt lvl l
     <> showPredbox amt (lvl + 1) p
-  Predicate (Labels l _) _ -> indent amt lvl [plain l]
+  Predicate (Labels l _) _ -> indent amt lvl l
 
 instance Show (Predbox a) where
   show = X.unpack
        . X.concat
        . concat
-       . map R.text
+       . map text
        . showPredbox 2 0
 
 
@@ -354,21 +346,17 @@ filter pd as
 
 -- # Showing Result
 
-labelBool :: Text -> Bool -> [R.Chunk]
-labelBool t b = [open, trueFalse, close, blank, txt]
+labelBool :: [Chunk] -> Bool -> [Chunk]
+labelBool txt t b = [open, trueFalse, close, space] ++ txt
   where
     trueFalse = 
-      if b then "TRUE" <> R.f_green else "FALSE" <> R.f_red
+      if b then "TRUE" <> f_green else "FALSE" <> f_red
     open = "["
     close = "]"
-    blank = plain (X.replicate blankLen " ")
-    blankLen = X.length "FALSE"
-               - (sum . map X.length . R.text $ trueFalse) + 1
-    txt = plain t
 
 -- | Shows a Result in a pretty way with colors and indentation.
 showResult
-  :: [R.Chunk]
+  :: [Chunk]
   -- ^ Additional label
 
   -> Int
@@ -385,16 +373,18 @@ showResult
   -> Result
   -- ^ The result to show
 
-  -> [R.Chunk]
+  -> [Chunk]
 showResult addl amt sa lvl (Result rslt vis nd)
   | Prelude.not vis && Prelude.not sa = []
   | otherwise = firstLine ++ restLines
   where
     firstLine = indent amt lvl $ labelBool lbl rslt
-    (lbl, restLines) = case nd of
-      RAnd ls -> ("and", f False ls)
-      ROr ls -> ("or", f True ls)
-      RNot r -> ("not", showResult amt sa (lvl + 1) r)
+    lbl = case addl of
+      [] -> 
+    (lblRest, restLines) = case nd of
+      RAnd ls -> (["and"], f False ls)
+      ROr ls -> (["or"], f True ls)
+      RNot r -> (["not"], showResult amt sa (lvl + 1) r)
       RFanand l ls -> (l, f False ls)
       RFanor l ls -> (l, f True ls)
       RPredicate l -> (l, [])
@@ -424,7 +414,7 @@ takeThrough f (x:xs) = x : if f x then [] else takeThrough f xs
 -- | Shows the top of a Result tree and all the child Results. Adds a
 -- short label at the top of the tree.
 showTopResult
-  :: X.Text
+  :: [Chunk]
   -- ^ Label to add to the top of the tree.
   -> Int
   -- ^ Indent each level by this many spaces
@@ -436,7 +426,7 @@ showTopResult
 
   -> Result
   -- ^ The result to show
-  -> [R.Chunk]
+  -> [Chunk]
 showTopResult txt i lvl sd r = showResult i sd lvl r'
   where
     r' = r { rLabel = rLabel r <> " - " <> txt }
@@ -459,7 +449,7 @@ verboseFilter
   -- ^ Used to perform the filtering
 
   -> [a]
-  -> ([R.Chunk], [a])
+  -> ([Chunk], [a])
 
 verboseFilter desc amt sa pd as = (chks, as')
   where
