@@ -5,11 +5,10 @@
 -- Exports names which conflict with Prelude names, so you probably
 -- want to import this module qualified.
 
-module Prednote.Predbox
-
+module Prednote.Predbox where
+{-
   ( -- * The Predbox tree
-    Label
-  , Visible
+    Labels(..)
   , Predbox(..)
   , Node(..)
 
@@ -44,7 +43,6 @@ module Prednote.Predbox
   , evaluateNode
   , IndentAmt
   , Level
-  , ShowAll
   , showResult
   , showTopResult
   , showPredbox
@@ -89,7 +87,7 @@ module Prednote.Predbox
   , parseComparer
 
   ) where
-
+-}
 
 -- # Imports
 
@@ -106,7 +104,7 @@ import qualified Prelude
 
 -- | A predicate. Each Predbox contains a tree of Node.
 data Predbox a = Predbox
-  { pVisible :: (Bool -> Text)
+  { pVisible :: (Bool -> Bool)
   -- ^ As results are computed, this function is applied to the
   -- result. If this function returns False, then this Predbox will not
   -- be shown by default in the results.
@@ -116,9 +114,14 @@ data Predbox a = Predbox
   }
 
 data Labels a = Labels
-  { static :: Text
-  , runtime :: a -> Text
+  { static :: [R.Chunk]
+  , runtime :: a -> [R.Chunk]
   }
+
+sameLabel :: Text -> Labels a
+sameLabel x = Labels ls (const ls)
+  where
+    ls = [R.fromText x]
 
 data Node a
   = And [Predbox a]
@@ -149,17 +152,15 @@ data Node a
 
 -- | Always True
 always :: Predbox a
-always = Predbox (const True) (Predicate lbl (const True))
+always = Predbox (const True) (Predicate (sameLabel l) (const True))
   where
-    lbl = Labels txt (const txt)
-    txt = "always True"
+    l = "always True"
 
 -- | Always False
 never :: Predbox a
-never = Predbox (const True) (Predicate lbl (const False))
+never = Predbox (const True) (Predicate (sameLabel l) (const False))
   where
-    lbl = Labels txt (const txt)
-    txt = "always False"
+    l = "always False"
 
 -- | Creates and labels predicates.
 predicate :: Text -> (a -> Text) -> (a -> Bool) -> Predbox a
@@ -180,13 +181,7 @@ not = Predbox (const True) . Not
 
 -- | Creates a 'Fanand' Predbox using a generic name.
 fanand
-  :: Text
-  -- ^ Label to use for static tree
-
-  -> (a -> Text)
-  -- ^ Label to use when when using tree
-
-  -> (a -> [b])
+  :: (a -> [b])
   -- ^ This function is applied to every subject to derive a list of
   -- new subjects.
 
@@ -196,17 +191,13 @@ fanand
   -- True.
 
   -> Predbox a
-fanand st dy f = Predbox  (const True) $ Fanand (Labels st dy) f
+fanand f = Predbox (const True) . Fanand (sameLabel l) f
+  where
+    l = "split into children - each child must be True"
 
 -- | Creates a 'Fanor' Predbox using a generic name.
 fanor
-  :: Text
-  -- ^ Label to use for static tree
-
-  -> (a -> Text)
-  -- ^ Label to use when when using tree
-
-  -> (a -> [b])
+  :: (a -> [b])
   -- ^ This function is applied to every subject to derive a list of
   -- new subjects.
 
@@ -216,7 +207,9 @@ fanor
   -- True.
 
   -> Predbox a
-fanor st dy f = Predbox "or" (const True) $ Fanor (Labels st dy) f
+fanor f = Predbox (const True) . Fanor (sameLabel l) f
+  where
+    l = "split into children - at least one child must be True"
 
 -- | Changes a Predbox so it is always hidden by default.
 hide :: Predbox a -> Predbox a
@@ -234,7 +227,7 @@ hideTrue p = p { pVisible = Prelude.not }
 hideFalse :: Predbox a -> Predbox a
 hideFalse p = p { pVisible = id }
 
--- | Forms a Predbox using 'and'; assigns a generic label.
+-- | Forms a Predbox using 'and'.
 (&&&) :: Predbox a -> Predbox a -> Predbox a
 (&&&) x y = Predbox (const True) (And [x, y])
 infixr 3 &&&
@@ -252,24 +245,21 @@ instance Contravariant Node where
     And ls -> And $ map (contramap f) ls
     Or ls -> Or $ map (contramap f) ls
     Not o -> Not $ contramap f o
-    Fanand g b -> Fanand (g . f) b
-    Fanor g b -> Fanor (g . f) b
-    Predicate g -> Predicate $ \b -> g (f b)
+    Fanand l g b -> Fanand l (g . f) b
+    Fanor l g b -> Fanor l (g . f) b
+    Predicate l g -> Predicate l (g . f)
 
 -- # Result
 
 -- | The result from evaluating a Predbox.
 data Result = Result
-  { rLabel :: Label
-  -- ^ The label from the original Predbox
-
-  , rBool :: Bool
+  { rBool :: Bool
   -- ^ The boolean result from evaluating the node. If the node is an
   -- predicate, this is the result of applying the predicate function to
   -- the subject. Otherwise, this is the result of application of the
   -- appropriate boolean operation to the child nodes.
 
-  , rVisible :: Visible
+  , rVisible :: Bool
   -- ^ Is this result shown? Hiding only
   -- affects presentation; it does not affect how this Predbox affects
   -- any parent Predbox.
@@ -280,24 +270,23 @@ data RNode
   = RAnd [Result]
   | ROr [Result]
   | RNot Result
-  | RFanand [Result]
-  | RFanor [Result]
-  | RPredicate Bool
+  | RFanand Text [Result]
+  | RFanor Text [Result]
+  | RPredicate Text Bool
   deriving (Eq, Show)
 
 -- | Applies a Predbox to a particular value, known as the subject.
 evaluate :: Predbox a -> a -> Result
-evaluate (Predbox l d n) a = Result l r d' rn
+evaluate (Predbox pv pn) a = Result r pv rn
   where
-    rn = evaluateNode n a
+    rn = evaluateNode pn a
     r = case rn of
       RAnd ls -> all rBool ls
       ROr ls -> any rBool ls
       RNot x -> Prelude.not . rBool $ x
-      RFanand ls -> all rBool ls
-      RFanor ls -> any rBool ls
-      RPredicate b -> b
-    d' = d r
+      RFanand _ ls -> all rBool ls
+      RFanor _ ls -> any rBool ls
+      RPredicate _ b -> b
 
 evaluateNode :: Node a -> a -> RNode
 evaluateNode n a = case n of
@@ -329,22 +318,22 @@ indent amt lvl cs = idt : (cs ++ [nl])
 
 -- | Creates a plain Chunk from a Text.
 plain :: Text -> R.Chunk
-plain = R.Chunk mempty . (:[])
+plain = R.fromText
 
 -- | Shows a Predbox tree without evaluating it.
 showPredbox :: IndentAmt -> Level -> Predbox a -> [R.Chunk]
-showPredbox amt lvl (Predbox l _ pd) = case pd of
-  And ls -> indent amt lvl [plain ("and - " <> l)]
+showPredbox amt lvl (Predbox _ pd) = case pd of
+  And ls -> indent amt lvl [plain "and"]
             <> mconcat (map (showPredbox amt (lvl + 1)) ls)
-  Or ls -> indent amt lvl [plain ("or - " <> l)]
+  Or ls -> indent amt lvl [plain "or"]
            <> mconcat (map (showPredbox amt (lvl + 1)) ls)
-  Not t -> indent amt lvl [plain ("not - " <> l)]
+  Not t -> indent amt lvl [plain "not"]
            <> showPredbox amt (lvl + 1) t
-  Fanand _ p -> indent amt lvl [plain ("and - " <> l)]
+  Fanand (Labels l _) _ p -> indent amt lvl [plain l]
     <> showPredbox amt (lvl + 1) p
-  Fanor _ p -> indent amt lvl [plain ("or - " <> l)]
+  Fanor (Labels l _) _ p -> indent amt lvl [plain l]
     <> showPredbox amt (lvl + 1) p
-  Predicate _ -> indent amt lvl [plain ("predicate - " <> l)]
+  Predicate (Labels l _) _ -> indent amt lvl [plain l]
 
 instance Show (Predbox a) where
   show = X.unpack
@@ -377,18 +366,19 @@ labelBool t b = [open, trueFalse, close, blank, txt]
                - (sum . map X.length . R.text $ trueFalse) + 1
     txt = plain t
 
-type ShowAll = Bool
-
 -- | Shows a Result in a pretty way with colors and indentation.
 showResult
-  :: IndentAmt
+  :: [R.Chunk]
+  -- ^ Additional label
+
+  -> Int
   -- ^ Indent each level by this many spaces
 
-  -> ShowAll
+  -> Bool
   -- ^ If True, shows all Predbox, even ones where 'rHide' is
   -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
 
-  -> Level
+  -> Int
   -- ^ How deep in the tree we are; this increments by one for each
   -- level of descent.
 
@@ -396,18 +386,18 @@ showResult
   -- ^ The result to show
 
   -> [R.Chunk]
-showResult amt sa lvl (Result lbl rslt shw nd)
-  | Prelude.not shw && Prelude.not sa = []
+showResult addl amt sa lvl (Result rslt vis nd)
+  | Prelude.not vis && Prelude.not sa = []
   | otherwise = firstLine ++ restLines
   where
     firstLine = indent amt lvl $ labelBool lbl rslt
-    restLines = case nd of
-      RAnd ls -> f False ls
-      ROr ls -> f True ls
-      RNot r -> showResult amt sa (lvl + 1) r
-      RFanand ls -> f False ls
-      RFanor ls -> f True ls
-      RPredicate _ -> []
+    (lbl, restLines) = case nd of
+      RAnd ls -> ("and", f False ls)
+      ROr ls -> ("or", f True ls)
+      RNot r -> ("not", showResult amt sa (lvl + 1) r)
+      RFanand l ls -> (l, f False ls)
+      RFanor l ls -> (l, f True ls)
+      RPredicate l -> (l, [])
     f stopOn ls = concatMap sr ls' ++ end
       where
         ls' = takeThrough ((== stopOn) . rBool) ls
@@ -436,11 +426,11 @@ takeThrough f (x:xs) = x : if f x then [] else takeThrough f xs
 showTopResult
   :: X.Text
   -- ^ Label to add to the top of the tree.
-  -> IndentAmt
+  -> Int
   -- ^ Indent each level by this many spaces
-  -> Level
+  -> Int
   -- ^ Indent the top by this many levels
-  -> ShowAll
+  -> Bool
   -- ^ If True, shows all Predbox, even ones where 'rHide' is
   -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
 
@@ -457,10 +447,10 @@ verboseFilter
   :: (a -> X.Text)
   -- ^ How to describe each subject
 
-  -> IndentAmt
+  -> Int
   -- ^ Indent each level by this many spaces
 
-  -> ShowAll
+  -> Bool
   -- ^ If True, shows all Predbox, even ones where 'rVisible' is
   -- True. Otherwise, respects 'rVisible' and shows only visible
   -- 'Predbox'.
