@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Helps you build tests that run against a series of items.
-module Prednote.Test
+module Prednote.Test where
+{-
   (
   -- * Test data types
     Name
@@ -222,3 +223,4 @@ atLeast i as
       let nFound = soFar + 1
       in if nFound == i then True else go nFound xs
 
+-}

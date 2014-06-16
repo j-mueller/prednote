@@ -5,11 +5,10 @@
 -- Exports names which conflict with Prelude names, so you probably
 -- want to import this module qualified.
 
-module Prednote.Predbox where
-{-
+module Prednote.Predbox
   ( -- * The Predbox tree
-    Labels(..)
-  , Predbox(..)
+    Predbox(..)
+  , Labels(..)
   , Node(..)
 
   -- * Creating Predbox.
@@ -18,21 +17,14 @@ module Prednote.Predbox where
   , and
   , or
   , not
-  , fanand
-  , fanor
   , (&&&)
   , (|||)
-  , always
-  , never
 
   -- * Controlling whether Predbox are shown in the results
   , hide
   , visible
   , hideTrue
   , hideFalse
-
-  -- * Renaming Predbox
-  , rename
 
   -- * Result
   , Result(..)
@@ -41,60 +33,22 @@ module Prednote.Predbox where
   -- * Showing and evaluating Predbox
   , evaluate
   , evaluateNode
-  , IndentAmt
-  , Level
   , showResult
-  , showTopResult
   , showPredbox
   , filter
   , verboseFilter
 
-  -- * Helpers for building common Predbox
-  -- ** Non-overloaded
-
-  -- | Each of these functions builds a Predbox that compares two
-  -- items.  The predicate in the Predbox is applied to an item that
-  -- is considered to be the left hand side of the comparison.  The
-  -- left hand side side can change; the right hand side is baked
-  -- into the Predbox.
-  --
-  -- For example, to build a Predbox that returns True if an item is
-  -- greater than 5:
-  --
-  -- >>> :set -XOverloadedStrings
-  -- >>> let p = compareBy "5" "integer" (`Prelude.compare` (5 :: Integer)) GT
-  -- >>> rBool . evaluate p $ 6
-  -- True
-  -- >>> rBool . evaluate p $ 4
-  -- False
-  , compareBy
-  , compareByMaybe
-  , greaterBy
-  , lessBy
-  , equalBy
-  , greaterEqBy
-  , lessEqBy
-  , notEqBy
-
-  -- ** Overloaded
-  , compare
-  , greater
-  , less
-  , equal
-  , greaterEq
-  , lessEq
-  , notEq
-  , parseComparer
+  -- * Auxiliary label function
+  , sameLabel
 
   ) where
--}
+
 
 -- # Imports
 
 import Data.Functor.Contravariant hiding (Predicate)
-import Data.Text (Text)
 import qualified Data.Text as X
-import Data.Monoid ((<>), mconcat, mempty)
+import Data.Monoid ((<>), mconcat)
 import Data.String (fromString)
 import System.Console.Rainbow
 import Prelude hiding (not, and, or, compare, filter, show)
@@ -117,6 +71,9 @@ data Labels a = Labels
   { static :: [Chunk]
   , runtime :: a -> [Chunk]
   }
+
+instance Contravariant Labels where
+  contramap g (Labels s r) = Labels s (r . g)
 
 sameLabel :: [Chunk] -> Labels a
 sameLabel x = Labels x (const x)
@@ -148,66 +105,22 @@ data Node a
   | Predicate (Labels a) (a -> Bool)
   -- ^ Most basic building block.
 
--- | Always True
-always :: Predbox a
-always = Predbox (const True) (Predicate (sameLabel l) (const True))
-  where
-    l = "always True"
-
--- | Always False
-never :: Predbox a
-never = Predbox (const True) (Predicate (sameLabel l) (const False))
-  where
-    l = "always False"
-
 -- | Creates and labels predicates.
 predicate :: [Chunk] -> (a -> [Chunk]) -> (a -> Bool) -> Predbox a
 predicate st dy pd = Predbox (const True) $
   Predicate (Labels st dy) pd
 
--- | Creates And Predbox using a generic name
+-- | Creates And Predbox
 and :: [Predbox a] -> Predbox a
 and = Predbox (const True) . And
 
--- | Creates Or Predbox using a generic name
+-- | Creates Or Predbox
 or :: [Predbox a] -> Predbox a
 or = Predbox (const True) . Or
 
--- | Creates Not Predbox using a generic name
+-- | Creates Not Predbox
 not :: Predbox a -> Predbox a
 not = Predbox (const True) . Not
-
--- | Creates a 'Fanand' Predbox using a generic name.
-fanand
-  :: (a -> [b])
-  -- ^ This function is applied to every subject to derive a list of
-  -- new subjects.
-
-  -> Predbox b
-  -- ^ This Predbox is applied to each of the new subjects.  The
-  -- resulting predicate is 'True' if each of the new subjects is also
-  -- True.
-
-  -> Predbox a
-fanand f = Predbox (const True) . Fanand (sameLabel l) f
-  where
-    l = [fromText "split into children - each child must be True"]
-
--- | Creates a 'Fanor' Predbox using a generic name.
-fanor
-  :: (a -> [b])
-  -- ^ This function is applied to every subject to derive a list of
-  -- new subjects.
-
-  -> Predbox b
-  -- ^ This Predbox is applied to each of the new subjects.  The
-  -- resulting predicate is 'True' if one of the new subjects is also
-  -- True.
-
-  -> Predbox a
-fanor f = Predbox (const True) . Fanor (sameLabel l) f
-  where
-    l = [fromText "split into children - at least one child must be True"]
 
 -- | Changes a Predbox so it is always hidden by default.
 hide :: Predbox a -> Predbox a
@@ -230,7 +143,7 @@ hideFalse p = p { pVisible = id }
 (&&&) x y = Predbox (const True) (And [x, y])
 infixr 3 &&&
 
--- | Forms a Predbox using 'or'; assigns a generic label.
+-- | Forms a Predbox using 'or'.
 (|||) :: Predbox a -> Predbox a -> Predbox a
 (|||) x y = Predbox (const True) (Or [x, y])
 infixr 2 |||
@@ -243,9 +156,9 @@ instance Contravariant Node where
     And ls -> And $ map (contramap f) ls
     Or ls -> Or $ map (contramap f) ls
     Not o -> Not $ contramap f o
-    Fanand l g b -> Fanand l (g . f) b
-    Fanor l g b -> Fanor l (g . f) b
-    Predicate l g -> Predicate l (g . f)
+    Fanand l g b -> Fanand (contramap f l) (g . f) b
+    Fanor l g b -> Fanor (contramap f l) (g . f) b
+    Predicate l g -> Predicate (contramap f l) (g . f)
 
 -- # Result
 
@@ -275,7 +188,7 @@ data RNode
 
 -- | Applies a Predbox to a particular value, known as the subject.
 evaluate :: Predbox a -> a -> Result
-evaluate (Predbox pv pn) a = Result r pv rn
+evaluate (Predbox pv pn) a = Result r (pv r) rn
   where
     rn = evaluateNode pn a
     r = case rn of
@@ -313,18 +226,30 @@ indent amt lvl cs = idt : (cs ++ [nl])
 -- # Showing Predbox
 
 -- | Shows a Predbox tree without evaluating it.
-showPredbox :: IndentAmt -> Level -> Predbox a -> [Chunk]
-showPredbox amt lvl (Predbox _ pd) = case pd of
-  And ls -> indent amt lvl [fromText "and"]
-            <> mconcat (map (showPredbox amt (lvl + 1)) ls)
-  Or ls -> indent amt lvl [fromText "or"]
-           <> mconcat (map (showPredbox amt (lvl + 1)) ls)
-  Not t -> indent amt lvl [fromText "not"]
-           <> showPredbox amt (lvl + 1) t
+showPredbox
+  :: [Chunk]
+  -- ^ How to show @and@
+  -> [Chunk]
+  -- ^ How to show @or@
+  -> [Chunk]
+  -- ^ How to show @not@
+  -> Int
+  -- ^ Indent each level by this amount
+  -> Int
+  -- ^ Current level
+  -> Predbox a
+  -> [Chunk]
+showPredbox cAnd cOr cNot amt lvl (Predbox _ pd) = case pd of
+  And ls -> indent amt lvl cAnd
+            <> mconcat (map (showPredbox cAnd cOr cNot amt (lvl + 1)) ls)
+  Or ls -> indent amt lvl cOr
+           <> mconcat (map (showPredbox cAnd cOr cNot amt (lvl + 1)) ls)
+  Not t -> indent amt lvl cNot
+           <> showPredbox cAnd cOr cNot amt (lvl + 1) t
   Fanand (Labels l _) _ p -> indent amt lvl l
-    <> showPredbox amt (lvl + 1) p
+    <> showPredbox cAnd cOr cNot amt (lvl + 1) p
   Fanor (Labels l _) _ p -> indent amt lvl l
-    <> showPredbox amt (lvl + 1) p
+    <> showPredbox cAnd cOr cNot amt (lvl + 1) p
   Predicate (Labels l _) _ -> indent amt lvl l
 
 instance Show (Predbox a) where
@@ -332,7 +257,8 @@ instance Show (Predbox a) where
        . X.concat
        . concat
        . map text
-       . showPredbox 2 0
+       . showPredbox [fromText "and"] [fromText "or"]
+          [fromText "not"] 2 0
 
 
 filter :: Predbox a -> [a] -> [a]
@@ -346,18 +272,38 @@ filter pd as
 
 -- # Showing Result
 
-labelBool :: [Chunk] -> Bool -> [Chunk]
-labelBool txt t b = [open, trueFalse, close, space] ++ txt
+labelBool
+  :: [Chunk]
+  -- ^ Label for True
+  -> [Chunk]
+  -- ^ Label for False
+  -> [Chunk]
+  -- ^ Additional label
+  -> Bool
+  -> [Chunk]
+labelBool lTrue lFalse txt b = open : trueFalse ++ [close] ++ [space] ++ txt
   where
-    trueFalse = 
-      if b then "TRUE" <> f_green else "FALSE" <> f_red
+    trueFalse
+      | b = lTrue
+      | otherwise = lFalse
     open = "["
     close = "]"
+    space = " "
 
 -- | Shows a Result in a pretty way with colors and indentation.
 showResult
   :: [Chunk]
-  -- ^ Additional label
+  -- ^ Label for true
+  -> [Chunk]
+  -- ^ Label for false
+  -> [Chunk]
+  -- ^ Label for and
+  -> [Chunk]
+  -- ^ Label for or
+  -> [Chunk]
+  -- ^ Label for not
+  -> [Chunk]
+  -- ^ Label for short circuit
 
   -> Int
   -- ^ Indent each level by this many spaces
@@ -365,6 +311,9 @@ showResult
   -> Bool
   -- ^ If True, shows all Predbox, even ones where 'rHide' is
   -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
+
+  -> [Chunk]
+  -- ^ Additional label
 
   -> Int
   -- ^ How deep in the tree we are; this increments by one for each
@@ -374,26 +323,28 @@ showResult
   -- ^ The result to show
 
   -> [Chunk]
-showResult addl amt sa lvl (Result rslt vis nd)
+showResult cTrue cFalse cAnd cOr cNot cShort amt sa addl lvl
+  (Result rslt vis nd)
   | Prelude.not vis && Prelude.not sa = []
   | otherwise = firstLine ++ restLines
   where
-    firstLine = indent amt lvl $ labelBool lbl rslt
-    lbl = case addl of
-      [] -> 
+    showMore = showResult cTrue cFalse cAnd cOr cNot cShort amt sa []
+    firstLine = indent amt lvl $ labelBool cTrue cFalse lbl rslt
+    addlLen = sum . map X.length . concat . map text $ addl
+    lbl | addlLen == 0 = lblRest
+        | otherwise = " " : lblRest
     (lblRest, restLines) = case nd of
-      RAnd ls -> (["and"], f False ls)
-      ROr ls -> (["or"], f True ls)
-      RNot r -> (["not"], showResult amt sa (lvl + 1) r)
+      RAnd ls -> (cAnd, f False ls)
+      ROr ls -> (cOr, f True ls)
+      RNot r -> (cNot, showMore (lvl + 1) r)
       RFanand l ls -> (l, f False ls)
       RFanor l ls -> (l, f True ls)
-      RPredicate l -> (l, [])
-    f stopOn ls = concatMap sr ls' ++ end
+      RPredicate l _ -> (l, [])
+    f stopOn ls = concatMap (showMore (lvl + 1)) ls' ++ end
       where
         ls' = takeThrough ((== stopOn) . rBool) ls
-        sr = showResult amt sa (lvl + 1)
         end = if ls' `shorter` ls
-              then indent amt (lvl + 1) ["(short circuit)"]
+              then indent amt lvl cShort
               else []
 
 -- | @shorter x y@ is True if list x is shorter than list y. Lazier
@@ -411,39 +362,31 @@ takeThrough :: (a -> Bool) -> [a] -> [a]
 takeThrough _ [] = []
 takeThrough f (x:xs) = x : if f x then [] else takeThrough f xs
 
--- | Shows the top of a Result tree and all the child Results. Adds a
--- short label at the top of the tree.
-showTopResult
+
+-- | Filters a list. Also returns chunks describing the process.
+verboseFilter
   :: [Chunk]
-  -- ^ Label to add to the top of the tree.
+  -- ^ Label for true
+  -> [Chunk]
+  -- ^ Label for false
+  -> [Chunk]
+  -- ^ Label for and
+  -> [Chunk]
+  -- ^ Label for or
+  -> [Chunk]
+  -- ^ Label for not
+  -> [Chunk]
+  -- ^ Label for short circuit
+
   -> Int
   -- ^ Indent each level by this many spaces
-  -> Int
-  -- ^ Indent the top by this many levels
+
   -> Bool
   -- ^ If True, shows all Predbox, even ones where 'rHide' is
   -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
 
-  -> Result
-  -- ^ The result to show
-  -> [Chunk]
-showTopResult txt i lvl sd r = showResult i sd lvl r'
-  where
-    r' = r { rLabel = rLabel r <> " - " <> txt }
-
-
--- | Filters a list. Also returns chunks describing the process.
-verboseFilter
-  :: (a -> X.Text)
+  -> (a -> [Chunk])
   -- ^ How to describe each subject
-
-  -> Int
-  -- ^ Indent each level by this many spaces
-
-  -> Bool
-  -- ^ If True, shows all Predbox, even ones where 'rVisible' is
-  -- True. Otherwise, respects 'rVisible' and shows only visible
-  -- 'Predbox'.
 
   -> Predbox a
   -- ^ Used to perform the filtering
@@ -451,260 +394,14 @@ verboseFilter
   -> [a]
   -> ([Chunk], [a])
 
-verboseFilter desc amt sa pd as = (chks, as')
+verboseFilter cTrue cFalse cAnd cOr cNot cShort amt sa desc pd as = (chks, as')
   where
     rs = map (evaluate pd) as
     subjAndRslts = zip as rs
-    mkChks (subj, rslt) = showTopResult (desc subj) amt 0 sa rslt
+    mkChks (subj, rslt) = showResult cTrue cFalse cAnd cOr cNot cShort
+      amt sa (desc subj) 0 rslt
     chks = concatMap mkChks subjAndRslts
     as' = map fst . Prelude.filter (rBool . snd) $ subjAndRslts
 
 -- # Comparisons
-
--- | Build a Predbox that compares items.
-compareBy
-  :: Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> (a -> Ordering)
-  -- ^ How to compare an item against the right hand side. Return LT
-  -- if the item is less than the right hand side; GT if greater; EQ
-  -- if equal to the right hand side.
-
-  -> Ordering
-  -- ^ When subjects are compared, this ordering must be the result in
-  -- order for the Predbox to be True; otherwise it is False. The subject
-  -- will be on the left hand side.
-
-  -> Predbox a
-
-compareBy itemDesc typeDesc cmp ord = Predbox l (const False) (Predicate f)
-  where
-    l = typeDesc <> " is " <> cmpDesc <> " " <> itemDesc
-    cmpDesc = case ord of
-      LT -> "less than"
-      GT -> "greater than"
-      EQ -> "equal to"
-    f subj = cmp subj == ord
-
--- | Overloaded version of 'compareBy'.
-compare
-  :: (Show a, Ord a)
-  => Text
-  -- ^ Description of the type of thing being matched
-
-  -> a
-  -- ^ The right hand side of the comparison.
-
-  -> Ordering
-  -- ^ When subjects are compared, this ordering must be the result in
-  -- order for the Predbox to be True; otherwise it is False. The subject
-  -- will be on the left hand side.
-
-  -> Predbox a
-compare typeDesc a ord = compareBy itemDesc typeDesc cmp ord
-  where
-    itemDesc = X.pack . Prelude.show $ a
-    cmp item = Prelude.compare item a
-
--- | Builds a Predbox for items that might fail to return a comparison.
-compareByMaybe
-  :: Text
-  -- ^ How to show the item being compared
-
-  -> Text
-  -- ^ Description of type of thing being matched
-
-  -> (a -> Maybe Ordering)
-  -- ^ How to compare against right hand side. If Nothing, a Predbox that
-  -- always returns False is returned.
-
-  -> Ordering
-  -- ^ Ordering that must result for the Predbox to be True
-
-  -> Predbox a
-
-compareByMaybe itemDesc typeDesc cmp ord =
-  Predbox l (const False) (Predicate f)
-  where
-    l = typeDesc <> " is " <> cmpDesc <> " " <> itemDesc
-    cmpDesc = case ord of
-      LT -> "less than"
-      GT -> "greater than"
-      EQ -> "equal to"
-    f subj = case cmp subj of
-      Nothing -> False
-      Just ord' -> ord == ord'
-
-greater
-  :: (Show a, Ord a)
-  => Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> a
-  -- ^ The right hand side of the comparison.
-
-  -> Predbox a
-greater d a = compare d a GT
-
-less
-  :: (Show a, Ord a)
-  => Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> a
-  -- ^ The right hand side of the comparison.
-
-  -> Predbox a
-less d a = compare d a LT
-
-equal
-  :: (Show a, Ord a)
-  => Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> a
-  -- ^ The right hand side of the comparison.
-
-  -> Predbox a
-equal d a = compare d a EQ
-
-greaterEq
-  :: (Show a, Ord a)
-  => Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> a
-  -- ^ The right hand side of the comparison.
-
-  -> Predbox a
-greaterEq d a = greater d a ||| equal d a
-
-lessEq
-  :: (Show a, Ord a)
-  => Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> a
-  -- ^ The right hand side of the comparison.
-
-  -> Predbox a
-lessEq d a = less d a ||| equal d a
-
-notEq
-  :: (Show a, Ord a)
-  => Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> a
-  -- ^ The right hand side of the comparison.
-
-  -> Predbox a
-notEq d a = not $ equal d a
-
-greaterBy
-  :: Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> (a -> Ordering)
-  -- ^ How to compare two items
-
-  -> Predbox a
-greaterBy iD tD cmp = compareBy iD tD cmp GT
-
-lessBy
-  :: Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> (a -> Ordering)
-  -- ^ How to compare two items
-
-  -> Predbox a
-lessBy iD tD cmp = compareBy iD tD cmp LT
-
-equalBy
-  :: Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> (a -> Ordering)
-  -- ^ How to compare two items
-
-  -> Predbox a
-equalBy iD tD cmp = compareBy iD tD cmp EQ
-
-greaterEqBy
-  :: Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> (a -> Ordering)
-  -- ^ How to compare two items
-
-  -> Predbox a
-greaterEqBy iD tD cmp =
-  greaterBy iD tD cmp ||| equalBy iD tD cmp
-
-lessEqBy
-  :: Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> (a -> Ordering)
-  -- ^ How to compare two items
-
-  -> Predbox a
-lessEqBy iD tD cmp =
-  lessBy iD tD cmp ||| equalBy iD tD cmp
-
-notEqBy
-  :: Text
-  -- ^ How to show the item being compared; used to describe the Predbox
-
-  -> Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> (a -> Ordering)
-  -- ^ How to compare two items
-
-  -> Predbox a
-notEqBy iD tD cmp =
-  not $ equalBy iD tD cmp
-
--- | Parses a string to find the correct comparer; returns the correct
--- function to build a Predbox.
-
-parseComparer
-  :: Text
-  -- ^ The string with the comparer to be parsed
-  -> (Ordering -> Predbox a)
-  -- ^ A function that, when given an ordering, returns a Predbox
-  -> Maybe (Predbox a)
-  -- ^ If an invalid comparer string is given, Nothing; otherwise, the
-  -- Predbox.
-parseComparer t f
-  | t == ">" = Just (f GT)
-  | t == "<" = Just (f LT)
-  | t == "=" = Just (f EQ)
-  | t == "==" = Just (f EQ)
-  | t == ">=" = Just (f GT ||| f EQ)
-  | t == "<=" = Just (f LT ||| f EQ)
-  | t == "/=" = Just (not $ f EQ)
-  | t == "!=" = Just (not $ f EQ)
-  | otherwise = Nothing
 

@@ -13,9 +13,6 @@ import Prednote.Predbox ((&&&), (|||))
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as X
-import qualified System.Console.Rainbow as C
-
-type Error = Text
 
 data RPNToken a
   = TokOperand (P.Predbox a)
@@ -38,7 +35,7 @@ pushOperand p ts = p : ts
 pushOperator
   :: Operator
   -> [P.Predbox a]
-  -> Either Error [P.Predbox a]
+  -> Either Text [P.Predbox a]
 pushOperator o ts = case o of
   OpAnd -> case ts of
     x:y:zs -> return $ (y &&& x) : zs
@@ -56,7 +53,7 @@ pushOperator o ts = case o of
 pushToken
   :: [P.Predbox a]
   -> RPNToken a
-  -> Either Error [P.Predbox a]
+  -> Either Text [P.Predbox a]
 pushToken ts t = case t of
   TokOperand p -> return $ pushOperand p ts
   TokOperator o -> pushOperator o ts
@@ -69,17 +66,13 @@ pushToken ts t = case t of
 parseRPN
   :: Fdbl.Foldable f
   => f (RPNToken a)
-  -> Either Error (P.Predbox a)
+  -> Either Text (P.Predbox a)
 parseRPN ts = do
   trees <- Fdbl.foldlM pushToken [] ts
   case trees of
     [] -> Left $ "bad expression: no operands left on the stack\n"
     x:[] -> return x
-    xs -> Left
+    xs -> Left . X.pack
       $ "bad expression: multiple operands left on the stack:\n"
-      <> ( X.concat
-           . concat
-           . map C.text
-           . concatMap (P.showPredbox 4 0)
-           $ xs )
+      <> concatMap show xs
 
