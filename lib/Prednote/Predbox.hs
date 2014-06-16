@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings, ExistentialQuantification #-}
 
+-- TODO make sure fanand and fanor short circuit
+
 -- | Trees of predicates.
 --
 -- Exports names which conflict with Prelude names, so you probably
@@ -289,6 +291,34 @@ labelBool lTrue lFalse txt b = open : trueFalse ++ [close] ++ [space] ++ txt
     open = "["
     close = "]"
     space = " "
+
+data Format = Format
+  { fTrue :: Int -> [Chunk] -> [Chunk]
+  -- ^ Formats results that are true.  This function is applied to the
+  -- level of indentation and to the rest of the text on the line; it
+  -- should return a properly indented line along with the indication
+  -- of truth or falsity.  Include a single newline.
+
+  , fFalse :: Int -> [Chunk] -> [Chunk]
+  -- ^ Formats results that are false; otherwise, same as 'fTrue'.
+
+  , fAnd :: [Chunk]
+  -- ^ Indicates conjunction.  The result from this will be passed to
+  -- 'fTrue' or 'fFalse' as appropriate.
+
+  , fOr :: [Chunk]
+  -- ^ Indicates disjunction.  The result from this will be passed to
+  -- 'fTrue' or 'fFalse' as appropriate.
+
+  , fNot :: [Chunk]
+  -- ^ Indicates negation.  The result from this will be passed to
+  -- 'fTrue' or 'fFalse' as appropriate.
+
+  , fShort :: Int -> [Chunk]
+  -- ^ Indicates a short-circuit.  This happens when 'And', 'Or',
+  -- 'Fanand', or 'Fanor' do not need to evaluate the entire list.
+  -- This function will be applied to the level of indentation.
+  }
 
 -- | Shows a Result in a pretty way with colors and indentation.
 showResult
