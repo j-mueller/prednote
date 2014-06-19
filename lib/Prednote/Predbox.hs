@@ -29,16 +29,13 @@ module Prednote.Predbox
   , P.hideFalse
 
   -- * Showing and evaluating
-  , P.Result(..)
-  , P.RNode(..)
-  , P.evaluate
-  , P.evaluateNode
-  , P.Format(..)
-  , format
-  , showResult
+  , evaluate
   , showPredbox
   , P.filter
   , verboseFilter
+
+  -- * Format
+  , format
 
   -- * Helpers for building common Predbox
   -- ** Non-overloaded
@@ -192,24 +189,6 @@ fmtResult bool lvl pre rest = indent lvl : payload
         (txt, color) | bool = ("TRUE", f_green)
                      | otherwise = ("FALSE", f_red)
 
-showResult
-  :: Bool
-  -- ^ If True, shows all Predbox, even ones where 'rHide' is
-  -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
-
-  -> Text
-  -- ^ Additional label
-
-  -> Int
-  -- ^ How deep in the tree we are; this increments by one for each
-  -- level of descent.
-
-  -> P.Result
-  -- ^ The result to show
-
-  -> [Chunk]
-showResult sa txt = P.showResult format sa [fromText txt]
-
 showPredbox :: P.Predbox a -> [Chunk]
 showPredbox = P.showPredbox (P.fAnd format) (P.fOr format)
   (P.fNot format) indentAmt 0
@@ -223,6 +202,12 @@ indent
   -> Chunk
 indent lvl = fromText . X.replicate (lvl * indentAmt) . X.singleton
   $ ' '
+
+evaluate
+  :: P.Predbox a
+  -> a
+  -> Bool
+evaluate p a = P.rBool $ P.evaluate p a
 
 verboseFilter
   :: Bool
