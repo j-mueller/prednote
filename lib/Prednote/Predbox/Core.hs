@@ -9,6 +9,7 @@ module Prednote.Predbox.Core
   ( -- * The Predbox tree
     Predbox(..)
   , Labels(..)
+  , sameLabel
   , Node(..)
 
   -- * Creating Predbox.
@@ -38,9 +39,6 @@ module Prednote.Predbox.Core
   , showPredbox
   , filter
   , verboseFilter
-
-  -- * Auxiliary label function
-  , sameLabel
 
   ) where
 
