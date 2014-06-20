@@ -30,6 +30,7 @@ module Prednote.Predbox.Core
   -- * Result
   , Result(..)
   , RNode(..)
+  , showAll
 
   -- * Showing and evaluating Predbox
   , evaluate
@@ -185,6 +186,18 @@ data RNode
   | RPredicate [Chunk] Bool
   deriving (Eq, Show)
 
+-- | Changes all items in a Result so they are shown.
+showAll :: Result -> Result
+showAll (Result r _ n) = Result r True n'
+  where
+    n' = case n of
+      RAnd rs -> RAnd (map showAll rs)
+      ROr rs -> ROr (map showAll rs)
+      RNot x -> RNot (showAll x)
+      RFanand cs rs -> RFanand cs (map showAll rs)
+      RFanor cs rs -> RFanor cs (map showAll rs)
+      x -> x
+
 -- | Applies a Predbox to a particular value, known as the subject.
 evaluate :: Predbox a -> a -> Result
 evaluate (Predbox pv pn) a = Result r (pv r) rn
@@ -303,9 +316,6 @@ data Format = Format
 -- | Shows a Result in a pretty way with colors and indentation.
 showResult
   :: Format
-  -> Bool
-  -- ^ If True, shows all Predbox, even ones where 'rHide' is
-  -- True. Otherwise, respects 'rHide' and does not show hidden Predbox.
 
   -> [Chunk]
   -- ^ Additional label
@@ -318,11 +328,11 @@ showResult
   -- ^ The result to show
 
   -> [Chunk]
-showResult fmt sa addl lvl (Result rslt vis nd)
-  | Prelude.not vis && Prelude.not sa = []
+showResult fmt addl lvl (Result rslt vis nd)
+  | Prelude.not vis = []
   | otherwise = firstLine ++ restLines
   where
-    showMore = showResult fmt sa []
+    showMore = showResult fmt []
     getLabeler | rslt = fTrue
                | otherwise = fFalse
     firstLine = getLabeler fmt lvl addl lbl
@@ -376,7 +386,10 @@ verboseFilter fmt sa desc pd as = (chks, as')
   where
     rs = map (evaluate pd) as
     subjAndRslts = zip as rs
-    mkChks (subj, rslt) = showResult fmt sa (desc subj) 0 rslt
+    mkChks (subj, rslt) = showResult fmt (desc subj) 0 rslt'
+      where
+        rslt' | sa = showAll rslt
+              | otherwise = rslt
     chks = concatMap mkChks subjAndRslts
     as' = map fst . Prelude.filter (rBool . snd) $ subjAndRslts
 
