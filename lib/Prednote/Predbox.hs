@@ -158,8 +158,7 @@ fanor f = P.Predbox (const True) . P.Fanor (P.sameLabel l) f
 -- 'P.verboseFilter'.
 format :: P.Format
 format = P.Format
-  { P.fTrue = fmtResult True
-  , P.fFalse = fmtResult False
+  { P.fResult = fmtResult
   , P.fAnd = [fromText "and"]
   , P.fOr = [fromText "or"]
   , P.fNot = [fromText "not"]

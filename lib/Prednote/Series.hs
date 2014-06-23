@@ -33,9 +33,61 @@ import Data.Monoid ((<>), mempty)
 import qualified Data.Text as X
 import Data.Text (Text)
 
-import qualified System.Console.Rainbow as R
+import System.Console.Rainbow
 import qualified Prednote.Predbox.Core as Pt
 
+data Series a = Series
+  { sPass :: [Pt.Result] -> Bool
+  , sFunc :: a -> Pt.Result
+  }
+
+type PrintSubject a
+  = Bool
+  -- ^ Whether the series passed or failed
+  -> [(a, Pt.Result)]
+  -- ^ Previous results in the list
+  -> (a, Pt.Result)
+  -- ^ Result to print
+  -> [(a, Pt.Result)]
+  -- ^ Future results in the list
+  -> [Chunk]
+
+data Style a = Style
+  { printer :: PrintSubject a
+  , header :: Bool -> [Chunk]
+  }
+
+data SeriesResult a = SeriesResult
+  { rPass :: Bool
+  , rResults :: [(a, Pt.Result)]
+  }
+
+evalSeries :: Series a -> [a] -> SeriesResult a
+evalSeries (Series fPass fFunc) as = SeriesResult r rs
+  where
+    rs = zip as rslts
+    rslts = map fFunc as
+    r = fPass rslts
+
+{-
+renderSeriesResult :: SeriesResult a -> Style a -> [Chunk]
+renderSeriesResult r s = lead ++ concatMap f vs
+  where
+    f (bs, a, rs) = printer (rPass r) s bs a rs
+    vs = views . rResults $ r
+    lead = header s (rPass r)
+
+-}
+views :: [a] -> [([a], a, [a])]
+views = go []
+  where
+    go soFar ls = case ls of
+      [] -> []
+      x:xs -> (soFar, x, xs) : go (x : soFar) xs
+
+styleNSubjectsMustBeTrue = undefined
+
+{-
 -- # Types
 
 -- | How verbose to be when showing the results of running a Predbox on a
@@ -148,6 +200,7 @@ atLeast i as
     go soFar (_:xs) =
       let nFound = soFar + 1
       in if nFound == i then True else go nFound xs
+-}
 
 {-
 

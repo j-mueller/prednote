@@ -285,15 +285,12 @@ filter pd as
 -- # Showing Result
 
 data Format = Format
-  { fTrue :: Int -> [Chunk] -> [Chunk] -> [Chunk]
-  -- ^ Formats results that are true.  This function is applied to the
-  -- level of indentation, to any pre-result label, and to the rest of
-  -- the text on the line; it should return a properly indented line
-  -- along with the indication of truth or falsity.  Include a single
-  -- newline.
-
-  , fFalse :: Int -> [Chunk] -> [Chunk] -> [Chunk]
-  -- ^ Formats results that are false; otherwise, same as 'fTrue'.
+  { fResult :: Bool -> Int -> [Chunk] -> [Chunk] -> [Chunk]
+  -- ^ Formats results.  This function is applied to the result
+  -- itself, to the level of indentation, to any pre-result label, and
+  -- to the rest of the text on the line; it should return a properly
+  -- indented line along with the indication of truth or falsity.
+  -- Include a single newline.
 
   , fAnd :: [Chunk]
   -- ^ Indicates conjunction.  The result from this will be passed to
@@ -333,9 +330,7 @@ showResult fmt addl lvl (Result rslt vis nd)
   | otherwise = firstLine ++ restLines
   where
     showMore = showResult fmt []
-    getLabeler | rslt = fTrue
-               | otherwise = fFalse
-    firstLine = getLabeler fmt lvl addl lbl
+    firstLine = fResult fmt rslt lvl addl lbl
     (lbl, restLines) = case nd of
       RAnd ls -> (fAnd fmt, f False ls)
       ROr ls -> (fOr fmt, f True ls)
