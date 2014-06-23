@@ -1,7 +1,50 @@
 {-# LANGUAGE OverloadedStrings, BangPatterns #-}
 
-module Prednote.Pred where
+module Prednote.Pred
+  (
+  -- * Predicates
+    Pred
 
+  -- * Visibility
+  , Visible(..)
+  , reveal
+  , hide
+
+  -- * Creation of 'Pred'
+  , predicate
+  , and
+  , (&&&)
+  , or
+  , (|||)
+  , not
+  , fanand
+  , fanor
+  , fanAtLeast
+
+  -- * Comparisons - overloaded
+  , compare
+  , equal
+  , greater
+  , less
+  , greaterEq
+  , lessEq
+  , notEq
+
+  -- * Comparisons - not overloaded
+  , compareBy
+  , equalBy
+  , compareByMaybe
+  , greaterBy
+  , lessBy
+  , greaterEqBy
+  , lessEqBy
+  , notEqBy
+
+  -- * Comparers
+  , parseComparer
+  ) where
+
+import Control.Arrow (first)
 import System.Console.Rainbow
 import Prednote.Pred.Core
 import Data.Text (Text)
@@ -349,9 +392,6 @@ compare
   => Text
   -- ^ Description of the type of thing that is being matched
 
-  -> Text
-  -- ^ Description of the right-hand side
-
   -> Ordering
   -- ^ When subjects are compared, this ordering must be the result in
   -- order for the Predbox to be True; otherwise it is False. The subject
@@ -361,9 +401,10 @@ compare
 
   -> Pred a
 
-compare typeDesc rhsDesc ord rhs = compareBy typeDesc rhsDesc ord fn
+compare typeDesc ord rhs = compareBy typeDesc rhsDesc ord fn
   where
     fn lhs = (Prelude.compare lhs rhs, X.pack . show $ lhs)
+    rhsDesc = X.pack . show $ rhs
 
 -- | Builds a 'Pred' for items that might fail to return a comparison.
 compareByMaybe
@@ -406,33 +447,160 @@ greater
   :: (Show a, Ord a)
   => Text
   -- ^ Description of the type of thing being matched
-  -> Text
-  -- ^ Description of the right-hand side
   -> a
   -> Pred a
-greater typeDesc rhsDesc = compare typeDesc rhsDesc GT
+greater typeDesc = compare typeDesc GT
 
 
 less
   :: (Show a, Ord a)
   => Text
   -- ^ Description of the type of thing being matched
-  -> Text
-  -- ^ Description of the right-hand side
   -> a
   -> Pred a
-less typeDesc rhsDesc = compare typeDesc rhsDesc GT
+less typeDesc = compare typeDesc GT
 
 greaterEq
   :: (Show a, Ord a)
   => Text
   -- ^ Description of the type of thing being matched
 
-  -> Text
-  -- ^ Description of the right-hand side
+  -> a
+  -- ^ Right-hand side
+
+  -> Pred a
+greaterEq t r = greater t r ||| equal t r
+
+lessEq
+  :: (Show a, Ord a)
+  => Text
+  -- ^ Description of the type of thing being matched
 
   -> a
   -- ^ Right-hand side
 
   -> Pred a
-greaterEq t d r = greater t d r ||| equal t r
+lessEq t r = less t r ||| equal t r
+
+notEq
+  :: (Show a, Ord a)
+  => Text
+  -- ^ Description of the type of thing being matched
+
+  -> a
+  -- ^ Right-hand side
+
+  -> Pred a
+notEq t r = not (const True) $ equal t r
+
+greaterBy
+  :: Text
+  -- ^ Description of the type of thing being matched
+
+  -> Text
+  -- ^ Description of right-hand side
+
+  -> (a -> (Ordering, Text))
+  -- ^ The first of the pair is how to compare an item against the
+  -- right hand side. Return LT if the item is less than the right
+  -- hand side; GT if greater; EQ if equal to the right hand side.
+  --
+  -- The second of the pair is a description of the left hand side.
+
+  -> Pred a
+greaterBy dT dR f = compareBy dT dR GT f
+
+
+lessBy
+  :: Text
+  -- ^ Description of the type of thing being matched
+
+  -> Text
+  -- ^ Description of right-hand side
+
+  -> (a -> (Ordering, Text))
+  -- ^ The first of the pair is how to compare an item against the
+  -- right hand side. Return LT if the item is less than the right
+  -- hand side; GT if greater; EQ if equal to the right hand side.
+  --
+  -- The second of the pair is a description of the left hand side.
+
+  -> Pred a
+lessBy dT dR f = compareBy dT dR LT f
+
+greaterEqBy
+  :: Text
+  -- ^ Description of the type of thing being matched
+
+  -> Text
+  -- ^ Description of right-hand side
+
+  -> (a -> (Ordering, Text))
+  -- ^ The first of the pair is how to compare an item against the
+  -- right hand side. Return LT if the item is less than the right
+  -- hand side; GT if greater; EQ if equal to the right hand side.
+  --
+  -- The second of the pair is a description of the left hand side.
+
+  -> Pred a
+greaterEqBy dT dR f = greaterBy dT dR f ||| equalBy dT dR f'
+  where
+    f' = fmap (first (== EQ)) f
+
+lessEqBy
+  :: Text
+  -- ^ Description of the type of thing being matched
+
+  -> Text
+  -- ^ Description of right-hand side
+
+  -> (a -> (Ordering, Text))
+  -- ^ The first of the pair is how to compare an item against the
+  -- right hand side. Return LT if the item is less than the right
+  -- hand side; GT if greater; EQ if equal to the right hand side.
+  --
+  -- The second of the pair is a description of the left hand side.
+
+  -> Pred a
+lessEqBy dT dR f = lessBy dT dR f ||| equalBy dT dR f'
+  where
+    f' = fmap (first (== EQ)) f
+
+notEqBy
+  :: Text
+  -- ^ Description of the type of thing being matched
+
+  -> Text
+  -- ^ Description of right-hand side
+
+  -> (a -> (Bool, Text))
+  -- ^ The first of the pair is how to compare an item against the
+  -- right hand side. Return True if the items are equal; False if not.
+  --
+  -- The second of the pair is a description of the left hand side.
+
+  -> Pred a
+notEqBy dT dR f = not (const True) $ equalBy dT dR f
+
+
+parseComparer
+  :: Text
+  -- ^ The string with the comparer to be parsed
+  -> (Ordering -> Pred a)
+  -- ^ A function that, when given an ordering, returns a Predbox
+  -> Maybe (Pred a)
+  -- ^ If an invalid comparer string is given, Nothing; otherwise, the
+  -- Predbox.
+parseComparer t f
+  | t == ">" = Just (f GT)
+  | t == "<" = Just (f LT)
+  | t == "=" = Just (f EQ)
+  | t == "==" = Just (f EQ)
+  | t == ">=" = Just (f GT ||| f EQ)
+  | t == "<=" = Just (f LT ||| f EQ)
+  | t == "/=" = Just (not (const True) $ f EQ)
+  | t == "!=" = Just (not (const True) $ f EQ)
+  | otherwise = Nothing
+
+
+
