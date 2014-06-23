@@ -303,6 +303,45 @@ compareBy typeDesc rhsDesc ord get = predicate stat fn
         res = ord' == ord
         dyn = typeDesc <+> txt <+> "is" <+> ordDesc <+> rhsDesc
 
+-- | Builds a 'Pred' that tests items for equality.
+
+equalBy
+  :: Text
+  -- ^ Description of the type of thing that is being matched
+
+  -> Text
+  -- ^ Description of the right-hand side
+
+  -> (a -> (Bool, Text))
+  -- ^ The first of the pair is how to compare an item against the
+  -- right hand side. Return True if the items are equal; False otherwise.
+  --
+  -- The second of the pair is a description of the left hand side.
+
+  -> Pred a
+equalBy typeDesc rhsDesc get = predicate stat fn
+  where
+    stat = typeDesc <+> "is equal to" <+> rhsDesc
+    fn a = (res, Visible True, dyn)
+      where
+        (res, txt) = get a
+        dyn = typeDesc <+> txt <+> "is equal to" <+> rhsDesc
+
+-- | Overloaded version of 'equalBy'.
+
+equal
+  :: (Eq a, Show a)
+  => Text
+  -- ^ Description of the type of thing that is being matched
+
+  -> a
+  -- ^ Right-hand side
+
+  -> Pred a
+equal typeDesc rhs = equalBy typeDesc (X.pack . show $ rhs) f
+  where
+    f lhs = (lhs == rhs, X.pack . show $ lhs)
+
 -- | Overloaded version of 'compareBy'.
 
 compare
@@ -384,4 +423,16 @@ less
   -> Pred a
 less typeDesc rhsDesc = compare typeDesc rhsDesc GT
 
+greaterEq
+  :: (Show a, Ord a)
+  => Text
+  -- ^ Description of the type of thing being matched
 
+  -> Text
+  -- ^ Description of the right-hand side
+
+  -> a
+  -- ^ Right-hand side
+
+  -> Pred a
+greaterEq t d r = greater t d r ||| equal t r
