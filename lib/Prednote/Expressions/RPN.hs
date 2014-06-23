@@ -8,14 +8,14 @@ module Prednote.Expressions.RPN where
 
 import Data.Functor.Contravariant
 import qualified Data.Foldable as Fdbl
-import qualified Prednote.Predbox as P
-import Prednote.Predbox ((&&&), (|||))
+import qualified Prednote.Pred as P
+import Prednote.Pred ((&&&), (|||))
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as X
 
 data RPNToken a
-  = TokOperand (P.Predbox a)
+  = TokOperand (P.Pred a)
   | TokOperator Operator
 
 instance Contravariant RPNToken where
@@ -29,13 +29,13 @@ data Operator
   | OpNot
   deriving Show
 
-pushOperand :: P.Predbox a -> [P.Predbox a] -> [P.Predbox a]
+pushOperand :: P.Pred a -> [P.Pred a] -> [P.Pred a]
 pushOperand p ts = p : ts
 
 pushOperator
   :: Operator
-  -> [P.Predbox a]
-  -> Either Text [P.Predbox a]
+  -> [P.Pred a]
+  -> Either Text [P.Pred a]
 pushOperator o ts = case o of
   OpAnd -> case ts of
     x:y:zs -> return $ (y &&& x) : zs
@@ -44,16 +44,16 @@ pushOperator o ts = case o of
     x:y:zs -> return $ (y ||| x) : zs
     _ -> Left $ err "or"
   OpNot -> case ts of
-    x:zs -> return $ P.not x : zs
+    x:zs -> return $ P.not (const True) x : zs
     _ -> Left $ err "not"
   where
     err x = "insufficient operands to apply \"" <> x
             <> "\" operator\n"
 
 pushToken
-  :: [P.Predbox a]
+  :: [P.Pred a]
   -> RPNToken a
-  -> Either Text [P.Predbox a]
+  -> Either Text [P.Pred a]
 pushToken ts t = case t of
   TokOperand p -> return $ pushOperand p ts
   TokOperator o -> pushOperator o ts
@@ -66,7 +66,7 @@ pushToken ts t = case t of
 parseRPN
   :: Fdbl.Foldable f
   => f (RPNToken a)
-  -> Either Text (P.Predbox a)
+  -> Either Text (P.Pred a)
 parseRPN ts = do
   trees <- Fdbl.foldlM pushToken [] ts
   case trees of

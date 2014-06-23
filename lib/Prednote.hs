@@ -1,9 +1,7 @@
 module Prednote
-  ( module Prednote.Predbox
+  ( module Prednote.Pred
   , module Prednote.Expressions
-  , module Prednote.Series
   ) where
 
-import Prednote.Predbox
+import Prednote.Pred
 import Prednote.Expressions
-import Prednote.Series

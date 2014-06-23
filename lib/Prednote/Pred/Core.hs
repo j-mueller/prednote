@@ -4,6 +4,8 @@ module Prednote.Pred.Core where
 import System.Console.Rainbow
 import Prelude hiding (filter)
 import qualified Prelude
+import Data.Functor.Contravariant (Contravariant(..))
+import qualified Data.Text as X
 
 data Tree a = Tree
   { node :: a
@@ -18,6 +20,9 @@ data Pred a = Pred
   , calc :: Calc a
   }
 
+instance Contravariant Pred where
+  contramap f (Pred l c) = Pred l (contramap f c)
+
 data Shortable = Shortable
   { short :: Maybe (Int, Int -> [Chunk])
   , output :: Output
@@ -28,6 +33,13 @@ data Calc a
   | Single (Pred a) (a -> Bool -> Output)
   | Variable [Pred a] (a -> [Bool] -> Shortable)
   | forall b. Fan (a -> [b]) (Pred b) (a -> [Bool] -> Shortable)
+
+instance Contravariant Calc where
+  contramap f c = case c of
+    Predicate g -> Predicate (g . f)
+    Single g h -> Single (contramap f g) (\a b -> h (f a) b)
+    Variable ps g -> Variable (map (contramap f) ps) (\a b -> g (f a) b)
+    Fan g p h -> Fan (g . f) p (\a b -> h (f a) b)
 
 
 data Output = Output
@@ -48,6 +60,11 @@ display lvl (Pred lbl c) = lbl lvl ++ case c of
   Single p _ -> display (lvl + 1) p
   Variable ps _ -> concatMap (display (lvl + 1)) ps
   Fan _ p _ -> display (lvl + 1) p
+
+instance Show (Pred a) where
+  show = X.unpack . X.concat
+    . map (X.concat . text)
+    . display 0
 
 evaluate
   :: Pred a

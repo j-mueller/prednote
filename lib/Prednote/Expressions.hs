@@ -19,7 +19,7 @@ import Data.Functor.Contravariant
 import qualified Data.Text as X
 import qualified Prednote.Expressions.Infix as I
 import qualified Prednote.Expressions.RPN as R
-import qualified Prednote.Predbox as P
+import qualified Prednote.Pred as P
 
 -- | A single type for both RPN tokens and infix tokens.
 newtype Token a = Token { unToken :: I.InfixToken a }
@@ -30,7 +30,7 @@ instance Contravariant Token where
 type Error = X.Text
 
 -- | Creates Operands from Predbox.
-operand :: P.Predbox a -> Token a
+operand :: P.Pred a -> Token a
 operand p = Token (I.TokRPN (R.TokOperand p))
 
 -- | The And operator
@@ -75,7 +75,7 @@ toksToRPN toks
 parseExpression
   :: ExprDesc
   -> [Token a]
-  -> Either Error (P.Predbox a)
+  -> Either Error (P.Pred a)
 parseExpression e toks = do
   rpnToks <- case e of
     Infix -> maybe (Left "unbalanced parentheses\n") Right
