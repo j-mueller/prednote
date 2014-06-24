@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings, BangPatterns #-}
 
+-- | Functions to work with 'Pred'.  This module works with 'Text' and
+-- produces 'Pred' that make sparing use of color.  For more control
+-- over the 'Pred' produced, use "Prednote.Pred.Core".
 module Prednote.Pred
   (
   -- * Predicates
@@ -20,6 +23,15 @@ module Prednote.Pred
   , fanand
   , fanor
   , fanAtLeast
+
+  -- * Displaying 'Pred' and evaluation
+  , display
+  , evaluate
+  , render
+  , test
+  , filter
+  , testV
+  , filterV
 
   -- * Comparisons - overloaded
   , compare
@@ -50,7 +62,7 @@ import Prednote.Pred.Core
 import Data.Text (Text)
 import qualified Data.Text as X
 import Data.Monoid
-import Prelude hiding (and, or, not, compare)
+import Prelude hiding (and, or, not, compare, filter)
 import qualified Prelude
 
 -- # Labels
@@ -100,9 +112,11 @@ indentedLbl = indent . (:[]) . fromText
 
 -- # Visibility
 
+-- | Is this item visible?
 newtype Visible = Visible { unVisible :: Bool }
   deriving (Eq, Ord, Show)
 
+-- | Modifies a 'Pred' so that it is always visible.
 reveal :: Pred a -> Pred a
 reveal (Pred l c) = Pred l c'
   where
@@ -115,6 +129,7 @@ reveal (Pred l c) = Pred l c'
         let r = f a bs in r { output = (output r) { visible = True } })
 
 
+-- | Modifies a 'Pred' so it is always hidden.
 hide :: Pred a -> Pred a
 hide (Pred l c) = Pred l c'
   where
@@ -129,12 +144,23 @@ hide (Pred l c) = Pred l c'
 
 -- # Predicate
 
+-- | Builds a 'Pred' using a simple predicate.
 predicate
+
   :: Text
-  -- ^ Static label
+  -- ^ Static label.  Used to display the 'Pred' when it is not
+  -- evaluated.
+
   -> (a -> (Bool, Visible, Text))
-  -- ^ Predicate function
+  -- ^ Predicate function.  This function is applied to the subject.
+  -- It returns a triple: the first element is the result of the
+  -- predicate; the second indicates whether this result is visible;
+  -- and the third element is the dynamic label to use.  Do not
+  -- indicate truth or falsity or provide indentation in the label;
+  -- this is taken care of for you.
+
   -> Pred a
+
 predicate lbl pdct = Pred l c
   where
     l = indentedLbl lbl
@@ -148,7 +174,16 @@ predicate lbl pdct = Pred l c
 
 -- | No child 'Pred' may be 'False'.  An empty list of child 'Pred'
 -- returns 'True'.
-and :: (Bool -> Bool) -> [Pred a] -> Pred a
+and
+  :: (Bool -> Bool)
+  -- ^ Controls visibility.  This function is applied to the result of
+  -- this 'Pred' to determine whether the resulting 'Pred' is visible.
+
+  -> [Pred a]
+  -- ^ List of child 'Pred'.  The resulting 'Pred' short circuits if
+  -- any of these child 'Pred' return 'False'.
+
+  -> Pred a
 and shw preds = Pred (indentedLbl lbl) c
   where
     c = Variable preds f
@@ -173,7 +208,16 @@ infixr 3 &&&
 -- | At least one child 'Pred' must be 'True'.  An empty list of child
 -- 'Pred' returns 'False'.
 
-or :: (Bool -> Bool) -> [Pred a] -> Pred a
+or
+  :: (Bool -> Bool)
+  -- ^ Controls visibility.  This function is applied to the result of
+  -- this 'Pred' to determine whether the resulting 'Pred' is visible.
+
+  -> [Pred a]
+  -- ^ List of child 'Pred'.  The resulting 'Pred' short circuits if
+  -- any of these child 'Pred' return 'True'.
+
+  -> Pred a
 or shw preds = Pred (indentedLbl lbl) c
   where
     lbl = "or"
@@ -195,7 +239,16 @@ l ||| r = or (const True) [l, r]
 
 infixr 2 |||
 
-not :: (Bool -> Bool) -> Pred a -> Pred a
+not
+  :: (Bool -> Bool)
+  -- ^ Controls visibility.  This function is applied to the result of
+  -- this 'Pred' to determine whether the resulting 'Pred' is visible.
+
+  -> Pred a
+  -- ^ Child 'Pred'
+
+  -> Pred a
+
 not shw pdct = Pred (indentedLbl lbl) c
   where
     lbl = "not"
@@ -398,6 +451,7 @@ compare
   -- will be on the left hand side.
 
   -> a
+  -- ^ Right-hand side
 
   -> Pred a
 
@@ -445,18 +499,26 @@ compareByMaybe typeDesc rhsDesc ord get = predicate stat fn
 
 greater
   :: (Show a, Ord a)
+
   => Text
   -- ^ Description of the type of thing being matched
+
   -> a
+  -- ^ Right-hand side
+
   -> Pred a
 greater typeDesc = compare typeDesc GT
 
 
 less
   :: (Show a, Ord a)
+
   => Text
   -- ^ Description of the type of thing being matched
+
   -> a
+  -- ^ Right-hand side
+
   -> Pred a
 less typeDesc = compare typeDesc GT
 
