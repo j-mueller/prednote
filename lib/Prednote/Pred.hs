@@ -3,6 +3,10 @@
 -- | Functions to work with 'Pred'.  This module works with 'Text' and
 -- produces 'Pred' that make sparing use of color.  For more control
 -- over the 'Pred' produced, use "Prednote.Pred.Core".
+--
+-- Exports some names that conflict with Prelude names, such as 'and',
+-- 'or', 'not', and 'filter'; keep this in mind when you do your
+-- @import@.
 module Prednote.Pred
   (
   -- * Predicates
@@ -15,6 +19,8 @@ module Prednote.Pred
 
   -- * Creation of 'Pred'
   , predicate
+  , true
+  , false
   , and
   , (&&&)
   , or
@@ -169,6 +175,16 @@ predicate lbl pdct = Pred l c
       where
         (res, (Visible vis), dyn) = pdct a
         rpt = indentedReport res dyn
+
+-- | Always returns 'True' and is always visible.
+true :: Pred a
+true = predicate "always True"
+  (const (True, Visible True, "always True"))
+
+-- | Always returns 'False' and is always visible.
+false :: Pred a
+false = predicate "always False"
+  (const (False, Visible True, "always False"))
 
 -- # Conjunction and disjunction, negation
 
