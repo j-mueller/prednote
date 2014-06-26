@@ -88,21 +88,6 @@ library ms = C.Library
   , C.defaultLanguage C.Haskell2010
   ]
 
-testSuite :: C.TestSuite
-testSuite = C.TestSuite "prednote-test"
-  [ C.TestType C.ExitcodeStdio
-  , C.TestMainIs "prednote-test.hs"
-  , C.hsSourceDirs ["./", "lib"]
-  , C.buildDepends
-    [ base
-    , contravariant
-    , rainbow
-    , text
-    , quickcheck
-    ]
-  , C.defaultLanguage C.Haskell2010
-  ]
-
 cabal
   :: [String]
   -- ^ Modules for library
@@ -111,7 +96,6 @@ cabal ms = C.empty
   { C.cProperties = properties
   , C.cRepositories = [repo]
   , C.cLibrary = Just $ library ms
-  , C.cTestSuites = [testSuite]
   }
 
 main :: IO ()
