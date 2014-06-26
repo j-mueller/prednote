@@ -1,0 +1,43 @@
+-- This Cabal file generated using the Cartel library.
+-- Cartel is available at:
+-- http://www.github.com/massysett/cartel
+--
+-- Script name used to generate: genCabal.hs
+-- Generated on: 2014-06-26 17:51:09.893177 EDT
+-- Cartel library version: 0.10.0.2
+name: prednote-test
+version: 0.24
+cabal-version: >= 1.14
+build-type: Simple
+license: BSD3
+license-file: LICENSE
+copyright: Copyright 2013-2014 Omari Norman
+author: Omari Norman
+maintainer: omari@smileystation.com
+stability: Experimental
+homepage: http://www.github.com/massysett/prednote
+bug-reports: http://www.github.com/massysett/prednote/issues
+description:
+  Tests and QuickCheck instances to accompany prednote.
+category: Data
+
+source-repository head
+  type: git
+  location: git://github.com/massysett/prednote.git
+  branch: master
+
+Library
+  exposed-modules:
+      Prednote.Pred.Core.Wrappers
+  build-depends:
+      base ((> 4.5.0.0 || == 4.5.0.0) && < 5)
+    , rainbow ((> 0.14.0.0 || == 0.14.0.0) && < 0.15)
+    , rainbow-tests ((> 0.14.0.0 || == 0.14.0.0) && < 0.15)
+    , text ((> 0.11.2.0 || == 0.11.2.0) && < 1.2)
+    , prednote == 0.24
+    , QuickCheck ((> 2.7.5 || == 2.7.5) && < 2.8)
+  hs-source-dirs:
+      lib
+  ghc-options:
+      -Wall
+  default-language: Haskell2010

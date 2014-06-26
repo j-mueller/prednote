@@ -27,6 +27,7 @@ import Prelude hiding (filter)
 import qualified Prelude
 import Data.Functor.Contravariant (Contravariant(..))
 import qualified Data.Text as X
+import Data.List (intersperse)
 
 -- | A rose tree.
 data Tree a = Tree
@@ -80,6 +81,9 @@ data Output = Output
   -- color, or both.
   }
 
+instance Show Output where
+  show (Output v r _) = "output - visible: " ++ show v
+    ++ " result: " ++ show r
 
 -- | A result returned from an evaluation that might /short circuit/.
 -- Short circuiting may occur with 'Variable' or 'Fan' calculations.
@@ -98,6 +102,12 @@ data Shortable = Shortable
   -- the text to show to indicate that a short circuit occurred.
   , output :: Output
   }
+
+instance Show Shortable where
+  show (Shortable m o) = "shortable - short is: " ++ sm ++ " "
+    ++ show o
+    where
+      sm = maybe "Nothing" (const "Just") m
 
 data Calc a
   = Predicate (a -> Output)
@@ -126,6 +136,14 @@ data Calc a
   -- function that is applied to the subject and to the result of the
   -- the application of the child 'Pred' to each result from the
   -- splitter; this function returns a 'Shortable'.
+
+instance Show (Calc a) where
+  show c = case c of
+    Predicate _ -> "predicate"
+    Single p _ -> "single: " ++ show p
+    Variable ps _ -> "variable: " ++ concat (intersperse " - " .
+      map show $ ps)
+    Fan _ p _ -> "fan: " ++ show p
 
 instance Contravariant Calc where
   contramap f c = case c of
