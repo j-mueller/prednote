@@ -32,6 +32,8 @@ module Prednote.Pred
 
   -- * Displaying 'Pred' and evaluation
   , display
+  , Output(..)
+  , Tree(..)
   , evaluate
   , render
   , test

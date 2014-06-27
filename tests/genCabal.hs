@@ -13,6 +13,12 @@ prednote = C.exactly "prednote" versionInts
 quickcheck :: C.Package
 quickcheck = C.closedOpen "QuickCheck" [2,7,5] [2,8]
 
+tasty :: C.Package
+tasty = C.closedOpen "tasty" [0,8,1,1] [0,9]
+
+tasty_quickcheck :: C.Package
+tasty_quickcheck = C.closedOpen "tasty-quickcheck" [0,8,1] [0,9]
+
 properties :: C.Properties
 properties = commonProperties
   { C.prName = "prednote-test"
@@ -33,6 +39,8 @@ library ms = C.Library
     , text
     , prednote
     , quickcheck
+    , tasty
+    , tasty_quickcheck
     ]
   , C.hsSourceDirs ["lib"]
   , C.ghcOptions ghcOptions
