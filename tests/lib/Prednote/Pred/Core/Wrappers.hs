@@ -5,7 +5,6 @@ import qualified Prednote.Pred.Core as C
 import Control.Monad
 import System.Console.Rainbow.Wrappers
 import qualified System.Console.Rainbow as R
-import qualified Data.Text as X
 
 newtype Output = Output { unOutput :: C.Output }
   deriving Show
@@ -52,8 +51,3 @@ instance Arbitrary Pred where
   arbitrary = fmap Pred $
     liftM2 C.Pred intToChunk (fmap unCalc arbitrary)
 
-newtype Text = Text { unText :: X.Text }
-  deriving (Eq, Ord, Show)
-
-instance Arbitrary Text where
-  arbitrary = fmap (Text . X.pack) $ listOf arbitrary

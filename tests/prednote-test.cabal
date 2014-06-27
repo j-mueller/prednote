@@ -3,7 +3,7 @@
 -- http://www.github.com/massysett/cartel
 --
 -- Script name used to generate: genCabal.hs
--- Generated on: 2014-06-26 21:43:42.451445 EDT
+-- Generated on: 2014-06-27 09:36:37.973214 EDT
 -- Cartel library version: 0.10.0.2
 name: prednote-test
 version: 0.24
@@ -28,8 +28,10 @@ source-repository head
 
 Library
   exposed-modules:
-      Prednote.Pred.Core.Wrappers
+      Data.Text.Wrappers
+    , Prednote.Pred.Core.Wrappers
     , Prednote.Pred.Properties
+    , Prednote.Pred.Wrappers
   build-depends:
       base ((> 4.5.0.0 || == 4.5.0.0) && < 5)
     , rainbow ((> 0.14.0.0 || == 0.14.0.0) && < 0.15)
