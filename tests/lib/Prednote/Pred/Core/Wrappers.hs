@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 module Prednote.Pred.Core.Wrappers where
 
 import Test.QuickCheck
@@ -5,6 +6,7 @@ import qualified Prednote.Pred.Core as C
 import Control.Monad
 import System.Console.Rainbow.Wrappers
 import qualified System.Console.Rainbow as R
+import Test.SmallCheck.Series
 
 newtype Output = Output { unOutput :: C.Output }
   deriving Show

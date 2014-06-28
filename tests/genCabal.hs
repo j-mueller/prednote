@@ -19,6 +19,9 @@ tasty = C.closedOpen "tasty" [0,8,1,1] [0,9]
 tasty_quickcheck :: C.Package
 tasty_quickcheck = C.closedOpen "tasty-quickcheck" [0,8,1] [0,9]
 
+smallcheck :: C.Package
+smallcheck = C.closedOpen "smallcheck" [1,1,1] [1,2]
+
 properties :: C.Properties
 properties = commonProperties
   { C.prName = "prednote-test"
@@ -39,12 +42,32 @@ library ms = C.Library
     , text
     , prednote
     , quickcheck
+    , smallcheck
     , tasty
     , tasty_quickcheck
     ]
   , C.hsSourceDirs ["lib"]
   , C.ghcOptions ghcOptions
   , C.defaultLanguage C.Haskell2010
+  ]
+
+executable :: C.Executable
+executable = C.Executable "prednote-test"
+  [ C.hsSourceDirs ["./", "lib"]
+  , C.ExeMainIs "prednote-test.hs"
+  , C.ghcOptions ghcOptions
+  , C.defaultLanguage C.Haskell2010
+  , C.buildDepends
+    [ base
+    , rainbow
+    , rainbow_tests
+    , text
+    , prednote
+    , quickcheck
+    , smallcheck
+    , tasty
+    , tasty_quickcheck
+    ]
   ]
 
 cabal
@@ -55,6 +78,7 @@ cabal ms = C.empty
   { C.cProperties = properties
   , C.cRepositories = [repo]
   , C.cLibrary = Just $ library ms
+  , C.cExecutables = [executable]
   }
 
 main :: IO ()
