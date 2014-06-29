@@ -5,12 +5,12 @@
 -- over the 'Pred' produced, use "Prednote.Pred.Core".
 --
 -- Exports some names that conflict with Prelude names, such as 'and',
--- 'or', 'not', and 'filter'; keep this in mind when you
+-- 'or', 'not', and 'C.filter'; keep this in mind when you
 -- @import@ this module.
 module Prednote.Pred
   ( 
   -- * Predicates
-    C.Pred
+    C.Pred(..)
 
   -- * Visibility
   , C.Visible(..)
@@ -187,8 +187,8 @@ fanand = C.fanand (indentTxt lbl) shortCir dyn
     lbl = "fanout and - no fanned-out subject may be False"
     dyn b _ = indent $ lblLine b lbl
 
--- | At least fanned-out item must be 'True'.  An empty list of child
--- items returns 'False'.
+-- | At least one fanned-out item must be 'True'.  An empty list of
+-- child items returns 'False'.
 fanor :: (a -> [b]) -> Pred b -> Pred a
 fanor = C.fanor (indentTxt lbl) shortCir dyn
   where
