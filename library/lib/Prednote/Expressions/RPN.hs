@@ -6,7 +6,6 @@
 -- where @and@ and @or@ are binary and @not@ is unary.
 module Prednote.Expressions.RPN where
 
-{-
 import Data.Functor.Contravariant
 import qualified Data.Foldable as Fdbl
 import qualified Prednote.Pred as P
@@ -77,4 +76,3 @@ parseRPN ts = do
       $ "bad expression: multiple operands left on the stack:\n"
       <> concatMap show xs
 
--}

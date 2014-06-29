@@ -1,6 +1,4 @@
-module Prednote.Expressions.Infix where
-
-{-
+module Prednote.Expressions.Infix
   ( InfixToken (..)
   , Paren(..)
   , createRPN
@@ -132,4 +130,3 @@ popRemainingOperators os ts = case os of
   x:xs -> case x of
     StkOp op -> popRemainingOperators xs (R.TokOperator op : ts)
     StkOpenParen -> Nothing
--}

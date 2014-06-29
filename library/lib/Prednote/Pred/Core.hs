@@ -29,21 +29,21 @@ instance Contravariant Pred where
 
 data Output = Output
   { result :: Bool
-  , visible :: Bool
+  , visible :: Visible
   , short :: Maybe Chunker
   , dynamic :: Chunker
   }
 
 instance Show Output where
   show (Output r v _ _) = "output - result: " ++ show r
-    ++ " visible: " ++ show v
+    ++ " visible: " ++ (show . unVisible $ v)
 
 
 predicate
   :: Chunker
   -- ^ Static name
 
-  -> (a -> (Bool, Bool, Chunker))
+  -> (a -> (Bool, Visible, Chunker))
   -- ^ Compute result
 
   -> Pred a
@@ -51,23 +51,32 @@ predicate st f = Pred (Node st [])
   (\a -> let (r, v, c) = f a in Node (Output r v Nothing c) [])
 
 
-visibility :: (Bool -> Bool) -> Pred a -> Pred a
+newtype Visible = Visible { unVisible :: Bool }
+  deriving (Eq, Ord, Show)
+
+shown :: Visible
+shown = Visible True
+
+hidden :: Visible
+hidden = Visible False
+
+visibility :: (Bool -> Visible) -> Pred a -> Pred a
 visibility f (Pred s e) = Pred s e'
   where
     e' a = g (e a)
     g (Node n cs) = Node n { visible = f (result n) } cs
 
 reveal :: Pred a -> Pred a
-reveal = visibility (const True)
+reveal = visibility (const shown)
 
 hide :: Pred a -> Pred a
-hide = visibility (const False)
+hide = visibility (const hidden)
 
 showTrue :: Pred a -> Pred a
-showTrue = visibility id
+showTrue = visibility (\b -> if b then shown else hidden)
 
 showFalse :: Pred a -> Pred a
-showFalse = visibility Prelude.not
+showFalse = visibility (\b -> if Prelude.not b then shown else hidden)
 
 
 and
@@ -84,7 +93,7 @@ and st ss dyn ls = Pred st' ev
     st' = Node st . map static $ ls
     ev a = go [] ls
       where
-        go soFar [] = Node (Output True True Nothing (dyn True a))
+        go soFar [] = Node (Output True shown Nothing (dyn True a))
           (reverse soFar)
         go soFar (x:xs) =
           let tree = eval x a
@@ -92,7 +101,7 @@ and st ss dyn ls = Pred st' ev
               shrt = case xs of
                 [] -> Nothing
                 _ -> Just ss
-              out = Output r True shrt (dyn r a)
+              out = Output r shown shrt (dyn r a)
               cs = reverse (tree:soFar)
           in case xs of
               [] -> Node out cs
@@ -114,7 +123,7 @@ or st ss dyn ls = Pred st' ev
     st' = Node st . map static $ ls
     ev a = go [] ls
       where
-        go soFar [] = Node (Output False True Nothing (dyn False a))
+        go soFar [] = Node (Output False shown Nothing (dyn False a))
           (reverse soFar)
         go soFar (x:xs) =
           let tree = eval x a
@@ -122,7 +131,7 @@ or st ss dyn ls = Pred st' ev
               shrt = case xs of
                 [] -> Nothing
                 _ -> Just ss
-              out = Output r True shrt (dyn r a)
+              out = Output r shown shrt (dyn r a)
               cs = reverse (tree:soFar)
           in case xs of
               [] -> Node out cs
@@ -142,14 +151,14 @@ not st dyn pd = Pred st' ev
     st' = Node st [static pd]
     ev a = Node nd [c]
       where
-        nd = Output res True Nothing (dyn res a)
+        nd = Output res shown Nothing (dyn res a)
         (res, c) = (Prelude.not r, t)
           where
             t = eval pd a
             r = result . rootLabel $ t
 
 fan
-  :: ([Bool] -> (Bool, Bool, Maybe Int))
+  :: ([Bool] -> (Bool, Visible, Maybe Int))
 
   -> Chunker
   -- ^ Static label
@@ -201,9 +210,9 @@ fanand = fan get
     get = go 0
       where
         go !c ls = case ls of
-          [] -> (True, True, Just c)
+          [] -> (True, shown, Just c)
           x:xs
-            | Prelude.not x -> (False, True, Just (c + 1))
+            | Prelude.not x -> (False, shown, Just (c + 1))
             | otherwise -> go (c + 1) xs
 
 fanor
@@ -226,9 +235,9 @@ fanor = fan get
     get = go 0
       where
         go !c ls = case ls of
-          [] -> (False, True, Just c)
+          [] -> (False, shown, Just c)
           x:xs
-            | x -> (True, True, Just (c + 1))
+            | x -> (True, shown, Just (c + 1))
             | otherwise -> go (c + 1) xs
 
 fanAtLeast
@@ -254,9 +263,9 @@ fanAtLeast i = fan get
     get = go 0 0
       where
         go !found !c ls
-          | found >= i = (True, True, Just c)
+          | found >= i = (True, shown, Just c)
           | otherwise = case ls of
-              [] -> (False, True, Just c)
+              [] -> (False, shown, Just c)
               x:xs -> go fnd' (c + 1) xs
                 where
                   fnd' | x = found + 1
@@ -267,7 +276,7 @@ report
   -> Tree Output
   -> [Chunk]
 report l (Node n cs)
-  | Prelude.not . visible $ n = []
+  | (== hidden) . visible $ n = []
   | otherwise = this ++ concatMap (report (l + 1)) cs ++ shrt
   where
     this = dynamic n l
