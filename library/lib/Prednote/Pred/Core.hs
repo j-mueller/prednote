@@ -21,7 +21,7 @@ type Chunker = Int -> [Chunk]
 
 data Pred a = Pred
   { static :: Tree Chunker
-  , eval :: a -> Tree Output
+  , evaluate :: a -> Tree Output
   }
 
 instance Contravariant Pred where
@@ -96,7 +96,7 @@ and st ss dyn ls = Pred st' ev
         go soFar [] = Node (Output True shown Nothing (dyn True a))
           (reverse soFar)
         go soFar (x:xs) =
-          let tree = eval x a
+          let tree = evaluate x a
               r = result . rootLabel $ tree
               shrt = case xs of
                 [] -> Nothing
@@ -126,7 +126,7 @@ or st ss dyn ls = Pred st' ev
         go soFar [] = Node (Output False shown Nothing (dyn False a))
           (reverse soFar)
         go soFar (x:xs) =
-          let tree = eval x a
+          let tree = evaluate x a
               r = result . rootLabel $ tree
               shrt = case xs of
                 [] -> Nothing
@@ -154,7 +154,7 @@ not st dyn pd = Pred st' ev
         nd = Output res shown Nothing (dyn res a)
         (res, c) = (Prelude.not r, t)
           where
-            t = eval pd a
+            t = evaluate pd a
             r = result . rootLabel $ t
 
 fan
@@ -181,7 +181,7 @@ fan get st ss dyn fn pd = Pred st' ev
       where
         nd = Output r v shrt (dyn r a)
         bs = fn a
-        allcs = map (eval pd) bs
+        allcs = map (evaluate pd) bs
         bools = map (result . rootLabel) allcs
         (r, v, mayInt) = get bools
         cs = case mayInt of
@@ -292,20 +292,17 @@ plan lvl pd = go lvl (static pd)
       where
         this = n l
 
-evaluate :: Pred a -> a -> Tree Output
-evaluate = eval
-
 instance Show (Pred a) where
   show = X.unpack . X.concat . concat . map text
     . plan 0
 
 test :: Pred a -> a -> Bool
-test p = result . rootLabel . eval p
+test p = result . rootLabel . evaluate p
 
 testV :: Pred a -> a -> (Bool, [Chunk])
 testV p a = (result . rootLabel $ t, report 0 t)
   where
-    t = eval p a
+    t = evaluate p a
 
 filter :: Pred a -> [a] -> [a]
 filter p = Prelude.filter (test p)
@@ -316,7 +313,7 @@ filterV p as = (mapMaybe fltr (zip as rslts), cks)
     fltr (a, r)
       | result . rootLabel $ r = Just a
       | otherwise = Nothing
-    rslts = map (eval p) as
+    rslts = map (evaluate p) as
     cks = concatMap (report 0) rslts
 
 -- | @shorter x y@ is True if list x is shorter than list y. Lazier

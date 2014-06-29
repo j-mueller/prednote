@@ -38,6 +38,35 @@ module Prednote.Pred
   , fanor
   , fanAtLeast
 
+  -- * Display and evaluation
+  , C.report
+  , C.plan
+  , C.test
+  , C.testV
+  , C.filter
+  , C.filterV
+
+  -- * Comparisons - overloaded
+  , compare
+  , equal
+  , greater
+  , less
+  , greaterEq
+  , lessEq
+  , notEq
+
+  -- * Comparisons - not overloaded
+  , compareBy
+  , equalBy
+  , compareByMaybe
+  , greaterBy
+  , lessBy
+  , greaterEqBy
+  , lessEqBy
+  , notEqBy
+
+  -- * Comparers
+  , parseComparer
   )where
 
 import qualified Prednote.Pred.Core as C
@@ -85,13 +114,6 @@ l <+> r
   | otherwise = l <> r
   where
     full = Prelude.not . X.null
-
-(<++>) :: [Chunk] -> [Chunk] -> [Chunk]
-l <++> r
-  | full l && full r = l ++ [" "] ++ r
-  | otherwise = l ++ r
-  where
-    full = (/= 0) . sum . map (sum . map X.length . text)
 
 -- # Predicate
 

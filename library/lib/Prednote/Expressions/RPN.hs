@@ -44,7 +44,7 @@ pushOperator o ts = case o of
     x:y:zs -> return $ (y ||| x) : zs
     _ -> Left $ err "or"
   OpNot -> case ts of
-    x:zs -> return $ P.not (const True) x : zs
+    x:zs -> return $ P.not x : zs
     _ -> Left $ err "not"
   where
     err x = "insufficient operands to apply \"" <> x
