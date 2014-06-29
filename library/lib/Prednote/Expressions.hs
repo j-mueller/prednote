@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Handles parsing of both infix and RPN Predbox expressions.
-module Prednote.Expressions
+module Prednote.Expressions where
+
+{-
   ( ExprDesc(..)
   , Error
   , Token
@@ -85,3 +87,4 @@ parseExpression e toks = do
     RPN -> maybe (Left "parentheses in an RPN expression\n") Right
            $ toksToRPN toks
   R.parseRPN rpnToks
+-}

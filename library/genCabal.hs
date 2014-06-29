@@ -15,6 +15,9 @@ contravariant = C.closedOpen "contravariant" [0,2,0,1] [0,7]
 split :: C.Package
 split = C.closedOpen "split" [0,2,2] [0,3]
 
+containers :: C.Package
+containers = C.closedOpen "containers" [0,4,2,1] [0,6]
+
 properties :: C.Properties
 properties = commonProperties
   { C.prName = "prednote"
@@ -51,6 +54,7 @@ library ms = C.Library
     , rainbow
     , split
     , text
+    , containers
     ]
   , C.hsSourceDirs ["lib"]
   , C.ghcOptions ghcOptions
