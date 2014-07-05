@@ -11,16 +11,10 @@ prednote :: C.Package
 prednote = C.exactly "prednote" versionInts
 
 quickcheck :: C.Package
-quickcheck = C.closedOpen "QuickCheck" [2,7,5] [2,8]
+quickcheck = C.closedOpen "QuickCheck" [2,7,2] [2,8]
 
-tasty :: C.Package
-tasty = C.closedOpen "tasty" [0,8,1,1] [0,9]
-
-tasty_quickcheck :: C.Package
-tasty_quickcheck = C.closedOpen "tasty-quickcheck" [0,8,1] [0,9]
-
-smallcheck :: C.Package
-smallcheck = C.closedOpen "smallcheck" [1,1,1] [1,2]
+quickpull :: C.Package
+quickpull = C.closedOpen "quickpull" [0,2,0,0] [0,3]
 
 properties :: C.Properties
 properties = commonProperties
@@ -42,9 +36,7 @@ library ms = C.Library
     , text
     , prednote
     , quickcheck
-    , smallcheck
-    , tasty
-    , tasty_quickcheck
+    , containers
     ]
   , C.hsSourceDirs ["lib"]
   , C.ghcOptions ghcOptions
@@ -53,7 +45,7 @@ library ms = C.Library
 
 executable :: C.Executable
 executable = C.Executable "prednote-test"
-  [ C.hsSourceDirs ["./", "lib"]
+  [ C.hsSourceDirs ["lib", "exe"]
   , C.ExeMainIs "prednote-test.hs"
   , C.ghcOptions ghcOptions
   , C.defaultLanguage C.Haskell2010
@@ -64,9 +56,7 @@ executable = C.Executable "prednote-test"
     , text
     , prednote
     , quickcheck
-    , smallcheck
-    , tasty
-    , tasty_quickcheck
+    , quickpull
     ]
   ]
 

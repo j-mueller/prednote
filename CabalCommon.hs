@@ -23,6 +23,9 @@ rainbow_tests = C.closedOpen "rainbow-tests" rainbowLower rainbowUpper
 text :: C.Package
 text = C.closedOpen "text" [0,11,2,0] [1,2]
 
+containers :: C.Package
+containers = C.closedOpen "containers" [0,4,2,1] [0,6]
+
 commonProperties :: C.Properties
 commonProperties = C.empty
   { C.prVersion = C.Version versionInts
