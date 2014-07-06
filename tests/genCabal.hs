@@ -23,21 +23,25 @@ properties = commonProperties
     [ "Tests and QuickCheck instances to accompany prednote." ]
   }
 
+depends :: [C.Package]
+depends =
+  [ base
+  , rainbow
+  , rainbow_tests
+  , text
+  , prednote
+  , quickcheck
+  , containers
+  , quickpull
+  ]
+
 library
   :: [String]
   -- ^ Library modules
   -> C.Library
 library ms = C.Library
   [ C.LibExposedModules ms
-  , C.buildDepends
-    [ base
-    , rainbow
-    , rainbow_tests
-    , text
-    , prednote
-    , quickcheck
-    , containers
-    ]
+  , C.buildDepends depends
   , C.hsSourceDirs ["lib"]
   , C.ghcOptions ghcOptions
   , C.defaultLanguage C.Haskell2010
@@ -49,15 +53,7 @@ executable = C.Executable "prednote-test"
   , C.ExeMainIs "prednote-test.hs"
   , C.ghcOptions ghcOptions
   , C.defaultLanguage C.Haskell2010
-  , C.buildDepends
-    [ base
-    , rainbow
-    , rainbow_tests
-    , text
-    , prednote
-    , quickcheck
-    , quickpull
-    ]
+  , C.buildDepends depends
   ]
 
 cabal
