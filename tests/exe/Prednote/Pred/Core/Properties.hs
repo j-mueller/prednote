@@ -23,3 +23,16 @@ prop_visibility =
   forAll arbitrary $ \i ->
   let r = E.rootLabel . ($ i) . C.evaluate . C.visibility f $ p
   in f (C.result r) == C.visible r
+
+-- | predicate has the expected result
+prop_predicate =
+  forAll (fmap Blind chunker) $ \(Blind ckr) ->
+  forAll (fmap Blind $ function3 coarbitrary arbitrary visible chunker)
+    $ \(Blind f) ->
+  forAll arbitrary $ \i ->
+  forAll pred $ \p ->
+  let (exR, exV, _) = f i
+      (acR, acV) = (C.result o, C.visible o)
+        where
+          o = E.rootLabel $ C.evaluate p i
+  in exR == acR && exV == acV
