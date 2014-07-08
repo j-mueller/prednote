@@ -8,7 +8,7 @@
 -- want to do something like
 --
 -- > import qualified Prednote.Pred as P
-module Prednote.Pred
+module Prednote.Prebuilt
   ( 
   -- * Predicates
     C.Pred(..)

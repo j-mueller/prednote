@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Prednote.Comparisons where
 
-import Prednote.Pred
+import Prednote.Prebuilt
 import Prednote.Format
 import qualified Prednote.Core as C
 import Data.Text (Text)

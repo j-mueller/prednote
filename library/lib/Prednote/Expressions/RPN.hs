@@ -8,8 +8,8 @@ module Prednote.Expressions.RPN where
 
 import Data.Functor.Contravariant
 import qualified Data.Foldable as Fdbl
-import qualified Prednote.Pred as P
-import Prednote.Pred ((&&&), (|||))
+import qualified Prednote.Prebuilt as P
+import Prednote.Prebuilt ((&&&), (|||))
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as X

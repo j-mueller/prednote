@@ -3,9 +3,9 @@
 --
 -- > import qualified Prednote as P
 module Prednote
-  ( module Prednote.Pred
+  ( module Prednote.Prebuilt
   , module Prednote.Expressions
   ) where
 
-import Prednote.Pred
+import Prednote.Prebuilt
 import Prednote.Expressions
