@@ -3,9 +3,10 @@
 -- is easier to use.  However, the types and functions in this module
 -- give you more control.
 --
--- Exports some names that conflict with Prelude names, such as 'and',
--- 'or', 'not', and 'filter'; keep this in mind when you
--- @import@ this module.
+-- Exports some names that conflict with Prelude names, so you might
+-- want to do something like
+--
+-- > import qualified Prednote.Pred.Core as P
 
 module Prednote.Pred.Core where
 
@@ -79,7 +80,7 @@ showFalse :: Pred a -> Pred a
 showFalse = visibility (\b -> if Prelude.not b then shown else hidden)
 
 
-and
+all
   :: Chunker
   -- ^ Static label
   -> Chunker
@@ -88,7 +89,7 @@ and
   -- ^ Dynamic label
   -> [Pred a]
   -> Pred a
-and st ss dyn ls = Pred st' ev
+all st ss dyn ls = Pred st' ev
   where
     st' = Node st . map static $ ls
     ev a = go [] ls
@@ -109,7 +110,7 @@ and st ss dyn ls = Pred st' ev
                 | otherwise -> go cs xs
 
 
-or
+any
   :: Chunker
   -- ^ Static label
   -> Chunker
@@ -118,7 +119,7 @@ or
   -- ^ Dynamic label
   -> [Pred a]
   -> Pred a
-or st ss dyn ls = Pred st' ev
+any st ss dyn ls = Pred st' ev
   where
     st' = Node st . map static $ ls
     ev a = go [] ls
@@ -190,7 +191,7 @@ fan get st ss dyn fn pd = Pred st' ev
         shrt | cs `shorter` allcs = Just ss
              | otherwise = Nothing
 
-fanand
+fanAll
   :: Chunker
   -- ^ Static label
 
@@ -205,7 +206,7 @@ fanand
 
   -> Pred b
   -> Pred a
-fanand = fan get
+fanAll = fan get
   where
     get = go 0
       where
@@ -215,7 +216,7 @@ fanand = fan get
             | Prelude.not x -> (False, shown, Just (c + 1))
             | otherwise -> go (c + 1) xs
 
-fanor
+fanAny
   :: Chunker
   -- ^ Static label
 
@@ -230,7 +231,7 @@ fanor
 
   -> Pred b
   -> Pred a
-fanor = fan get
+fanAny = fan get
   where
     get = go 0
       where

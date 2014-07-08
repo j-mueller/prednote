@@ -21,3 +21,6 @@ output = liftM4 C.Output arbitrary visible
 
 pred :: Gen (C.Pred Int)
 pred = liftM2 C.Pred (tree chunker) (function1 variant (tree output))
+
+dynamicLabel :: Gen (Bool -> Int -> C.Chunker)
+dynamicLabel = function2 coarbitrary coarbitrary chunker

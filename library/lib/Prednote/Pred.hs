@@ -4,9 +4,10 @@
 -- produces 'Pred' that make sparing use of color.  For more control
 -- over the 'Pred' produced, use "Prednote.Pred.Core".
 --
--- Exports some names that conflict with Prelude names, such as 'and',
--- 'or', 'not', and 'C.filter'; keep this in mind when you
--- @import@ this module.
+-- Exports some names that conflict with Prelude names, so you might
+-- want to do something like
+--
+-- > import qualified Prednote.Pred as P
 module Prednote.Pred
   ( 
   -- * Predicates
@@ -27,15 +28,15 @@ module Prednote.Pred
   , false
 
   -- * Conjunction, disjunction, negation
-  , and
+  , all
   , (&&&)
-  , or
+  , any
   , (|||)
   , not
 
   -- * Fan
-  , fanand
-  , fanor
+  , fanAll
+  , fanAny
   , fanAtLeast
 
   -- * Display and evaluation
@@ -75,7 +76,7 @@ import qualified Data.Text as X
 import Data.Text (Text)
 import System.Console.Rainbow
 import Data.Monoid
-import Prelude hiding (and, or, not, filter, compare)
+import Prelude hiding (and, or, not, filter, compare, any, all)
 import Control.Arrow (first)
 import qualified Prelude
 
@@ -148,28 +149,28 @@ false = predicate "always False"
 
 -- | No child 'Pred' may be 'False'.  An empty list of child 'Pred'
 -- returns 'True'.  Always visible.
-and :: [Pred a] -> Pred a
-and = C.and (indentTxt "and") shortCir dyn
+all :: [Pred a] -> Pred a
+all = C.all (indentTxt "all") shortCir dyn
   where
-    dyn b _ = indent $ lblLine b "and"
+    dyn b _ = indent $ lblLine b "all"
 
--- | Creates 'and' 'Pred' that are always visible.
+-- | Creates 'all' 'Pred' that are always visible.
 (&&&) :: Pred a -> Pred a -> Pred a
-l &&& r = and [l, r]
+l &&& r = all [l, r]
 
 infixr 3 &&&
 
 -- | At least one child 'Pred' must be 'True'.  An empty list of child
 -- 'Pred' returns 'False'.  Always visible.
 
-or :: [Pred a] -> Pred a
-or = C.or (indentTxt "or") shortCir dyn
+any :: [Pred a] -> Pred a
+any = C.any (indentTxt "any") shortCir dyn
   where
-    dyn b _ = indent $ lblLine b "or"
+    dyn b _ = indent $ lblLine b "any"
 
 -- | Creates 'or' 'Pred' that are always visible.
 (|||) :: Pred a -> Pred a -> Pred a
-l ||| r = or [l, r]
+l ||| r = any [l, r]
 
 infixr 2 |||
 
@@ -181,18 +182,18 @@ not = C.not (indentTxt "not") dyn
 
 -- | No fanned-out item may be 'False'.  An empty list of child items
 -- returns 'True'.
-fanand :: (a -> [b]) -> Pred b -> Pred a
-fanand = C.fanand (indentTxt lbl) shortCir dyn
+fanAll :: (a -> [b]) -> Pred b -> Pred a
+fanAll = C.fanAll (indentTxt lbl) shortCir dyn
   where
-    lbl = "fanout and - no fanned-out subject may be False"
+    lbl = "fanout all - no fanned-out subject may be False"
     dyn b _ = indent $ lblLine b lbl
 
 -- | At least one fanned-out item must be 'True'.  An empty list of
 -- child items returns 'False'.
-fanor :: (a -> [b]) -> Pred b -> Pred a
-fanor = C.fanor (indentTxt lbl) shortCir dyn
+fanAny :: (a -> [b]) -> Pred b -> Pred a
+fanAny = C.fanAny (indentTxt lbl) shortCir dyn
   where
-    lbl = "fanout or - one fanned-out subject must be True"
+    lbl = "fanout any - one fanned-out subject must be True"
     dyn b _ = indent $ lblLine b lbl
 
 -- | At least the given number of child items must be 'True'.
