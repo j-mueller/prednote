@@ -8,7 +8,8 @@
 -- want to do something like
 --
 -- > import qualified Prednote.Pred as P
-module Prednote.Pred
+module Prednote.Pred where
+{-
   ( 
   -- * Predicates
     C.Pred(..)
@@ -69,9 +70,11 @@ module Prednote.Pred
   -- * Comparers
   , parseComparer
   )where
+-}
 
 import qualified Prednote.Pred.Core as C
-import Prednote.Pred.Core (Pred, Visible, shown)
+import Prednote.Pred.Core (Pred, Visible, Chunker, shown)
+import qualified Data.Tree as E
 import qualified Data.Text as X
 import Data.Text (Text)
 import System.Console.Rainbow
@@ -118,33 +121,53 @@ l <+> r
 
 -- # Predicate
 
-predicate
-  :: Text
-  -- ^ Static name
-  -> (a -> (Bool, Visible, Text))
-  -- ^ Predicate function.  This function is applied to the subject.
-  -- It returns a triple: the first element is the result of the
-  -- predicate; the second indicates whether this result is visible;
-  -- and the third element is the dynamic label to use.  Do not
-  -- indicate truth or falsity or provide indentation in the label;
-  -- this is taken care of for you.
-  -> Pred a
-predicate l f = C.predicate (indentTxt l) f'
+rename :: Chunker -> Pred a -> Pred a
+rename c p = p { C.static = t' }
   where
-    f' a = (r, v, indentTxt dyn)
+    t' = (C.static p) { E.rootLabel = c }
+
+changeOutput
+  :: (a -> C.Output -> C.Output)
+  -> Pred a
+  -> Pred a
+changeOutput f p = p { C.evaluate = e' }
+  where
+    e' a = t'
       where
-        (r, v, dyn) = f a
+        t = C.evaluate p a
+        t' = t { E.rootLabel = f a (E.rootLabel t) }
+
+speak :: (a -> Text) -> C.Pred a -> C.Pred a
+speak f = changeOutput g
+  where
+    g a o = o { C.dynamic = dyn }
+      where
+        dyn = indent $ lblLine (C.result o) (f a)
+
+
+speakShort :: C.Pred a -> C.Pred a
+speakShort p = p { C.evaluate = e' }
+  where
+    e' a = t { E.rootLabel = (E.rootLabel t)
+      { C.short = fmap (const shortCir) shrt } }
+      where
+        t = C.evaluate p a
+        shrt = C.short . E.rootLabel $ t
+
+predicate :: (a -> Text) -> (a -> Bool) -> C.Pred a
+predicate s f = speak s $ C.Pred (E.Node (const []) []) ev
+  where
+    ev a = E.Node (C.Output (f a) C.shown Nothing (const [])) []
 
 -- | Always returns 'True' and is always visible.
 true :: Pred a
-true = predicate "always True"
-  (const (True, shown, "always True"))
+true = predicate (const "always True") (const True)
 
 -- | Always returns 'False' and is always visible.
 false :: Pred a
-false = predicate "always False"
-  (const (False, shown, "always False"))
+false = predicate (const "always False") (const False)
 
+{-
 -- # Visibility
 
 visibility :: (Bool -> Visible) -> Pred a -> Pred a
@@ -531,3 +554,4 @@ parseComparer t f
 
 
 
+-}
