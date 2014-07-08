@@ -8,16 +8,15 @@
 -- want to do something like
 --
 -- > import qualified Prednote.Pred as P
-module Prednote.Pred where
-{-
+module Prednote.Pred
   ( 
   -- * Predicates
     C.Pred(..)
 
   -- * Visibility
   , C.Visible(..)
-  , shown
-  , hidden
+  , C.shown
+  , C.hidden
   , reveal
   , hide
   , showTrue
@@ -69,49 +68,75 @@ module Prednote.Pred where
 
   -- * Comparers
   , parseComparer
+
+  -- * Labels and indentation
+  , lblTrue
+  , lblFalse
+  , indentAmt
+  , lblLine
+  , indent
+  , shortCir
+  , indentTxt
+  , (<+>)
+
+  -- * Naming and changing output
+  , rename
+  , changeOutput
+  , speak
+  , speakShort
   )where
--}
+
 
 import qualified Prednote.Pred.Core as C
-import Prednote.Pred.Core (Pred, Visible, Chunker, shown)
 import qualified Data.Tree as E
 import qualified Data.Text as X
 import Data.Text (Text)
 import System.Console.Rainbow
 import Data.Monoid
 import Prelude hiding (and, or, not, filter, compare, any, all)
-import Control.Arrow (first)
 import qualified Prelude
 
 -- # Labels and indentation
 
+-- | A colorful label for 'True' values.
 lblTrue :: [Chunk]
 lblTrue = ["[", f_green <> "TRUE", "]"]
 
+-- | A colorful label for 'False' values.
 lblFalse :: [Chunk]
 lblFalse = ["[", f_red <> "FALSE", "]"]
 
+-- | Indent amount.
 indentAmt :: Int
 indentAmt = 2
 
+-- | Prefixes the given 'Text' with colorful text to indicate 'True'
+-- or 'False' as appropriate.
 lblLine :: Bool -> Text -> [Chunk]
 lblLine b t = lbl ++ [" ", fromText t]
   where
     lbl | b = lblTrue
         | otherwise = lblFalse
 
+-- | Indents the given list of 'Chunk' by the given 'Int' multipled by
+-- 'indentAmt'.  Appends a newline.
 indent :: [Chunk] -> Int -> [Chunk]
 indent cs i = spaces : cs ++ [fromText "\n"]
   where
     spaces = fromText . X.replicate (indentAmt * i)
       . X.singleton $ ' '
 
+-- | A label for a short circuit.
 shortCir :: Int -> [Chunk]
 shortCir = indent ["[", f_yellow <> "short circuit" <> "]"]
 
+-- | Indents a 'Text' by the given 'Int' multiplied by
+-- 'indentAmt'.
 indentTxt :: Text -> Int -> [Chunk]
 indentTxt = indent . (:[]) . fromText
 
+-- | Append two 'Text', with an intervening space if both 'Text' are
+-- not empty.
 (<+>) :: Text -> Text -> Text
 l <+> r
   | full l && full r = l <> " " <> r
@@ -121,15 +146,21 @@ l <+> r
 
 -- # Predicate
 
-rename :: Chunker -> Pred a -> Pred a
-rename c p = p { C.static = t' }
-  where
-    t' = (C.static p) { E.rootLabel = c }
+-- | Create a new 'C.Pred' with a different static label.
+rename :: Text -> C.Pred a -> C.Pred a
+rename x p = p { C.static = (C.static p)
+  { E.rootLabel = indentTxt x } }
 
+-- | Creates a new 'C.Pred' with a result differing from the original
+-- 'C.Pred'.
 changeOutput
   :: (a -> C.Output -> C.Output)
-  -> Pred a
-  -> Pred a
+  -- ^ Function to modify the 'C.Output'
+
+  -> C.Pred a
+  -- ^ Modify the 'C.Output' of this 'C.Pred'
+
+  -> C.Pred a
 changeOutput f p = p { C.evaluate = e' }
   where
     e' a = t'
@@ -137,7 +168,15 @@ changeOutput f p = p { C.evaluate = e' }
         t = C.evaluate p a
         t' = t { E.rootLabel = f a (E.rootLabel t) }
 
-speak :: (a -> Text) -> C.Pred a -> C.Pred a
+-- | Creates a new 'C.Pred' with a different dynamic label.
+speak
+  :: (a -> Text)
+  -- ^ New dynamic label.  Do not indicate whether the result is
+  -- 'True' or 'False'; this is done for you.
+
+  -> C.Pred a
+
+  -> C.Pred a
 speak f = changeOutput g
   where
     g a o = o { C.dynamic = dyn }
@@ -145,6 +184,8 @@ speak f = changeOutput g
         dyn = indent $ lblLine (C.result o) (f a)
 
 
+-- | Creates a new 'C.Pred' with any short circuits having a colorful
+-- label.
 speakShort :: C.Pred a -> C.Pred a
 speakShort p = p { C.evaluate = e' }
   where
@@ -154,99 +195,127 @@ speakShort p = p { C.evaluate = e' }
         t = C.evaluate p a
         shrt = C.short . E.rootLabel $ t
 
-predicate :: (a -> Text) -> (a -> Bool) -> C.Pred a
-predicate s f = speak s $ C.Pred (E.Node (const []) []) ev
+-- | Builds predicates.
+predicate
+  :: Text
+  -- ^ Static label
+
+  -> (a -> Text)
+  -- ^ Computes the dynamic label.  Do not indicate whether the result
+  -- is 'True' or 'False'; this is automatically done for you.
+
+  -> (a -> Bool)
+  -- ^ Predicate function
+
+  -> C.Pred a
+
+predicate r s f = rename r . speak s $ C.Pred (E.Node (const []) []) ev
   where
     ev a = E.Node (C.Output (f a) C.shown Nothing (const [])) []
 
 -- | Always returns 'True' and is always visible.
-true :: Pred a
-true = predicate (const "always True") (const True)
+true :: C.Pred a
+true = predicate l (const l) (const True)
+  where
+    l = "always True"
 
 -- | Always returns 'False' and is always visible.
-false :: Pred a
-false = predicate (const "always False") (const False)
+false :: C.Pred a
+false = predicate l (const l) (const False)
+  where
+    l = "always False"
 
-{-
 -- # Visibility
 
-visibility :: (Bool -> Visible) -> Pred a -> Pred a
-visibility f (Pred s e) = Pred s e'
+-- | Creates a 'C.Pred' with its visibility modified.
+visibility
+  :: (Bool -> C.Visible)
+  -- ^ When applied to the 'C.result' of the 'C.Pred', this function
+  -- returns the desired visibility.
+  -> C.Pred a
+  -> C.Pred a
+visibility f (C.Pred s e) = C.Pred s e'
   where
     e' a = g (e a)
-    g (Node n cs) = Node n { visible = f (result n) } cs
+    g (E.Node n cs) = E.Node n { C.visible = f (C.result n) } cs
 
-reveal :: Pred a -> Pred a
-reveal = visibility (const shown)
+-- | Creates a 'C.Pred' that is always shown.
+reveal :: C.Pred a -> C.Pred a
+reveal = visibility (const C.shown)
 
-hide :: Pred a -> Pred a
-hide = visibility (const hidden)
+-- | Creates a 'C.Pred' that is always hidden.
+hide :: C.Pred a -> C.Pred a
+hide = visibility (const C.hidden)
 
-showTrue :: Pred a -> Pred a
-showTrue = visibility (\b -> if b then shown else hidden)
+-- | Creates a 'C.Pred' that is shown only if its 'C.result' is
+-- 'True'.
+showTrue :: C.Pred a -> C.Pred a
+showTrue = visibility (\b -> if b then C.shown else C.hidden)
 
-showFalse :: Pred a -> Pred a
-showFalse = visibility (\b -> if Prelude.not b then shown else hidden)
-
+-- | Creates a 'C.Pred' that is shown only if its 'C.result' is
+-- 'False'.
+showFalse :: C.Pred a -> C.Pred a
+showFalse = visibility (\b -> if Prelude.not b then C.shown else C.hidden)
 
 -- # Conjunction and disjunction, negation
 
 -- | No child 'Pred' may be 'False'.  An empty list of child 'Pred'
 -- returns 'True'.  Always visible.
-all :: [Pred a] -> Pred a
-all = C.all (indentTxt "all") shortCir dyn
+all :: [C.Pred a] -> C.Pred a
+all = speakShort . rename l . speak (const l) . C.all
   where
-    dyn b _ = indent $ lblLine b "all"
+    l = "all"
 
 -- | Creates 'all' 'Pred' that are always visible.
-(&&&) :: Pred a -> Pred a -> Pred a
+(&&&) :: C.Pred a -> C.Pred a -> C.Pred a
 l &&& r = all [l, r]
 
 infixr 3 &&&
 
 -- | At least one child 'Pred' must be 'True'.  An empty list of child
 -- 'Pred' returns 'False'.  Always visible.
-
-any :: [Pred a] -> Pred a
-any = C.any (indentTxt "any") shortCir dyn
+any :: [C.Pred a] -> C.Pred a
+any = speakShort . rename l . speak (const l) . C.any
   where
-    dyn b _ = indent $ lblLine b "any"
+    l = "any"
 
--- | Creates 'or' 'Pred' that are always visible.
-(|||) :: Pred a -> Pred a -> Pred a
+
+-- | Creates 'any' 'Pred' that are always visible.
+(|||) :: C.Pred a -> C.Pred a -> C.Pred a
 l ||| r = any [l, r]
 
 infixr 2 |||
 
 -- | Negation.  Always visible.
-not :: Pred a -> Pred a
-not = C.not (indentTxt "not") dyn
+not :: C.Pred a -> C.Pred a
+not = rename l . speak (const l) . C.not
   where
-    dyn b _ = indent $ lblLine b "not"
+    l = "not"
 
 -- | No fanned-out item may be 'False'.  An empty list of child items
 -- returns 'True'.
-fanAll :: (a -> [b]) -> Pred b -> Pred a
-fanAll = C.fanAll (indentTxt lbl) shortCir dyn
+fanAll :: (a -> [b]) -> C.Pred b -> C.Pred a
+fanAll f = speakShort . rename l . speak (const l) . C.fanAll f
   where
-    lbl = "fanout all - no fanned-out subject may be False"
-    dyn b _ = indent $ lblLine b lbl
+    l = "fanout all"
+
+
 
 -- | At least one fanned-out item must be 'True'.  An empty list of
 -- child items returns 'False'.
-fanAny :: (a -> [b]) -> Pred b -> Pred a
-fanAny = C.fanAny (indentTxt lbl) shortCir dyn
+fanAny :: (a -> [b]) -> C.Pred b -> C.Pred a
+fanAny f = speakShort . rename l . speak (const l) . C.fanAny f
   where
-    lbl = "fanout any - one fanned-out subject must be True"
-    dyn b _ = indent $ lblLine b lbl
+    l = "fanout any"
+
 
 -- | At least the given number of child items must be 'True'.
-fanAtLeast :: Int -> (a -> [b]) -> Pred b -> Pred a
-fanAtLeast i = C.fanAtLeast i (indentTxt lbl) shortCir dyn
+fanAtLeast :: Int -> (a -> [b]) -> C.Pred b -> C.Pred a
+fanAtLeast i f = speakShort . rename l . speak (const l)
+  . C.fanAtLeast i f
   where
-    lbl = "fanout at least - at least " <> X.pack (show i)
-      <> " fanned-out subject(s) must be True"
-    dyn b _ = indent $ lblLine b lbl
+    l = "fanout - at least " <> X.pack (show i) <>
+      " fanned-out subject(s) must be True"
 
 -- # Comparisons
 
@@ -265,66 +334,25 @@ compareBy
   -- order for the Predbox to be True; otherwise it is False. The subject
   -- will be on the left hand side.
 
-  -> (a -> (Ordering, Text))
-  -- ^ The first of the pair is how to compare an item against the
-  -- right hand side. Return LT if the item is less than the right
-  -- hand side; GT if greater; EQ if equal to the right hand side.
-  --
-  -- The second of the pair is a description of the left hand side.
+  -> (a -> Text)
+  -- ^ Describes the left-hand side
 
-  -> Pred a
+  -> (a -> Ordering)
+  -- ^ How to compare the left-hand side to the right-hand side.
+  -- Return LT if the item is less than the right hand side; GT if
+  -- greater; EQ if equal to the right hand side.
 
-compareBy typeDesc rhsDesc ord get = predicate stat fn
+  -> C.Pred a
+
+compareBy typeDesc rhsDesc ord lhsDesc get = predicate stat dyn pd
   where
     stat = typeDesc <+> "is" <+> ordDesc <+> rhsDesc
     ordDesc = case ord of
       EQ -> "equal to"
       LT -> "less than"
       GT -> "greater than"
-    fn a = (res, shown, dyn)
-      where
-        (ord', txt) = get a
-        res = ord' == ord
-        dyn = typeDesc <+> txt <+> "is" <+> ordDesc <+> rhsDesc
-
--- | Builds a 'Pred' that tests items for equality.
-
-equalBy
-  :: Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> Text
-  -- ^ Description of the right-hand side
-
-  -> (a -> (Bool, Text))
-  -- ^ The first of the pair is how to compare an item against the
-  -- right hand side. Return True if the items are equal; False otherwise.
-  --
-  -- The second of the pair is a description of the left hand side.
-
-  -> Pred a
-equalBy typeDesc rhsDesc get = predicate stat fn
-  where
-    stat = typeDesc <+> "is equal to" <+> rhsDesc
-    fn a = (res, shown, dyn)
-      where
-        (res, txt) = get a
-        dyn = typeDesc <+> txt <+> "is equal to" <+> rhsDesc
-
--- | Overloaded version of 'equalBy'.
-
-equal
-  :: (Eq a, Show a)
-  => Text
-  -- ^ Description of the type of thing that is being matched
-
-  -> a
-  -- ^ Right-hand side
-
-  -> Pred a
-equal typeDesc rhs = equalBy typeDesc (X.pack . show $ rhs) f
-  where
-    f lhs = (lhs == rhs, X.pack . show $ lhs)
+    dyn a = typeDesc <+> lhsDesc a <+> "is" <+> ordDesc <+> rhsDesc
+    pd a = get a == ord
 
 -- | Overloaded version of 'compareBy'.
 
@@ -341,12 +369,47 @@ compare
   -> a
   -- ^ Right-hand side
 
-  -> Pred a
+  -> C.Pred a
+compare typeDesc ord rhs =
+  compareBy typeDesc (X.pack . show $ rhs) ord (X.pack . show)
+            (`Prelude.compare` rhs)
 
-compare typeDesc ord rhs = compareBy typeDesc rhsDesc ord fn
+-- | Builds a 'Pred' that tests items for equality.
+
+equalBy
+  :: Text
+  -- ^ Description of the type of thing that is being matched
+
+  -> Text
+  -- ^ Description of the right-hand side
+
+  -> (a -> Text)
+  -- ^ Describes the left-hand side
+
+  -> (a -> Bool)
+  -- ^ How to compare an item against the right hand side.  Return
+  -- 'True' if the items are equal; 'False' otherwise.
+
+  -> C.Pred a
+equalBy typeDesc rhsDesc lhsDesc get = predicate stat dyn get
   where
-    fn lhs = (Prelude.compare lhs rhs, X.pack . show $ lhs)
-    rhsDesc = X.pack . show $ rhs
+    stat = typeDesc <+> "is equal to" <+> rhsDesc
+    dyn a = typeDesc <+> lhsDesc a <+> "is equal to" <+> rhsDesc
+
+-- | Overloaded version of 'equalBy'.
+
+equal
+  :: (Eq a, Show a)
+  => Text
+  -- ^ Description of the type of thing that is being matched
+
+  -> a
+  -- ^ Right-hand side
+
+  -> C.Pred a
+equal typeDesc rhs = equalBy typeDesc (X.pack . show $ rhs)
+                             (X.pack . show) (== rhs)
+
 
 -- | Builds a 'Pred' for items that might fail to return a comparison.
 compareByMaybe
@@ -361,29 +424,27 @@ compareByMaybe
   -- order for the Predbox to be True; otherwise it is False. The subject
   -- will be on the left hand side.
 
-  -> (a -> (Maybe Ordering, Text))
-  -- ^ The first of the pair is how to compare an item against the
-  -- right hand side. Return LT if the item is less than the right
-  -- hand side; GT if greater; EQ if equal to the right hand side.
-  --
-  -- The second of the pair is a description of the left hand side.
+  -> (a -> Text)
+  -- ^ Describes the left-hand side
 
-  -> Pred a
+  -> (a -> Maybe Ordering)
+  -- ^ How to compare an item against the right hand side. Return LT if
+  -- the item is less than the right hand side; GT if greater; EQ if
+  -- equal to the right hand side.
 
-compareByMaybe typeDesc rhsDesc ord get = predicate stat fn
+  -> C.Pred a
+
+compareByMaybe typeDesc rhsDesc ord lhsDesc get = predicate stat dyn fn
   where
     stat = typeDesc <+> "is" <+> ordDesc <+> rhsDesc
+    dyn a = typeDesc <+> lhsDesc a <+> "is" <+> ordDesc <+> rhsDesc
     ordDesc = case ord of
       EQ -> "equal to"
       LT -> "less than"
       GT -> "greater than"
-    fn a = (res, shown, dyn)
-      where
-        (ord', txt) = get a
-        res = case ord' of
-          Nothing -> False
-          Just o -> o == ord
-        dyn = typeDesc <+> txt <+> "is" <+> ordDesc <+> rhsDesc
+    fn a = case get a of
+      Nothing -> False
+      Just o -> o == ord
 
 greater
   :: (Show a, Ord a)
@@ -394,7 +455,7 @@ greater
   -> a
   -- ^ Right-hand side
 
-  -> Pred a
+  -> C.Pred a
 greater typeDesc = compare typeDesc GT
 
 
@@ -407,7 +468,7 @@ less
   -> a
   -- ^ Right-hand side
 
-  -> Pred a
+  -> C.Pred a
 less typeDesc = compare typeDesc GT
 
 greaterEq
@@ -418,7 +479,7 @@ greaterEq
   -> a
   -- ^ Right-hand side
 
-  -> Pred a
+  -> C.Pred a
 greaterEq t r = greater t r ||| equal t r
 
 lessEq
@@ -429,7 +490,7 @@ lessEq
   -> a
   -- ^ Right-hand side
 
-  -> Pred a
+  -> C.Pred a
 lessEq t r = less t r ||| equal t r
 
 notEq
@@ -440,7 +501,7 @@ notEq
   -> a
   -- ^ Right-hand side
 
-  -> Pred a
+  -> C.Pred a
 notEq t r = not $ equal t r
 
 greaterBy
@@ -450,15 +511,16 @@ greaterBy
   -> Text
   -- ^ Description of right-hand side
 
-  -> (a -> (Ordering, Text))
-  -- ^ The first of the pair is how to compare an item against the
-  -- right hand side. Return LT if the item is less than the right
-  -- hand side; GT if greater; EQ if equal to the right hand side.
-  --
-  -- The second of the pair is a description of the left hand side.
+  -> (a -> Text)
+  -- ^ Describes the left-hand side
 
-  -> Pred a
-greaterBy dT dR f = compareBy dT dR GT f
+  -> (a -> Ordering)
+  -- ^ How to compare an item against the right hand side. Return LT
+  -- if the item is less than the right hand side; GT if greater; EQ
+  -- if equal to the right hand side.
+
+  -> C.Pred a
+greaterBy dT dR dL = compareBy dT dR GT dL
 
 
 lessBy
@@ -468,15 +530,16 @@ lessBy
   -> Text
   -- ^ Description of right-hand side
 
-  -> (a -> (Ordering, Text))
-  -- ^ The first of the pair is how to compare an item against the
-  -- right hand side. Return LT if the item is less than the right
-  -- hand side; GT if greater; EQ if equal to the right hand side.
-  --
-  -- The second of the pair is a description of the left hand side.
+  -> (a -> Text)
+  -- ^ Describes the left-hand side
 
-  -> Pred a
-lessBy dT dR f = compareBy dT dR LT f
+  -> (a -> Ordering)
+  -- ^ How to compare an item against the right hand side. Return LT
+  -- if the item is less than the right hand side; GT if greater; EQ
+  -- if equal to the right hand side.
+
+  -> C.Pred a
+lessBy dT dR dL = compareBy dT dR LT dL
 
 greaterEqBy
   :: Text
@@ -485,17 +548,18 @@ greaterEqBy
   -> Text
   -- ^ Description of right-hand side
 
-  -> (a -> (Ordering, Text))
-  -- ^ The first of the pair is how to compare an item against the
-  -- right hand side. Return LT if the item is less than the right
-  -- hand side; GT if greater; EQ if equal to the right hand side.
-  --
-  -- The second of the pair is a description of the left hand side.
+  -> (a -> Text)
+  -- ^ Describes the left-hand side
 
-  -> Pred a
-greaterEqBy dT dR f = greaterBy dT dR f ||| equalBy dT dR f'
+  -> (a -> Ordering)
+  -- ^ How to compare an item against the right hand side. Return LT
+  -- if the item is less than the right hand side; GT if greater; EQ
+  -- if equal to the right hand side.
+
+  -> C.Pred a
+greaterEqBy dT dR dL f = greaterBy dT dR dL f ||| equalBy dT dR dL f'
   where
-    f' = fmap (first (== EQ)) f
+    f' = fmap (== EQ) f
 
 lessEqBy
   :: Text
@@ -504,17 +568,18 @@ lessEqBy
   -> Text
   -- ^ Description of right-hand side
 
-  -> (a -> (Ordering, Text))
-  -- ^ The first of the pair is how to compare an item against the
-  -- right hand side. Return LT if the item is less than the right
-  -- hand side; GT if greater; EQ if equal to the right hand side.
-  --
-  -- The second of the pair is a description of the left hand side.
+  -> (a -> Text)
+  -- ^ Describes the left-hand side
 
-  -> Pred a
-lessEqBy dT dR f = lessBy dT dR f ||| equalBy dT dR f'
+  -> (a -> Ordering)
+  -- ^ How to compare an item against the right hand side. Return LT
+  -- if the item is less than the right hand side; GT if greater; EQ
+  -- if equal to the right hand side.
+
+  -> C.Pred a
+lessEqBy dT dR dL f = lessBy dT dR dL f ||| equalBy dT dR dL f'
   where
-    f' = fmap (first (== EQ)) f
+    f' = fmap (== EQ) f
 
 notEqBy
   :: Text
@@ -523,24 +588,25 @@ notEqBy
   -> Text
   -- ^ Description of right-hand side
 
-  -> (a -> (Bool, Text))
-  -- ^ The first of the pair is how to compare an item against the
-  -- right hand side. Return True if the items are equal; False if not.
-  --
-  -- The second of the pair is a description of the left hand side.
+  -> (a -> Text)
+  -- ^ Describes the left-hand side
 
-  -> Pred a
-notEqBy dT dR f = not $ equalBy dT dR f
+  -> (a -> Bool)
+  -- ^ How to compare an item against the right hand side.  Return
+  -- 'True' if equal; 'False' otherwise.
+
+  -> C.Pred a
+notEqBy dT dR dL = not . equalBy dT dR dL
 
 
 parseComparer
   :: Text
   -- ^ The string with the comparer to be parsed
-  -> (Ordering -> Pred a)
-  -- ^ A function that, when given an ordering, returns a Predbox
-  -> Maybe (Pred a)
+  -> (Ordering -> C.Pred a)
+  -- ^ A function that, when given an ordering, returns a 'C.Pred'
+  -> Maybe (C.Pred a)
   -- ^ If an invalid comparer string is given, Nothing; otherwise, the
-  -- Predbox.
+  -- 'C.Pred'.
 parseComparer t f
   | t == ">" = Just (f GT)
   | t == "<" = Just (f LT)
@@ -552,6 +618,3 @@ parseComparer t f
   | t == "!=" = Just (not $ f EQ)
   | otherwise = Nothing
 
-
-
--}
