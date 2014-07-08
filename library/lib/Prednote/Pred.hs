@@ -329,11 +329,6 @@ compareBy
   -> Text
   -- ^ Description of the right-hand side
 
-  -> Ordering
-  -- ^ When subjects are compared, this ordering must be the result in
-  -- order for the Predbox to be True; otherwise it is False. The subject
-  -- will be on the left hand side.
-
   -> (a -> Text)
   -- ^ Describes the left-hand side
 
@@ -342,9 +337,14 @@ compareBy
   -- Return LT if the item is less than the right hand side; GT if
   -- greater; EQ if equal to the right hand side.
 
+  -> Ordering
+  -- ^ When subjects are compared, this ordering must be the result in
+  -- order for the Predbox to be True; otherwise it is False. The subject
+  -- will be on the left hand side.
+
   -> C.Pred a
 
-compareBy typeDesc rhsDesc ord lhsDesc get = predicate stat dyn pd
+compareBy typeDesc rhsDesc lhsDesc get ord = predicate stat dyn pd
   where
     stat = typeDesc <+> "is" <+> ordDesc <+> rhsDesc
     ordDesc = case ord of
@@ -361,18 +361,18 @@ compare
   => Text
   -- ^ Description of the type of thing that is being matched
 
+  -> a
+  -- ^ Right-hand side
+
   -> Ordering
   -- ^ When subjects are compared, this ordering must be the result in
   -- order for the Predbox to be True; otherwise it is False. The subject
   -- will be on the left hand side.
 
-  -> a
-  -- ^ Right-hand side
-
   -> C.Pred a
-compare typeDesc ord rhs =
-  compareBy typeDesc (X.pack . show $ rhs) ord (X.pack . show)
-            (`Prelude.compare` rhs)
+compare typeDesc rhs ord =
+  compareBy typeDesc (X.pack . show $ rhs) (X.pack . show)
+            (`Prelude.compare` rhs) ord
 
 -- | Builds a 'Pred' that tests items for equality.
 
@@ -419,11 +419,6 @@ compareByMaybe
   -> Text
   -- ^ Description of the right-hand side
 
-  -> Ordering
-  -- ^ When subjects are compared, this ordering must be the result in
-  -- order for the Predbox to be True; otherwise it is False. The subject
-  -- will be on the left hand side.
-
   -> (a -> Text)
   -- ^ Describes the left-hand side
 
@@ -432,9 +427,14 @@ compareByMaybe
   -- the item is less than the right hand side; GT if greater; EQ if
   -- equal to the right hand side.
 
+  -> Ordering
+  -- ^ When subjects are compared, this ordering must be the result in
+  -- order for the Predbox to be True; otherwise it is False. The subject
+  -- will be on the left hand side.
+
   -> C.Pred a
 
-compareByMaybe typeDesc rhsDesc ord lhsDesc get = predicate stat dyn fn
+compareByMaybe typeDesc rhsDesc lhsDesc get ord = predicate stat dyn fn
   where
     stat = typeDesc <+> "is" <+> ordDesc <+> rhsDesc
     dyn a = typeDesc <+> lhsDesc a <+> "is" <+> ordDesc <+> rhsDesc
@@ -456,8 +456,7 @@ greater
   -- ^ Right-hand side
 
   -> C.Pred a
-greater typeDesc = compare typeDesc GT
-
+greater typeDesc rhs = compare typeDesc rhs GT
 
 less
   :: (Show a, Ord a)
@@ -469,7 +468,7 @@ less
   -- ^ Right-hand side
 
   -> C.Pred a
-less typeDesc = compare typeDesc GT
+less typeDesc rhs = compare typeDesc rhs GT
 
 greaterEq
   :: (Show a, Ord a)
@@ -520,7 +519,7 @@ greaterBy
   -- if equal to the right hand side.
 
   -> C.Pred a
-greaterBy dT dR dL = compareBy dT dR GT dL
+greaterBy dT dR dL get = compareBy dT dR dL get GT
 
 
 lessBy
@@ -539,7 +538,7 @@ lessBy
   -- if equal to the right hand side.
 
   -> C.Pred a
-lessBy dT dR dL = compareBy dT dR LT dL
+lessBy dT dR dL get = compareBy dT dR dL get LT
 
 greaterEqBy
   :: Text
@@ -599,11 +598,17 @@ notEqBy
 notEqBy dT dR dL = not . equalBy dT dR dL
 
 
+-- | Parses a string that contains text, such as @>=@, which indicates
+-- which comparer to use.  Returns the comparer.
 parseComparer
   :: Text
   -- ^ The string with the comparer to be parsed
+
   -> (Ordering -> C.Pred a)
-  -- ^ A function that, when given an ordering, returns a 'C.Pred'
+  -- ^ A function that, when given an ordering, returns a 'C.Pred'.
+  -- Typically you will get this by partial application of 'compare',
+  -- 'compareBy', or 'compareByMaybe'.
+
   -> Maybe (C.Pred a)
   -- ^ If an invalid comparer string is given, Nothing; otherwise, the
   -- 'C.Pred'.
