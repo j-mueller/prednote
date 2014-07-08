@@ -39,19 +39,6 @@ instance Show Output where
   show (Output r v _ _) = "output - result: " ++ show r
     ++ " visible: " ++ (show . unVisible $ v)
 
-
-predicate
-  :: Chunker
-  -- ^ Static name
-
-  -> (a -> (Bool, Visible, Chunker))
-  -- ^ Compute result
-
-  -> Pred a
-predicate st f = Pred (Node st [])
-  (\a -> let (r, v, c) = f a in Node (Output r v Nothing c) [])
-
-
 newtype Visible = Visible { unVisible :: Bool }
   deriving (Eq, Ord, Show)
 
@@ -61,48 +48,21 @@ shown = Visible True
 hidden :: Visible
 hidden = Visible False
 
-visibility :: (Bool -> Visible) -> Pred a -> Pred a
-visibility f (Pred s e) = Pred s e'
+all :: [Pred a] -> Pred a
+all ls = Pred st' ev
   where
-    e' a = g (e a)
-    g (Node n cs) = Node n { visible = f (result n) } cs
-
-reveal :: Pred a -> Pred a
-reveal = visibility (const shown)
-
-hide :: Pred a -> Pred a
-hide = visibility (const hidden)
-
-showTrue :: Pred a -> Pred a
-showTrue = visibility (\b -> if b then shown else hidden)
-
-showFalse :: Pred a -> Pred a
-showFalse = visibility (\b -> if Prelude.not b then shown else hidden)
-
-
-all
-  :: Chunker
-  -- ^ Static label
-  -> Chunker
-  -- ^ Short-circuit label
-  -> (Bool -> a -> Chunker)
-  -- ^ Dynamic label
-  -> [Pred a]
-  -> Pred a
-all st ss dyn ls = Pred st' ev
-  where
-    st' = Node st . map static $ ls
+    st' = Node (const []) . map static $ ls
     ev a = go [] ls
       where
-        go soFar [] = Node (Output True shown Nothing (dyn True a))
+        go soFar [] = Node (Output True shown Nothing (const []))
           (reverse soFar)
         go soFar (x:xs) =
           let tree = evaluate x a
               r = result . rootLabel $ tree
               shrt = case xs of
                 [] -> Nothing
-                _ -> Just ss
-              out = Output r shown shrt (dyn r a)
+                _ -> Just (const [])
+              out = Output r shown shrt (const [])
               cs = reverse (tree:soFar)
           in case xs of
               [] -> Node out cs
@@ -110,29 +70,21 @@ all st ss dyn ls = Pred st' ev
                 | otherwise -> go cs xs
 
 
-any
-  :: Chunker
-  -- ^ Static label
-  -> Chunker
-  -- ^ Short-circuit label
-  -> (Bool -> a -> Chunker)
-  -- ^ Dynamic label
-  -> [Pred a]
-  -> Pred a
-any st ss dyn ls = Pred st' ev
+any :: [Pred a] -> Pred a
+any ls = Pred st' ev
   where
-    st' = Node st . map static $ ls
+    st' = Node (const []) . map static $ ls
     ev a = go [] ls
       where
-        go soFar [] = Node (Output False shown Nothing (dyn False a))
+        go soFar [] = Node (Output False shown Nothing (const []))
           (reverse soFar)
         go soFar (x:xs) =
           let tree = evaluate x a
               r = result . rootLabel $ tree
               shrt = case xs of
                 [] -> Nothing
-                _ -> Just ss
-              out = Output r shown shrt (dyn r a)
+                _ -> Just (const [])
+              out = Output r shown shrt (const [])
               cs = reverse (tree:soFar)
           in case xs of
               [] -> Node out cs
@@ -140,19 +92,13 @@ any st ss dyn ls = Pred st' ev
                 | otherwise -> go cs xs
 
 
-not
-  :: Chunker
-  -- ^ Static label
-  -> (Bool -> a -> Chunker)
-  -- ^ Dynamic label
-  -> Pred a
-  -> Pred a
-not st dyn pd = Pred st' ev
+not :: Pred a -> Pred a
+not pd = Pred st' ev
   where
-    st' = Node st [static pd]
+    st' = Node (const []) [static pd]
     ev a = Node nd [c]
       where
-        nd = Output res shown Nothing (dyn res a)
+        nd = Output res shown Nothing (const [])
         (res, c) = (Prelude.not r, t)
           where
             t = evaluate pd a
@@ -161,26 +107,17 @@ not st dyn pd = Pred st' ev
 fan
   :: ([Bool] -> (Bool, Visible, Maybe Int))
 
-  -> Chunker
-  -- ^ Static label
-
-  -> Chunker
-  -- ^ Short-circuit label
-
-  -> (Bool -> a -> Chunker)
-  -- ^ Dynamic label
-
   -> (a -> [b])
   -- ^ Fanout function
 
   -> Pred b
   -> Pred a
-fan get st ss dyn fn pd = Pred st' ev
+fan get fn pd = Pred st' ev
   where
-    st' = Node st [static pd]
+    st' = Node (const []) [static pd]
     ev a = Node nd cs
       where
-        nd = Output r v shrt (dyn r a)
+        nd = Output r v shrt (const [])
         bs = fn a
         allcs = map (evaluate pd) bs
         bools = map (result . rootLabel) allcs
@@ -188,20 +125,11 @@ fan get st ss dyn fn pd = Pred st' ev
         cs = case mayInt of
           Nothing -> allcs
           Just i -> take i allcs
-        shrt | cs `shorter` allcs = Just ss
+        shrt | cs `shorter` allcs = Just (const [])
              | otherwise = Nothing
 
 fanAll
-  :: Chunker
-  -- ^ Static label
-
-  -> Chunker
-  -- ^ Short-circuit label
-
-  -> (Bool -> a -> Chunker)
-  -- ^ Dynamic label
-
-  -> (a -> [b])
+  :: (a -> [b])
   -- ^ Fanout function
 
   -> Pred b
@@ -217,16 +145,7 @@ fanAll = fan get
             | otherwise -> go (c + 1) xs
 
 fanAny
-  :: Chunker
-  -- ^ Static label
-
-  -> Chunker
-  -- ^ Short-circuit label
-
-  -> (Bool -> a -> Chunker)
-  -- ^ Dynamic label
-
-  -> (a -> [b])
+  :: (a -> [b])
   -- ^ Fanout function
 
   -> Pred b
@@ -244,15 +163,6 @@ fanAny = fan get
 fanAtLeast
   :: Int
   -- ^ Find at least this many
-
-  -> Chunker
-  -- ^ Static label
-
-  -> Chunker
-  -- ^ Short-circuit label
-
-  -> (Bool -> a -> Chunker)
-  -- ^ Dynamic label
 
   -> (a -> [b])
   -- ^ Fanout function

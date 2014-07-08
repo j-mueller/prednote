@@ -15,12 +15,12 @@ module Prednote.Pred
 
   -- * Visibility
   , C.Visible(..)
-  , C.shown
-  , C.hidden
-  , C.reveal
-  , C.hide
-  , C.showTrue
-  , C.showFalse
+  , shown
+  , hidden
+  , reveal
+  , hide
+  , showTrue
+  , showFalse
 
   -- * Predicate creation
   , predicate
@@ -144,6 +144,27 @@ true = predicate "always True"
 false :: Pred a
 false = predicate "always False"
   (const (False, shown, "always False"))
+
+-- # Visibility
+
+visibility :: (Bool -> Visible) -> Pred a -> Pred a
+visibility f (Pred s e) = Pred s e'
+  where
+    e' a = g (e a)
+    g (Node n cs) = Node n { visible = f (result n) } cs
+
+reveal :: Pred a -> Pred a
+reveal = visibility (const shown)
+
+hide :: Pred a -> Pred a
+hide = visibility (const hidden)
+
+showTrue :: Pred a -> Pred a
+showTrue = visibility (\b -> if b then shown else hidden)
+
+showFalse :: Pred a -> Pred a
+showFalse = visibility (\b -> if Prelude.not b then shown else hidden)
+
 
 -- # Conjunction and disjunction, negation
 
