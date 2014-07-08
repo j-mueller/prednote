@@ -9,13 +9,14 @@ module Prednote.Expressions.RPN where
 import Data.Functor.Contravariant
 import qualified Data.Foldable as Fdbl
 import qualified Prednote.Prebuilt as P
+import Prednote.Core (Pred)
 import Prednote.Prebuilt ((&&&), (|||))
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as X
 
 data RPNToken a
-  = TokOperand (P.Pred a)
+  = TokOperand (Pred a)
   | TokOperator Operator
 
 instance Contravariant RPNToken where
@@ -29,13 +30,13 @@ data Operator
   | OpNot
   deriving Show
 
-pushOperand :: P.Pred a -> [P.Pred a] -> [P.Pred a]
+pushOperand :: Pred a -> [Pred a] -> [Pred a]
 pushOperand p ts = p : ts
 
 pushOperator
   :: Operator
-  -> [P.Pred a]
-  -> Either Text [P.Pred a]
+  -> [Pred a]
+  -> Either Text [Pred a]
 pushOperator o ts = case o of
   OpAnd -> case ts of
     x:y:zs -> return $ (y &&& x) : zs
@@ -51,9 +52,9 @@ pushOperator o ts = case o of
             <> "\" operator\n"
 
 pushToken
-  :: [P.Pred a]
+  :: [Pred a]
   -> RPNToken a
-  -> Either Text [P.Pred a]
+  -> Either Text [Pred a]
 pushToken ts t = case t of
   TokOperand p -> return $ pushOperand p ts
   TokOperator o -> pushOperator o ts
@@ -66,7 +67,7 @@ pushToken ts t = case t of
 parseRPN
   :: Fdbl.Foldable f
   => f (RPNToken a)
-  -> Either Text (P.Pred a)
+  -> Either Text (Pred a)
 parseRPN ts = do
   trees <- Fdbl.foldlM pushToken [] ts
   case trees of

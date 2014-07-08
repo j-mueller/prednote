@@ -8,47 +8,7 @@
 -- want to do something like
 --
 -- > import qualified Prednote.Pred as P
-module Prednote.Prebuilt
-  ( 
-  -- * Predicates
-    C.Pred(..)
-
-  -- * Visibility
-  , C.Visible(..)
-  , C.shown
-  , C.hidden
-  , reveal
-  , hide
-  , showTrue
-  , showFalse
-
-  -- * Predicate creation
-  , predicate
-  , true
-  , false
-
-  -- * Conjunction, disjunction, negation
-  , all
-  , (&&&)
-  , any
-  , (|||)
-  , not
-
-  -- * Fan
-  , fanAll
-  , fanAny
-  , fanAtLeast
-
-  -- * Display and evaluation
-  , C.report
-  , C.plan
-  , C.test
-  , C.testV
-  , C.filter
-  , C.filterV
-
-  ) where
-
+module Prednote.Prebuilt where
 
 import qualified Prednote.Core as C
 import Prednote.Format
