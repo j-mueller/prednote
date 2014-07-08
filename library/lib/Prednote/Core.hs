@@ -8,7 +8,7 @@
 --
 -- > import qualified Prednote.Pred.Core as P
 
-module Prednote.Pred.Core where
+module Prednote.Core where
 
 import System.Console.Rainbow
 import Prelude hiding (filter, not)

@@ -2,8 +2,8 @@
 module Prednote.Comparisons where
 
 import Prednote.Pred
-import Prednote.Pred.Format
-import qualified Prednote.Pred.Core as C
+import Prednote.Format
+import qualified Prednote.Core as C
 import Data.Text (Text)
 import qualified Data.Text as X
 import Prelude hiding (compare, not)

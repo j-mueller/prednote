@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Prednote.Pred.Format where
+module Prednote.Format where
 
 import System.Console.Rainbow
 import Data.Text (Text)
 import qualified Data.Text as X
-import qualified Prednote.Pred.Core as C
+import qualified Prednote.Core as C
 import qualified Data.Tree as E
 import Data.Monoid
 

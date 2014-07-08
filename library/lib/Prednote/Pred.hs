@@ -50,8 +50,8 @@ module Prednote.Pred
   ) where
 
 
-import qualified Prednote.Pred.Core as C
-import Prednote.Pred.Format
+import qualified Prednote.Core as C
+import Prednote.Format
 import qualified Data.Tree as E
 import qualified Data.Text as X
 import Data.Text (Text)
