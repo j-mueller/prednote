@@ -1,4 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
+-- | Functions used to format text.  Typically you won't need these
+-- unless you want tailored control over how your 'Prednote.Core.Pred'
+-- are formatted.
 module Prednote.Format where
 
 import System.Console.Rainbow
