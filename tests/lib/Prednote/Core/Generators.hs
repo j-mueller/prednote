@@ -1,7 +1,7 @@
-module Prednote.Pred.Core.Generators where
+module Prednote.Core.Generators where
 
 import Test.QuickCheck hiding (output)
-import qualified Prednote.Pred.Core as C
+import qualified Prednote.Core as C
 import Prednote.Tests.Util
 import System.Console.Rainbow.Types.Generators
 import Control.Monad

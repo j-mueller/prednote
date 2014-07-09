@@ -141,8 +141,7 @@ any ls = Pred st' ev
                 | otherwise -> go cs xs
 
 
--- | Negates the child 'Pred'.  Never short circuits.  Has no static
--- or dynamic name.
+-- | Negates the child 'Pred'.  Never short circuits.
 not :: Pred a -> Pred a
 not pd = Pred st' ev
   where
