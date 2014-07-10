@@ -54,6 +54,7 @@ module Prednote
   , P.predicate
   , P.true
   , P.false
+  , P.same
 
   -- * Combinators
 

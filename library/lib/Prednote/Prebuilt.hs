@@ -51,6 +51,12 @@ false = predicate l (const l) (const False)
   where
     l = "always False"
 
+-- | Returns the subject as is; is always visible.
+same :: C.Pred Bool
+same = predicate l (const l) id
+  where
+    l = "same as subject"
+
 -- # Visibility
 
 -- | Creates a 'C.Pred' with its visibility modified.

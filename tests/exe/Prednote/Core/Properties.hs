@@ -61,6 +61,39 @@ prop_allShortNotLastFalse =
   isJust . C.short . E.rootLabel . ($ i) . C.evaluate
     $ C.all (ls1 ++ [P.false] ++ ls2)
 
+-- | when all short circuits, the number of children is equal to the
+-- leading number of True predicates plus one
+prop_allShortCirLength =
+  forAll arbitrary $ \(A i) ->
+  forAll (listOf (return P.true)) $ \ls1 ->
+  forAll (listOf (elements [P.true, P.false])) $ \ls2 ->
+  (== (length ls1 + 1)) . length . E.subForest . ($ i) . C.evaluate
+    $ C.all (ls1 ++ [P.false] ++ ls2)
+
+-- | When all does not short circuit, the number of children is equal
+-- to the number of inputs
+prop_allAllTrueLength =
+  forAll arbitrary $ \(A i) ->
+  forAll (listOf (return P.true)) $ \ls1 ->
+  (== (length ls1)) . length . E.subForest . ($ i) . C.evaluate
+    $ C.all ls1
+
+-- | When all does not short circuit, the number of children is equal
+-- to the number of inputs
+prop_allOneFalseLength =
+  forAll arbitrary $ \(A i) ->
+  forAll (listOf (return P.true)) $ \ls1 ->
+  (== (length ls1 + 1)) . length . E.subForest . ($ i) . C.evaluate
+    $ C.all (ls1 ++ [P.false])
+
+-- | children of result of all is always a list of True followed by,
+-- at most, one False.
+prop_allResultSpan =
+  forAll arbitrary $ \i ->
+  forAll (listOf pred) $ \ls ->
+  (< 2) . length . dropWhile (C.result . E.rootLabel) . E.subForest
+    $ C.evaluate (C.all ls) i
+
 -- # any
 
 -- | any is false on an empty list
@@ -103,52 +136,43 @@ prop_anyShortsNotLastTrue =
   isJust . C.short . E.rootLabel . ($ i) . C.evaluate
     $ C.any (ls1 ++ [P.true] ++ ls2)
 
--- -- | Visiblity has the expected result
--- prop_visibility =
---   forAll (fmap Blind $ function1 coarbitrary visible) $ \(Blind f) ->
---   forAll pred $ \p ->
---   forAll arbitrary $ \i ->
---   let r = E.rootLabel . ($ i) . C.evaluate . C.visibility f $ p
---   in f (C.result r) == C.visible r
+-- | If there is a short circuit, last element of children is True
+prop_anyShortCircuitLastChild =
+  forAll arbitrary $ \i ->
+  forAll (listOf pred) $ \ps ->
+  let r = C.evaluate (C.any ps) i
+  in isJust (C.short . E.rootLabel $ r)
+     ==> last (map (C.result . E.rootLabel) . E.subForest $ r)
 
--- -- | reveal always creates shown Pred
--- prop_reveal =
---   forAll pred $ \p ->
---   forAll arbitrary $ \i ->
---   (== C.shown) . C.visible . E.rootLabel . ($ i)
---     . C.evaluate . C.reveal $ p
+-- | children of result of any is always a list of False followed by,
+-- at most, one True.
+prop_anyResultSpan =
+  forAll arbitrary $ \i ->
+  forAll (listOf pred) $ \ls ->
+  (< 2) . length . dropWhile (not . C.result . E.rootLabel) . E.subForest
+    $ C.evaluate (C.any ls) i
 
--- -- | hide always creates hidden Pred
--- prop_hide =
---   forAll pred $ \p ->
---   forAll arbitrary $ \i ->
---   (== C.hidden) . C.visible . E.rootLabel . ($ i)
---     . C.evaluate . C.hide $ p
+-- # not
 
--- -- | showTrue shows Pred if the result is True
--- prop_showTrue =
---   forAll pred $ \p ->
---   forAll arbitrary $ \i ->
---   getResult . E.rootLabel . ($ i)
---     . C.evaluate . C.showTrue $ p
---   where
---     getResult o = C.unVisible (C.visible o) == C.result o
+-- | not always has exactly one child
 
--- -- | showFalse shows Pred if the result is False
+prop_notOneChild =
+  forAll arbitrary $ \i ->
+  forAll pred $ \p ->
+  (== 1) . length . E.subForest $ C.evaluate (C.not p) i
 
--- prop_showFalse =
---   forAll pred $ \p ->
---   forAll arbitrary $ \i ->
---   getResult . E.rootLabel . ($ i) . C.evaluate . C.showFalse $ p
---   where
---     getResult o = not (C.unVisible . C.visible $ o) == C.result o
+-- | not never short circuits
 
--- -- | all is True on empty lists of Pred
--- prop_allIsTrueOnEmptyPred =
---   forAll (fmap Blind chunker) $ \(Blind st) ->
---   forAll (fmap Blind chunker) $ \(Blind sh) ->
---   forAll (fmap Blind dynamicLabel) $ \(Blind dyn) ->
---   forAll arbitrary $ \i ->
---   C.result . E.rootLabel . ($ i) . C.evaluate $
---     C.all st sh dyn []
+prop_notNeverShort =
+  forAll arbitrary $ \i ->
+  forAll pred $ \p ->
+  isNothing . C.short . E.rootLabel $ C.evaluate (C.not p) i
 
+-- | Result of not is always opposite child
+
+prop_notIsOpposite =
+  forAll arbitrary $ \i ->
+  forAll pred $ \p ->
+  let r = C.evaluate (C.not p) i
+  in (C.result . E.rootLabel $ r) ==
+      (not . C.result . E.rootLabel . head . E.subForest $ r)
