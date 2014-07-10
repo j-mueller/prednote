@@ -176,3 +176,58 @@ prop_notIsOpposite =
   let r = C.evaluate (C.not p) i
   in (C.result . E.rootLabel $ r) ==
       (not . C.result . E.rootLabel . head . E.subForest $ r)
+
+-- # fan
+
+-- | fan always short circuits if analyzer returns a Just Int with an
+-- Int less than or equal to zero
+
+prop_fanAlwaysShortsOnNonPositive =
+  forAll (oneof [return undefined, listOf (return ())]) $ \ls ->
+  forAll (elements [P.true, P.false]) $ \p ->
+  let genInt = fmap (negate . abs) arbitrarySizedIntegral
+      genTup = liftM3 (,,) arbitrary visible (fmap Just genInt)
+      genFn = fmap Blind $ function1 coarbitrary genTup in
+  forAll genFn $ \(Blind fn) ->
+  isJust . C.short . E.rootLabel $
+    C.evaluate (C.fan fn id p) ls
+
+-- -- | fan does not short circuit if fanner returns a Just Int that is
+-- -- greater than or equal to the length of the list.
+
+-- prop_fanNoShortCircuit =
+--   forAll (listOf (return ())) $ \ls ->
+--   forAll (elements [P.true, P.false]) $ \p ->
+--   let genInt = oneof [ return (length ls),
+--                        choose (length ls, maxBound)]
+--       genTup = liftM3 (,,) arbitrary visible (fmap Just genInt)
+--       genFn = fmap Blind $ function1 coarbitrary genTup in
+--   forAll genFn $ \(Blind fn) ->
+--   isNothing . C.short . E.rootLabel $
+--     C.evaluate (C.fan fn id p) ls
+
+-- -- | fan does not short circuit if the input list is empty or has one
+-- -- element
+
+-- prop_fanNoShortCircuitEmptyOrOne =
+--   forAll (elements [P.true, P.false]) $ \p ->
+--   forAll (elements [0,1]) $ \i ->
+--   let genTup = liftM3 (,,) arbitrary visible arbitrary
+--       genFn = fmap Blind $ function1 coarbitrary genTup in
+--   forAll genFn $ \(Blind fn) ->
+--   isNothing . C.short . E.rootLabel $
+--     C.evaluate (C.fan fn id p) (replicate i ())
+
+-- -- | fan short circuits on lists at least two long if returned integer
+-- -- is less than the length of the list
+-- prop_fanShortCircuit =
+--   forAll (elements [P.true, P.false]) $ \p ->
+--   forAll (arbitrarySizedBoundedIntegral `suchThat` (> 1)) $ \i ->
+--   let genInt = oneof [ return 0, return (i - 1),
+--                        choose (minBound, i - 1) ]
+--       genTup = liftM3 (,,) arbitrary visible (fmap Just genInt)
+--       genFn = fmap Blind $ function1 coarbitrary genTup in
+--   forAll genFn $ \(Blind fn) ->
+--   isNothing . C.short . E.rootLabel $
+--     C.evaluate (C.fan fn id p) (replicate i ())
+
