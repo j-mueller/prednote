@@ -180,31 +180,30 @@ prop_notIsOpposite =
 -- # fan
 
 -- | fan always short circuits if analyzer returns a Just Int with an
--- Int less than or equal to zero
+-- Int less than zero
 
 prop_fanAlwaysShortsOnNonPositive =
   forAll (oneof [return undefined, listOf (return ())]) $ \ls ->
   forAll (elements [P.true, P.false]) $ \p ->
-  let genInt = fmap (negate . abs) arbitrarySizedIntegral
+  let genInt = arbitrarySizedIntegral `suchThat` (< 0)
+      genTup = liftM3 (,,) arbitrary visible (fmap Just genInt) in
+  forAll genTup $ \tup ->
+  isJust . C.short . E.rootLabel $
+    C.evaluate (C.fan (const tup) id p) ls
+
+-- | fan does not short circuit if fanner returns a Just Int that is
+-- greater than or equal to the length of the list.
+
+prop_fanNoShortCircuit =
+  forAll (listOf (return ())) $ \ls ->
+  forAll (elements [P.true, P.false]) $ \p ->
+  let genInt = oneof [ return (length ls),
+                       choose (length ls, maxBound)]
       genTup = liftM3 (,,) arbitrary visible (fmap Just genInt)
       genFn = fmap Blind $ function1 coarbitrary genTup in
   forAll genFn $ \(Blind fn) ->
-  isJust . C.short . E.rootLabel $
+  isNothing . C.short . E.rootLabel $
     C.evaluate (C.fan fn id p) ls
-
--- -- | fan does not short circuit if fanner returns a Just Int that is
--- -- greater than or equal to the length of the list.
-
--- prop_fanNoShortCircuit =
---   forAll (listOf (return ())) $ \ls ->
---   forAll (elements [P.true, P.false]) $ \p ->
---   let genInt = oneof [ return (length ls),
---                        choose (length ls, maxBound)]
---       genTup = liftM3 (,,) arbitrary visible (fmap Just genInt)
---       genFn = fmap Blind $ function1 coarbitrary genTup in
---   forAll genFn $ \(Blind fn) ->
---   isNothing . C.short . E.rootLabel $
---     C.evaluate (C.fan fn id p) ls
 
 -- -- | fan does not short circuit if the input list is empty or has one
 -- -- element

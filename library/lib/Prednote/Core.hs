@@ -165,6 +165,12 @@ fan
   -- was no short circuit, or 'Just' with an 'Int' to indicate a short
   -- circuit, with the 'Int' indicating that a short circuit occurred
   -- after examining the given number of elements.
+  --
+  -- The resulting 'Pred' always short circuits if the previous
+  -- function returns a 'Just' 'Int' with the 'Int' being less than or
+  -- equal to zero.  Otherwise, the resulting 'Pred' short circuits if
+  -- the 'Int' is less than the number of elements returned by the
+  -- fanout function.
 
   -> (a -> [b])
   -- ^ Fanout function
@@ -177,15 +183,19 @@ fan get fn pd = Pred st' ev
     ev a = Node nd cs
       where
         nd = Output r v shrt (const [])
+        (r, v, mayInt) = get bools
+        shrt = case mayInt of
+          Nothing -> Nothing
+          Just s | s < 0 -> Just (const [])
+                 | cs `shorter` allcs -> Just (const [])
+                 | otherwise -> Nothing
         bs = fn a
         allcs = map (evaluate pd) bs
         bools = map (result . rootLabel) allcs
-        (r, v, mayInt) = get bools
         cs = case mayInt of
           Nothing -> allcs
           Just i -> take i allcs
-        shrt | cs `shorter` allcs = Just (const [])
-             | otherwise = Nothing
+
 
 -- | Fanout all.  The resulting 'Pred' is 'True' if no child item
 -- returns 'False'; an empty list of child items returns 'True'.  May
