@@ -5,4 +5,9 @@ import Test.QuickCheck
 import Control.Monad
 
 tree :: Gen a -> Gen (Tree a)
-tree g = liftM2 Node g (listOf (tree g))
+tree g = sized h
+  where
+    h s = liftM2 Node g cs
+      where
+        cs | s <= 0 = return []
+           | otherwise = resize (s `div` 8) (listOf (tree g))

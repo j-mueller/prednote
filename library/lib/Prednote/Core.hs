@@ -167,8 +167,8 @@ fan
   -- after examining the given number of elements.
   --
   -- The resulting 'Pred' always short circuits if the previous
-  -- function returns a 'Just' 'Int' with the 'Int' being less than or
-  -- equal to zero.  Otherwise, the resulting 'Pred' short circuits if
+  -- function returns a 'Just' 'Int' with the 'Int' being less than
+  -- zero.  Otherwise, the resulting 'Pred' short circuits if
   -- the 'Int' is less than the number of elements returned by the
   -- fanout function.
 
@@ -239,7 +239,8 @@ fanAny = fan get
 -- given number of child items return 'True'.  May short circuit.
 fanAtLeast
   :: Int
-  -- ^ Find at least this many
+  -- ^ Find at least this many.  If this number is less than or equal
+  -- to zero, 'fanAtLeast' will always return 'True'.
 
   -> (a -> [b])
   -- ^ Fanout function
