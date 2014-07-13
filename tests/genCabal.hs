@@ -19,8 +19,17 @@ quickpull = C.closedOpen "quickpull" [0,2,0,0] [0,3]
 properties :: C.Properties
 properties = commonProperties
   { C.prName = "prednote-test"
+  , C.prSynopsis = "Tests and QuickCheck generators to accompany prednote."
   , C.prDescription =
-    [ "Tests and QuickCheck instances to accompany prednote." ]
+    [ "These are packaged separately so other packages may depend"
+    , "on them."
+    ]
+  , C.prExtraSourceFiles =
+    [ "genCabal.hs"
+    , "sunlight-test.hs"
+    , "current-versions.txt"
+    , "minimum-versions.txt"
+    ]
   }
 
 depends :: [C.Package]
