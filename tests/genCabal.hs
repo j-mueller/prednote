@@ -11,7 +11,7 @@ prednote :: C.Package
 prednote = C.exactly "prednote" versionInts
 
 quickcheck :: C.Package
-quickcheck = C.closedOpen "QuickCheck" [2,7,2] [2,8]
+quickcheck = C.closedOpen "QuickCheck" [2,7,5] [2,8]
 
 quickpull :: C.Package
 quickpull = C.closedOpen "quickpull" [0,2,0,0] [0,3]
@@ -56,9 +56,10 @@ library ms = C.Library
   , C.defaultLanguage C.Haskell2010
   ]
 
-executable :: C.Executable
-executable = C.Executable "prednote-test"
+executable :: [String] -> C.Executable
+executable ms = C.Executable "prednote-test"
   [ C.hsSourceDirs ["lib", "exe"]
+  , C.otherModules ms
   , C.ExeMainIs "prednote-test.hs"
   , C.ghcOptions ghcOptions
   , C.defaultLanguage C.Haskell2010
@@ -77,15 +78,18 @@ visual = C.Executable "prednote-visual-test"
 cabal
   :: [String]
   -- ^ Modules for library
+  -> [String]
+  -- ^ Modules for the executable
   -> C.Cabal
-cabal ms = C.empty
+cabal msLib msExe = C.empty
   { C.cProperties = properties
   , C.cRepositories = [repo]
-  , C.cLibrary = Just $ library ms
-  , C.cExecutables = [executable, visual]
+  , C.cLibrary = Just $ library msLib
+  , C.cExecutables = [executable (msLib ++ msExe), visual]
   }
 
 main :: IO ()
 main = do
   mods <- C.modules "lib"
-  C.render "genCabal.hs" $ cabal mods
+  modsExe <- C.modules "exe"
+  C.render "genCabal.hs" $ cabal mods modsExe

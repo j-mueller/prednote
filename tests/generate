@@ -1,4 +1,4 @@
 #!/bin/sh
 
-runghc genCabal.hs > prednote-test.cabal
 quickpull exe > exe/Decrees.hs
+runghc genCabal.hs > prednote-test.cabal

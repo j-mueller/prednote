@@ -9,7 +9,7 @@ base :: C.Package
 base = C.closedOpen "base" [4,5,0,0] [5]
 
 rainbowLower :: [Int]
-rainbowLower = [0,14,0,0]
+rainbowLower = [0,14,0,2]
 
 rainbowUpper :: [Int]
 rainbowUpper = [0,15]
