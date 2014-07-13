@@ -1,7 +1,7 @@
 This package was tested to work with these dependency
 versions and compiler version.
 These are the default versions fetched by cabal install.
-Tested as of: 2014-07-13 14:46:00.194054 UTC
+Tested as of: 2014-07-13 14:54:13.902743 UTC
 Path to compiler: ghc-7.8.2
 Compiler description: 7.8.2
 
@@ -33,9 +33,9 @@ Compiler description: 7.8.2
     transformers-0.3.0.0
     unix-2.7.0.1
 
-/home/massysett/prednote/library/sunlight-18174/db:
+/home/massysett/prednote/library/sunlight-25515/db:
     contravariant-0.6
-    prednote-0.24
+    prednote-0.24.0.0
     rainbow-0.14.0.2
     split-0.2.2
     terminfo-0.4.0.0
