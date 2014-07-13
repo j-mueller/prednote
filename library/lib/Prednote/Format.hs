@@ -43,7 +43,7 @@ indent cs i = spaces : cs ++ [fromText "\n"]
 
 -- | A label for a short circuit.
 shortCir :: Int -> [Chunk]
-shortCir = indent ["[", f_yellow <> "short circuit" <> "]"]
+shortCir = indent ["[", f_yellow <> "short circuit", "]"]
 
 -- | Indents a 'Text' by the given 'Int' multiplied by
 -- 'indentAmt'.

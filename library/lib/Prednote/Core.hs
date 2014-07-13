@@ -271,7 +271,7 @@ report l (Node n cs)
   | otherwise = this ++ concatMap (report (l + 1)) cs ++ shrt
   where
     this = dynamic n l
-    shrt = maybe [] ($ l) . short $ n
+    shrt = maybe [] ($ (l + 1)) . short $ n
 
 -- | Indents and formats static labels for display.  This is a 'plan'
 -- for how the 'Pred' would be applied.
