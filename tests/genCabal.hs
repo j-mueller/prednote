@@ -2,7 +2,7 @@
 -- Written to use version 0.10.0.2 of the Cartel
 -- library.
 
-module Main where
+module Main (main) where
 
 import CabalCommon
 import qualified Cartel as C
@@ -56,6 +56,15 @@ executable = C.Executable "prednote-test"
   , C.buildDepends depends
   ]
 
+visual :: C.Executable
+visual = C.Executable "prednote-visual-test"
+  [ C.hsSourceDirs ["lib", "visual"]
+  , C.ExeMainIs "prednote-visual-test.hs"
+  , C.ghcOptions ghcOptions
+  , C.defaultLanguage C.Haskell2010
+  , C.buildDepends depends
+  ]
+
 cabal
   :: [String]
   -- ^ Modules for library
@@ -64,7 +73,7 @@ cabal ms = C.empty
   { C.cProperties = properties
   , C.cRepositories = [repo]
   , C.cLibrary = Just $ library ms
-  , C.cExecutables = [executable]
+  , C.cExecutables = [executable, visual]
   }
 
 main :: IO ()
