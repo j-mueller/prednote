@@ -158,7 +158,7 @@ less
   -- ^ Right-hand side
 
   -> C.Pred a
-less typeDesc rhs = compare typeDesc rhs GT
+less typeDesc rhs = compare typeDesc rhs LT
 
 greaterEq
   :: (Show a, Ord a)
@@ -183,7 +183,7 @@ lessEq
 lessEq t r = less t r ||| equal t r
 
 notEq
-  :: (Show a, Ord a)
+  :: (Show a, Eq a)
   => Text
   -- ^ Description of the type of thing being matched
 
