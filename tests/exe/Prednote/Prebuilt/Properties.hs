@@ -57,6 +57,37 @@ prop_false =
 
 prop_falseShown = isShown P.false
 
+-- # Wrap
+prop_wrapResultSameAsChild =
+  forAll (text arbitrary) $ \st ->
+  forAll (fmap Blind $ function1 coarbitrary (text arbitrary)) $
+    \(Blind fDyn) ->
+  forAll (fmap Blind arbitrary) $ \(Blind xfrm) ->
+  let _types = xfrm :: Int -> Int in
+  forAll pred $ \p ->
+  forAll arbitrary $ \i ->
+  C.test p (xfrm i) === C.test (P.wrap st fDyn xfrm p) i
+
+prop_wrapVisible =
+  forAll (text arbitrary) $ \st ->
+  forAll (fmap Blind $ function1 coarbitrary (text arbitrary)) $
+    \(Blind fDyn) ->
+  forAll (fmap Blind arbitrary) $ \(Blind xfrm) ->
+  forAll pred $ \p ->
+  forAll arbitrary $ \(A i) ->
+  (== C.shown) . C.visible . E.rootLabel . ($ i) . C.evaluate $
+    P.wrap st fDyn xfrm p
+
+prop_wrapNoShortCircuit =
+  forAll (text arbitrary) $ \st ->
+  forAll (fmap Blind $ function1 coarbitrary (text arbitrary)) $
+    \(Blind fDyn) ->
+  forAll (fmap Blind arbitrary) $ \(Blind xfrm) ->
+  forAll pred $ \p ->
+  forAll arbitrary $ \(A i) ->
+  isNothing . C.short . E.rootLabel . ($ i) . C.evaluate $
+    P.wrap st fDyn xfrm p
+
 -- # visibility
 
 prop_visibility =

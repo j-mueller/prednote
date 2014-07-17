@@ -60,7 +60,8 @@ same = predicate l (const l) id
 -- # Wrap
 
 -- | Makes an existing 'C.Pred' the child of a new 'C.Pred'.  The new
--- 'Pred' has the same 'C.result' as the child 'Pred'.
+-- 'Pred' has the same 'C.result' as the child 'C.Pred'.  The new
+-- 'C.Pred' is always visible and never short circuits.
 
 wrap
   :: Text
@@ -76,7 +77,12 @@ wrap
 wrap st dyn wr p = C.Pred trC ev
   where
     trC = E.Node (indentTxt st) [C.static p]
-    ev a = undefined
+    ev a = E.Node o [c]
+      where
+        c = C.evaluate p (wr a)
+        r = C.result . E.rootLabel $ c
+        o = C.Output r C.shown Nothing dy
+        dy = indent $ lblLine r (dyn a)
 
 
 -- # Visibility

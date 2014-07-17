@@ -7,12 +7,14 @@ import Prednote.Comparisons
 import Prednote.Format
 import qualified Data.Text as X
 import System.Console.Rainbow
+import Data.Monoid
 
 singleInt :: Pred Int
 singleInt = P.any
   [ equal "integer" 5
   , greaterEq "integer" 20
-  , lessEq "integer" 10
+  , P.wrap "integer" (\a -> "integer " <> X.pack (show a))
+    id $ lessEq "integer" 10
   ]
 
 listInt :: Pred [Int]
