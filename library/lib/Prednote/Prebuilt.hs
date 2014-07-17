@@ -57,6 +57,28 @@ same = predicate l (const l) id
   where
     l = "same as subject"
 
+-- # Wrap
+
+-- | Makes an existing 'C.Pred' the child of a new 'C.Pred'.  The new
+-- 'Pred' has the same 'C.result' as the child 'Pred'.
+
+wrap
+  :: Text
+  -- ^ Static label
+
+  -> (a -> Text)
+  -- ^ Computes the dynamic label.  Do not indicate whether the result
+  -- is 'True' or 'False'; this is automatically done for you.
+
+  -> (a -> b)
+  -> C.Pred b
+  -> C.Pred a
+wrap st dyn wr p = C.Pred trC ev
+  where
+    trC = E.Node (indentTxt st) [C.static p]
+    ev a = undefined
+
+
 -- # Visibility
 
 -- | Creates a 'C.Pred' with its visibility modified.
