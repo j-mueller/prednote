@@ -105,7 +105,7 @@ import qualified Prednote.Prebuilt as P
 import Prednote.Prebuilt ((&&&), (|||))
 import Prednote.Core (Pred)
 import qualified Prednote.Core as C
-import System.Console.Rainbow
+import Rainbow
 import Data.Tree
 
 -- | Indents and formats static labels for display.  This is a 'plan'

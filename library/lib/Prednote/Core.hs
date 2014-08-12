@@ -27,7 +27,7 @@
 
 module Prednote.Core where
 
-import System.Console.Rainbow
+import Rainbow
 import Prelude hiding (filter, not)
 import qualified Prelude
 import Data.Functor.Contravariant (Contravariant(..))

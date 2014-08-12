@@ -4,7 +4,7 @@
 -- are formatted.
 module Prednote.Format where
 
-import System.Console.Rainbow
+import Rainbow
 import Data.Text (Text)
 import qualified Data.Text as X
 import qualified Prednote.Core as C
@@ -15,11 +15,11 @@ import Data.Monoid
 
 -- | A colorful label for 'True' values.
 lblTrue :: [Chunk]
-lblTrue = ["[", f_green <> "TRUE", "]"]
+lblTrue = ["[", fore green <> "TRUE", "]"]
 
 -- | A colorful label for 'False' values.
 lblFalse :: [Chunk]
-lblFalse = ["[", f_red <> "FALSE", "]"]
+lblFalse = ["[", fore red <> "FALSE", "]"]
 
 -- | Indent amount.
 indentAmt :: Int
@@ -43,7 +43,7 @@ indent cs i = spaces : cs ++ [fromText "\n"]
 
 -- | A label for a short circuit.
 shortCir :: Int -> [Chunk]
-shortCir = indent ["[", f_yellow <> "short circuit", "]"]
+shortCir = indent ["[", fore yellow <> "short circuit", "]"]
 
 -- | Indents a 'Text' by the given 'Int' multiplied by
 -- 'indentAmt'.

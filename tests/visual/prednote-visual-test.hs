@@ -6,7 +6,7 @@ import qualified Prednote as P
 import Prednote.Comparisons
 import Prednote.Format
 import qualified Data.Text as X
-import System.Console.Rainbow
+import Rainbow
 import Data.Monoid
 
 singleInt :: Pred Int

@@ -42,6 +42,7 @@ depends =
   , quickcheck
   , containers
   , quickpull
+  , barecheck
   ]
 
 library

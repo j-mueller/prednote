@@ -3,16 +3,16 @@ module CabalCommon where
 import qualified Cartel as C
 
 versionInts :: [Int]
-versionInts = [0,24,2,0]
+versionInts = [0,26,0,0]
 
 base :: C.Package
 base = C.closedOpen "base" [4,5,0,0] [5]
 
 rainbowLower :: [Int]
-rainbowLower = [0,14,0,2]
+rainbowLower = [0,16,0,0]
 
 rainbowUpper :: [Int]
-rainbowUpper = [0,15]
+rainbowUpper = [0,17]
 
 rainbow :: C.Package
 rainbow = C.closedOpen "rainbow" rainbowLower rainbowUpper
@@ -25,6 +25,9 @@ text = C.closedOpen "text" [0,11,2,0] [1,2]
 
 containers :: C.Package
 containers = C.closedOpen "containers" [0,4,2,1] [0,6]
+
+barecheck :: C.Package
+barecheck = C.closedOpen "barecheck" [0,2,0,0] [0,3]
 
 commonProperties :: C.Properties
 commonProperties = C.empty

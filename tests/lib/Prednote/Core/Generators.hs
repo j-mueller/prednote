@@ -3,7 +3,7 @@ module Prednote.Core.Generators where
 import Test.QuickCheck hiding (output)
 import qualified Prednote.Core as C
 import Prednote.Tests.Util
-import System.Console.Rainbow.Types.Generators
+import Rainbow.Types.Generators
 import Control.Monad
 import Prelude hiding (pred)
 import Data.Tree.Generators
