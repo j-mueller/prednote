@@ -2,7 +2,7 @@
 module Prednote.Prebuilt.Properties where
 
 import Prednote.Core.Generators
-import Prednote.Tests.Util
+import Prelude.Generators
 import Test.QuickCheck
 import Test.QuickCheck.Poly (A(..))
 import Data.Text.Generators

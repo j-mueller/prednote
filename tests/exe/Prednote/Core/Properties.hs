@@ -6,7 +6,7 @@ import qualified Prednote.Core as C
 import qualified Prednote.Prebuilt as P
 import qualified Data.Tree as E
 import Test.QuickCheck
-import Prednote.Tests.Util
+import Prelude.Generators
 import Prelude hiding (pred)
 import Control.Monad
 import Test.QuickCheck.Poly (A(..))

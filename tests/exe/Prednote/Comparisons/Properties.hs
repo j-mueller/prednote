@@ -7,7 +7,7 @@ import Test.QuickCheck
 import Data.Text (Text)
 import qualified Prednote.Comparisons as M
 import qualified Prednote.Core as C
-import Prednote.Tests.Util
+import Prelude.Generators
 
 -- | compareBy is same as compare
 prop_compareBy =

@@ -2,7 +2,7 @@ module Prednote.Core.Generators where
 
 import Test.QuickCheck hiding (output)
 import qualified Prednote.Core as C
-import Prednote.Tests.Util
+import Prelude.Generators
 import Rainbow.Types.Generators
 import Control.Monad
 import Prelude hiding (pred)
@@ -20,7 +20,8 @@ output = liftM4 C.Output arbitrary visible
   chunker
 
 pred :: Gen (C.Pred Int)
-pred = liftM2 C.Pred (tree chunker) (function1 variant (tree output))
+pred = liftM2 C.Pred (tree (`div` 8) chunker)
+  (function1 variant (tree (`div` 8) output))
 
 dynamicLabel :: Gen (Bool -> Int -> C.Chunker)
 dynamicLabel = function2 coarbitrary coarbitrary chunker
