@@ -30,6 +30,14 @@ If you have trouble building prednote due to dependency issues, try
 looking at the previous test results, as they will show you package
 versions that were used to build prednote successfully.
 
+## Something similar
+
+See also rematch:
+
+http://hackage.haskell.org/package/rematch
+
+which is apparently based on a Java library called hamcrest.
+
 ## License
 
 prednote is licensed under the BSD license; see the LICENSE file.
