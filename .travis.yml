@@ -1,13 +1,25 @@
 language: haskell
 ghc:
   - 7.6
+  - 7.8
 
-install:
-  - cabal sdist --output-directory playpen
-  - cd playpen
-  - cabal install --only-dependencies --enable-tests
-
+before_install:
+  - cabal update
+  - cabal install cartel
+  - cabal install quickpull
+  - cd library
+  - sh generate
+  - cd ../tests
+  - sh generate
+  - cd ..
 
 script:
-  - cabal configure --enable-tests
+  - ghc-pkg list
+  - cabal sdist --output-directory=tarball
+  - cd tarball
+  - cabal install
+  - cd ../../tests
+  - cabal configure
   - cabal build
+  - dist/build/prednote-test/prednote-test
+  - dist/build/prednote-visual-test/prednote-visual-test
