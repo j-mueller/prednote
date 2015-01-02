@@ -6,7 +6,6 @@ ghc:
 before_install:
   - cabal update
   - cabal install cartel
-  - cabal install quickpull
   - cd library
   - sh generate
   - cd ../tests
@@ -23,6 +22,8 @@ script:
   - cd tarball
   - cabal install
   - cd ../../tests
+  - pwd
+  - cabal install --only-dependencies
   - cabal configure
   - cabal build
   - dist/build/prednote-test/prednote-test
