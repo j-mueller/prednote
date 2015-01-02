@@ -5,8 +5,7 @@ ghc:
 
 before_install:
   - cabal update
-  - cabal install cartel
-  - cabal install packdeps
+  - cabal install cartel quickpull packdeps
   - cd library
   - pwd
   - sh generate
