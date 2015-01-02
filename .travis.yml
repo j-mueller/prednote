@@ -13,6 +13,10 @@ before_install:
   - sh generate
   - cd ..
 
+install:
+  - cd library
+  - cabal install --only-dependencies
+
 script:
   - ghc-pkg list
   - cabal sdist --output-directory=tarball
