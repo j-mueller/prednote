@@ -40,6 +40,7 @@ commonProperties = C.empty
   , C.prHomepage = "http://www.github.com/massysett/prednote"
   , C.prBugReports = "http://www.github.com/massysett/prednote/issues"
   , C.prCategory = "Data"
+  , C.prSynopsis = "Evaluate and display trees of predicates"
   }
 
 repo :: C.Repository
