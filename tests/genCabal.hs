@@ -14,7 +14,7 @@ quickcheck :: C.Package
 quickcheck = C.closedOpen "QuickCheck" [2,7,5] [2,8]
 
 quickpull :: C.Package
-quickpull = C.closedOpen "quickpull" [0,2,0,0] [0,3]
+quickpull = C.closedOpen "quickpull" [0,4] [0,5]
 
 properties :: C.Properties
 properties = commonProperties
@@ -26,9 +26,6 @@ properties = commonProperties
     ]
   , C.prExtraSourceFiles =
     [ "genCabal.hs"
-    , "sunlight-test.hs"
-    , "current-versions.txt"
-    , "minimum-versions.txt"
     ]
   }
 

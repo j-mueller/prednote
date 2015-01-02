@@ -6,24 +6,35 @@ ghc:
 before_install:
   - cabal update
   - cabal install cartel
+  - cabal install packdeps
   - cd library
+  - pwd
   - sh generate
+  - packdeps prednote.cabal
   - cd ../tests
+  - pwd
   - sh generate
+  - packdeps prednote-tests.cabal || true
   - cd ..
+  - pwd
 
 install:
   - cd library
+  - pwd
   - cabal install --only-dependencies
 
 script:
   - ghc-pkg list
   - cabal sdist --output-directory=tarball
   - cd tarball
+  - pwd
   - cabal install
   - cd ../../tests
   - pwd
   - cabal install --only-dependencies
+  - cabal sdist --output-directory=tarball
+  - cd tarball
+  - pwd
   - cabal configure
   - cabal build
   - dist/build/prednote-test/prednote-test
