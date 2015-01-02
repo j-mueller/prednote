@@ -10,7 +10,7 @@ import qualified Cartel as C
 -- Dependencies
 
 contravariant :: C.Package
-contravariant = C.closedOpen "contravariant" [0,2,0,1] [0,7]
+contravariant = C.closedOpen "contravariant" [0,2,0,1] [1,3]
 
 split :: C.Package
 split = C.closedOpen "split" [0,2,2] [0,3]
@@ -31,12 +31,9 @@ properties = commonProperties
     , "tests are packaged separately in the prednote-tests package."
     ]
   , C.prTestedWith = map (\ls -> (C.GHC, C.eq ls))
-    [ [7,4,1], [7,6,3], [7,8,2] ]
+    [ [7,6,3], [7,8,2] ]
   , C.prExtraSourceFiles =
     [ "README.md"
-    , "minimum-versions.txt"
-    , "current-versions.txt"
-    , "sunlight-test.hs"
     , "changelog"
     ]
   }

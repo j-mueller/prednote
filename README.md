@@ -19,4 +19,17 @@ and Hackage:
 
 http://hackage.haskell.org/package/prednote
 
+## Test results
+
+You can view the results of building and testing on Travis by clicking
+the button below:
+
+[![Build Status](https://travis-ci.org/massysett/prednote.svg?branch=v0.26.0.4)](https://travis-ci.org/massysett/prednote)
+
+If you have trouble building prednote due to dependency issues, try
+looking at the previous test results, as they will show you package
+versions that were used to build prednote successfully.
+
+## License
+
 prednote is licensed under the BSD license; see the LICENSE file.
