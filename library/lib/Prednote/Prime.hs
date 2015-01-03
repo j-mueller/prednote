@@ -1,7 +1,8 @@
 module Prednote.Prime where
 
 import Rainbow
-import Prelude hiding (all, any, maybe, and, or)
+import Prelude hiding (all, any, maybe, and, or, not)
+import qualified Prelude
 import Data.Functor.Contravariant (Contravariant(..))
 
 data Tree a = Tree a (Children a)
@@ -36,17 +37,11 @@ data Pred a = Pred (Tree [Chunk]) (a -> Tree Output)
 evaluate :: Pred a -> a -> Tree Output
 evaluate (Pred _ f) a = f a
 
+eval :: Pred a -> a -> Bool
+eval (Pred _ f) a = let (Tree (Output res _ _) _) = f a in res
+
 instance Contravariant Pred where
   contramap f (Pred t e) = Pred t (e . f)
-
-newtype Short = Short Bool
-  deriving (Eq, Ord, Show)
-
-short :: Short
-short = Short True
-
-full :: Short
-full = Short False
 
 data Output = Output Bool Visible [Chunk]
   deriving (Eq, Ord, Show)
@@ -85,7 +80,7 @@ and st spawn (Pred lblB fB) (Pred lblC fC) = Pred lbls f
         outB@(Tree (Output resB _ _) _) = fB b
         outC@(Tree (Output resC _ _) _) = fC c
         (children, res)
-          | not resB = (One outB, False)
+          | Prelude.not resB = (One outB, False)
           | otherwise = (Two outB outC, resB && resC)
 
 or
@@ -117,76 +112,38 @@ switch
   -> Pred a
 switch st split (Pred lblB fB) (Pred lblC fC) = Pred lbls f
   where
-    
-    Annotated dynL ei = split 
+    lbls = Tree st (Two lblB lblC)
+    f a = Tree out (One child)
+      where
+        Annotated dynL ei = split a
+        out = Output res shown dynL
+        child@(Tree (Output res _ _) _) = case ei of
+          Left b -> fB b
+          Right c -> fC c
 
-{-
-and :: (a -> (b, c)) -> (b -> Bool) -> (c -> Bool) -> a -> Bool
-and prod fb fc a = fb b && fc c
+not
+  :: [Chunk]
+  -> (a -> [Chunk])
+  -> Pred a
+  -> Pred a
+not st fDyn (Pred lbl f) = Pred lbl' f'
   where
-    (b, c) = prod a
+    lbl' = Tree st (One lbl)
+    f' a = Tree out (One chld)
+      where
+        chld@(Tree (Output chldRes _ _) _) = f a
+        out = Output (Prelude.not chldRes) shown (fDyn a)
 
-
-or :: (a -> (b, c)) -> (b -> Bool) -> (c -> Bool) -> a -> Bool
-or prod fb fc a = fb b || fc c
+wrap
+  :: [Chunk]
+  -> (a -> [Chunk])
+  -> (a -> b)
+  -> Pred b
+  -> Pred a
+wrap st fDyn wrapper (Pred lbl f) = Pred lbl' f'
   where
-    (b, c) = prod a
-
-switch :: (a -> Either b c) -> (b -> Bool) -> (c -> Bool) -> a -> Bool
-switch switcher fb fc = either fb fc . switcher
-
-false :: a -> Bool
-false = const False
-
-true :: a -> Bool
-true = const True
-
-all :: (a -> Bool) -> [a] -> Bool
-all f = switch caser true fPair
-  where
-    caser [] = Left ()
-    caser (x:xs) = Right (x, xs)
-    fPair = and id f (all f)
-
-any :: (a -> Bool) -> [a] -> Bool
-any f = switch caser false fPair
-  where
-    caser [] = Left ()
-    caser (x:xs) = Right (x, xs)
-    fPair = or id f (any f)
-
-maybe :: (a -> Bool) -> Maybe a -> Bool
-maybe f = switch caser false f
-  where
-    caser Nothing = Left ()
-    caser (Just x) = Right x
-
-all3 :: (a -> Bool) -> (b -> Bool) -> (c -> Bool) -> (a, b, c) -> Bool
-all3 fa fb fc = and mkTup fa fbc
-  where
-    mkTup (a, b, c) = (a, (b, c))
-    fbc = and id fb fc
-
-data S3 = S3a Int | S3b Char | S3c String
-
-anyS3 :: (Int -> Bool) -> (Char -> Bool) -> (String -> Bool) -> S3 -> Bool
-anyS3 fInt fChar fString = switch switch1 fInt (switch id fChar fString)
-  where
-    switch1 s3 = case s3 of
-      S3a i -> Left i
-      S3b c -> Right (Left c)
-      S3c s -> Right (Right s)
-
-data S4 = S4a Int | S4b Char | S4c String | S4d (Maybe Int)
-
-anyS4 :: (Int -> Bool) -> (Char -> Bool) -> (String -> Bool) -> (Maybe Int -> Bool)
-  -> S4 -> Bool
-
-anyS4 fI fC fS fM = switch switch1 fI (switch id fC (switch id fS fM))
-  where
-    switch1 s4 = case s4 of
-      S4a i -> Left i   
-      S4b c -> Right (Left c)
-      S4c s -> Right (Right (Left s))
-      S4d m -> Right (Right (Right m))
--}
+    lbl' = Tree st (One lbl)
+    f' a = Tree out (One chld)
+      where
+        chld@(Tree (Output chldRes _ _) _) = f (wrapper a)
+        out = Output chldRes shown (fDyn a)
