@@ -84,6 +84,59 @@ wrap st dyn wr p = C.Pred trC ev
         o = C.Output r C.shown Nothing dy
         dy = indent $ lblLine r (dyn a)
 
+-- # wrapMaybe
+
+-- | Wraps a predicate where the parent predicate may or may not have
+-- a value that the child predicate can test.
+--
+-- @wrapMaybe lbl dyn fMaybe predB@ returns a predicate @predA@.  The
+-- function @fMaybe@ is applied to the original subject of @predA@.
+-- If @fMaybe@ returns 'Nothing', then @predA@ returns 'False'.  If
+-- @fMaybe@ returns @'Just' b@, then @predB@ is applied to @b@ and
+-- @predA@ returns the result of @predB@.  For example:
+--
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- > module MyPred where
+-- > import Prednote
+-- > import Prednote.Comparisons
+-- > import qualified Data.Text as X
+-- >
+-- > isRightIntAndEquals5 :: Pred (Either String Int)
+-- > isRightIntAndEquals5 = wrapMaybe
+-- >   "Either String Int is a Right"
+-- >   (\a -> (X.append (X.pack (show a)) " is a Right"))
+-- >   (either (const Nothing) Just)
+-- >   (equal "Int" 5)
+wrapMaybe
+  :: Text
+  -- ^ Static label
+  -> (a -> Text)
+  -- ^ Computes the dynamic label.  Do not indicate whether a result
+  -- is 'True' or 'False'; this is done for you.
+  -> (a -> Maybe b)
+  -- ^ This function is applied to the original subject.
+  -> C.Pred b
+  -- ^ If the above function returns 'Just', then this 'Pred' is
+  -- applied to the result of the above function.
+  -> C.Pred a
+wrapMaybe st fDyn toMaybeB p = C.Pred trC ev
+  where
+    trC = E.Node (indentTxt st) [C.static p]
+    ev a = E.Node o children
+      where
+        (o, children) = case toMaybeB a of
+          Nothing -> (C.Output False C.shown Nothing dy, [])
+            where
+              dy = indent $ lblLine False (fDyn a)
+          Just b -> (C.Output rslt vis shrt dyn, cs)
+            where
+              (E.Node (C.Output rslt vis shrt dynChld) cs) =
+                C.evaluate p b
+              dyn = undefined
+
+              
+
+
 
 -- # Visibility
 

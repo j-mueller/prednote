@@ -67,6 +67,7 @@ module Prednote
   , (|||)
   , P.not
   , P.wrap
+  , P.wrapMaybe
 
   -- ** Fanout
 
