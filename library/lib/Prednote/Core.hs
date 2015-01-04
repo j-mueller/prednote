@@ -122,48 +122,6 @@ predicate lbl f = Pred (Static lbl Empty) f'
         Annotated cks r = f a
 
 
-splitAnd
-  :: [Chunk]
-  -- ^ Static label
-  -> (a -> Annotated (b, c))
-  -> Pred b
-  -> Pred c
-  -> Pred a
-splitAnd st spawn (Pred lblB fB) (Pred lblC fC) = Pred lbls f
-  where
-    lbls = Static st (Two lblB lblC)
-    f a = Out cks res
-      where
-        Annotated cks (b, c) = spawn a
-        outB@(Out _ cB) = fB b
-        outC@(Out _ cC) = fC c
-        (resB, resC) = (outResult cB, outResult cC)
-        res
-          | Prelude.not resB = Child1 False showChildren outB
-          | otherwise = Child2 (resB && resC) showChildren outB outC
-
-
-splitOr
-  :: [Chunk]
-  -- ^ Static label
-  -> (a -> Annotated (b, c))
-  -> Pred b
-  -> Pred c
-  -> Pred a
-splitOr st spawn (Pred lblB fB) (Pred lblC fC) = Pred lbls f
-  where
-    lbls = Static st (Two lblB lblC)
-    f a = Out cks res
-      where
-        Annotated cks (b, c) = spawn a
-        outB@(Out _ cB) = fB b
-        outC@(Out _ cC) = fC c
-        (resB, resC) = (outResult cB, outResult cC)
-        res
-          | resB = Child1 True showChildren outB
-          | otherwise = Child2 (resB || resC) showChildren outB outC
-
-
 wrap
   :: [Chunk]
   -> (a -> Annotated b)
@@ -176,6 +134,8 @@ wrap st spawn (Pred lbl f) = Pred lbl' f'
       where
         Annotated ann b = spawn a
         res = Hollow (f b)
+
+
 switch
   :: [Chunk]
   -> (a -> Annotated (Either b c))

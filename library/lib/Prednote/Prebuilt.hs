@@ -23,19 +23,15 @@ wrap st dyn wrapper = C.wrap [fromText st] f
     f a = Annotated [fromText . dyn $ a] (wrapper a)
 
 wrap'
-  :: Text
+  :: (Text, (a -> Text))
   -- ^ Describes the input type of the resulting 'Pred'
-  -> Text
+  -> (Text, (b -> Text))
   -- ^ Describes the input type of the input 'Pred'
-  -> (a -> Text)
-  -- ^ Shows the input type of the resulting 'Pred'
-  -> (b -> Text)
-  -- ^ Shows the input type of the input 'Pred'
   -> (a -> b)
   -- ^ Converts the type of the result 'Pred' to the type of the input 'Pred'
   -> Pred b
   -> Pred a
-wrap' descA descB shwA shwB conv = C.wrap [fromText lbl] f
+wrap' (descA, shwA) (descB, shwB) conv = C.wrap [fromText lbl] f
   where
     lbl = descA <+> "is transformed to" <+> descB
     f a = Annotated [fromText dyn] b
@@ -92,63 +88,104 @@ predicate st shw pd = C.predicate [fromText st] f
 
 -- # Lists
 
-anyShower :: (a -> Text) -> Pred a -> Pred [a]
-anyShower shw pd = C.switch [fromText stat] caser false pc
-  where
-    stat = "either head or tail of (:) must be True ([] always False)"
-    caser a = case a of
-      [] -> Annotated ["[]"] (Left ())
-      x:xs -> Annotated ["(:)"] (Right (x, xs))
-    pc = C.splitOr ["analyzing cons cell"] fOr pd (anyShower shw pd)
-      where
-        fOr (x, xs) = Annotated ["cons cell: ", fromText . shw $ x]
-                                 (x, xs)
+anyShower :: Text -> (a -> Text) -> Pred a -> Pred [a]
+anyShower desc shwA pd
+  = wrap' (listDesc, (const "List"))
+          ("Either (" <> desc <> ", " <> listDesc <> ") ()", showEi)
+          conv
 
-any :: Show a => Pred a -> Pred [a]
-any = anyShower (X.pack . show)
+  $ eitherShower ("(" <> desc <> ", (List " <> desc <> "))")
+                 "Nil"
+                 showCons
+                 (const "[]")
+                 predCons
+                 false
+  where
+    predCons = predFst ||| predSnd
+    predFst = wrap' ("cons cell", showCons) (desc, shwA) fst pd
+    predSnd = wrap' ("cons cell", showCons) (listDesc, const listDesc) snd
+      (anyShower desc shwA pd)
+    listDesc = "[" <> desc <> "]"
+    conv ls = case ls of
+      [] -> Right ()
+      (x:xs) -> Left (x, xs)
+    showEi ei = case ei of
+      Left cons -> showCons cons
+      Right () -> "End of list"
+    showCons (x, _) = "Cons cell with head: " <> shwA x
+
+
+any
+  :: Show a
+  => Text
+  -- ^ Describes the type of the list; for example, if your input list
+  -- is @['Int']@, use @Int@ here.
+  -> Pred a
+  -> Pred [a]
+any desc = anyShower desc (X.pack . show)
 
 allShower :: (a -> Text) -> Pred a -> Pred [a]
-allShower shw pd = C.switch [fromText stat] caser true pc
-  where
-    stat = "both head and tail of (:) must be True ([] always True)"
-    caser a = case a of
-      [] -> Annotated ["End of list"] (Left ())
-      x:xs -> Annotated ["cons cell"] (Right (x, xs))
-    pc = C.splitAnd ["analyzing cons cell"] fAnd pd (anyShower shw pd)
-      where
-        fAnd (x, xs) = Annotated ["cons cell: ", fromText . shw $ x]
-                                 (x, xs)
+allShower = undefined
+
 
 all :: Show a => Pred a -> Pred [a]
 all = allShower (X.pack . show)
 
 -- # Other Prelude types - maybe, either
 
-maybeShower :: (a -> Text) -> Pred a -> Pred (Maybe a)
-maybeShower shw = C.switch [stat] caser false
-  where
-    stat = "False on Nothing; test with child predicate on Just"
-    caser a = case a of
-      Nothing -> Annotated ["Nothing"] (Left ())
-      Just x -> Annotated ["Just: ", fromText . shw $ x] (Right x)
+maybeShower
+  :: Text
+  -- ^ Describes type @a@
+  -> (a -> Text)
+  -> Pred a
+  -> Pred (Maybe a)
+maybeShower descA shwA
+  = wrap' ( "Maybe" <+> descA
+          , Prelude.maybe "Nothing" (\x -> "Just" <+> shwA x))
+          ( "Either ()" <+> descA
+          , Prelude.either (const "Left ()") (\x -> "Right" <+> shwA x))
+          (Prelude.maybe (Left ()) Right)
+  . eitherShower "()" descA (X.pack . show) shwA false
 
-maybe :: Show a => Pred a -> Pred (Maybe a)
-maybe = maybeShower (X.pack . show)
+maybe
+  :: Show a
+  => Text
+  -- ^ Describes type @a@
+  -> Pred a
+  -> Pred (Maybe a)
+maybe desc = maybeShower desc (X.pack . show)
 
 eitherShower
-  :: (a -> Text)
+  :: Text
+  -- ^ Describes type @a@
+  -> Text
+  -- ^ Describes type @b@
+  -> (a -> Text)
   -> (b -> Text)
   -> Pred a
   -> Pred b
   -> Pred (Either a b)
-eitherShower shwA shwB = C.switch ["either"] f
+eitherShower descA descB shwA shwB = C.switch [fromText stat] f
   where
-    f ei = case ei of
-      Left l -> Annotated ["Left: ", fromText . shwA $ l] (Left l)
-      Right r -> Annotated ["Right: ", fromText . shwB $ r] (Right r)
+    stat = "Either" <+> descA <+> descB
+    f a = Annotated [fromText dyn] val
+      where
+        dyn = "value has type" <+> side <+> ("(" <> typeDesc <> ")")
+          <+> "with value" <+> shown
+        (side, typeDesc, shown, val) = case a of
+          Left l -> ("Left", descA, shwA l, Left l)
+          Right r -> ("Right", descB, shwB r, Right r)
 
-either :: (Show a, Show b) => Pred a -> Pred b -> Pred (Either a b)
-either = eitherShower (X.pack . show) (X.pack . show)
+either
+  :: (Show a, Show b)
+  => Text
+  -- ^ Describes type A
+  -> Text
+  -- ^ Describes type B
+  -> Pred a
+  -> Pred b
+  -> Pred (Either a b)
+either shwA shwB = eitherShower shwA shwB (X.pack . show) (X.pack . show)
 
 -- # Combining or modifying Pred
 
