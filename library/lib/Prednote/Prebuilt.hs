@@ -7,6 +7,7 @@ import Prednote.Core (Pred, Annotated(..))
 import Data.Text (Text)
 import qualified Data.Text as X
 import Prelude hiding (any)
+import Data.Monoid
 
 -- # Wrapping - handles newtypes
 
@@ -35,6 +36,27 @@ same = predicate l (const l) id
   where l = "same as subject"
 
 -- # Predicates
+
+predicate'
+  :: Text
+  -- ^ Describes the type being matched by the predicate, e.g. 'Int'.
+  -- Used for the static label.
+  -> Text
+  -- ^ Describes the condition the type being matched must meet,
+  -- e.g. @greater than 5@.  Used in both the static and dynamic
+  -- labels.
+  -> (a -> Text)
+  -- ^ Describes the value being matched, such as @'X.pack' . 'show'@.
+  -- Used for the dynamic label.
+  -> (a -> Bool)
+  -- ^ Predicate
+  -> Pred a
+predicate' desc cond shw pd = C.predicate [fromText lbl] f
+  where
+    lbl = desc <> " is " <> cond
+    f a = Annotated [fromText dyn] (pd a)
+      where
+        dyn = desc <> " " <> shw a <> " is " <> cond
 
 predicate
   :: Text
