@@ -238,6 +238,7 @@ or st fDyn (Pred lblA fA) (Pred lblB fB) = Pred lbls f
         c | resA = Child1 True showChildren outA
           | otherwise = Child2 (resA || resB) showChildren outA outB
 
+
 not
   :: [Chunk]
   -> (a -> [Chunk])
@@ -250,21 +251,3 @@ not st fDyn (Pred lbl f) = Pred lbl' f'
       where
         child@(Out _ c) = f a
         res = Prelude.not . outResult $ c
-
-{-
-
-
-not
-  :: [Chunk]
-  -> (a -> [Chunk])
-  -> Pred a
-  -> Pred a
-not st fDyn (Pred lbl f) = Pred lbl' f'
-  where
-    lbl' = Tree st (One lbl)
-    f' a = Tree out (One chld)
-      where
-        chld@(Tree (Output chldRes _ _) _) = f a
-        out = Output (Prelude.not chldRes) shown (fDyn a)
-
--}
