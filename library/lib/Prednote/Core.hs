@@ -34,6 +34,40 @@ hidden = Visible False
 
 data Pred a = Pred (Tree [Chunk]) (a -> Tree Output)
 
+runPred :: Pred a -> a -> Bool
+runPred (Pred _ f) a = let (Tree (Output r _ _) _) = f a in r
+
+visibility :: (Bool -> Visible) -> Pred a -> Pred a
+visibility fVis (Pred lbl f) = Pred lbl f'
+  where
+    f' a = Tree o' c
+      where
+        o' = Output res vis' cks
+        (Tree (Output res _ cks) c) = f a
+        vis' = fVis res
+
+showTrue :: Pred a -> Pred a
+showTrue = visibility f
+  where
+    f b | b = shown
+        | otherwise = hidden
+
+showFalse :: Pred a -> Pred a
+showFalse = visibility f
+  where
+    f b | Prelude.not b = shown
+        | otherwise = hidden
+
+hideTrue :: Pred a -> Pred a
+hideTrue = showFalse
+
+hideFalse :: Pred a -> Pred a
+hideFalse = showTrue
+
+
+instance Show (Pred a) where
+  show _ = "Pred"
+
 test :: Pred a -> a -> Bool
 test (Pred _ f) a = let (Tree (Output res _ _) _) = f a in res
 

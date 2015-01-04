@@ -8,14 +8,19 @@ import Data.Text (Text)
 import qualified Data.Text as X
 import Prelude hiding (any)
 
-predicate
+-- # Wrapping - handles newtypes
+
+wrap
   :: Text
   -> (a -> Text)
-  -> (a -> Bool)
+  -> (a -> b)
+  -> Pred b
   -> Pred a
-predicate st shw pd = C.predicate [fromText st] f
+wrap st dyn wrapper = C.wrap [fromText st] f
   where
-    f a = Annotated [fromText . shw $ a] (pd a)
+    f a = Annotated [fromText . dyn $ a] (wrapper a)
+
+-- # Constants
 
 true :: Pred a
 true = predicate l (const l) (const True)
@@ -29,13 +34,26 @@ same :: Pred Bool
 same = predicate l (const l) id
   where l = "same as subject"
 
+-- # Predicates
+
+predicate
+  :: Text
+  -> (a -> Text)
+  -> (a -> Bool)
+  -> Pred a
+predicate st shw pd = C.predicate [fromText st] f
+  where
+    f a = Annotated [fromText . shw $ a] (pd a)
+
+-- # Lists
+
 anyShower :: (a -> Text) -> Pred a -> Pred [a]
 anyShower shw pd = C.switch [fromText stat] caser false pc
   where
-    stat = "at least one item must be True"
+    stat = "either head or tail of (:) must be True ([] always False)"
     caser a = case a of
-      [] -> Annotated ["End of list"] (Left ())
-      x:xs -> Annotated ["cons cell"] (Right (x, xs))
+      [] -> Annotated ["[]"] (Left ())
+      x:xs -> Annotated ["(:)"] (Right (x, xs))
     pc = C.splitOr ["analyzing cons cell"] fOr pd (anyShower shw pd)
       where
         fOr (x, xs) = Annotated ["cons cell: ", fromText . shw $ x]
@@ -47,7 +65,7 @@ any = anyShower (X.pack . show)
 allShower :: (a -> Text) -> Pred a -> Pred [a]
 allShower shw pd = C.switch [fromText stat] caser true pc
   where
-    stat = "no item may be False"
+    stat = "both head and tail of (:) must be True ([] always True)"
     caser a = case a of
       [] -> Annotated ["End of list"] (Left ())
       x:xs -> Annotated ["cons cell"] (Right (x, xs))
@@ -55,6 +73,11 @@ allShower shw pd = C.switch [fromText stat] caser true pc
       where
         fAnd (x, xs) = Annotated ["cons cell: ", fromText . shw $ x]
                                  (x, xs)
+
+all :: Show a => Pred a -> Pred [a]
+all = allShower (X.pack . show)
+
+-- # Other Prelude types - maybe, either
 
 maybeShower :: (a -> Text) -> Pred a -> Pred (Maybe a)
 maybeShower shw = C.switch [stat] caser false
@@ -82,8 +105,7 @@ eitherShower shwA shwB = C.switch ["either"] f
 either :: (Show a, Show b) => Pred a -> Pred b -> Pred (Either a b)
 either = eitherShower (X.pack . show) (X.pack . show)
 
-all :: Show a => Pred a -> Pred [a]
-all = allShower (X.pack . show)
+-- # Combining or modifying Pred
 
 (&&&) :: Pred a -> Pred a -> Pred a
 l &&& r = C.and t (const t) l r
@@ -100,14 +122,4 @@ infixr 2 |||
 not :: Pred a -> Pred a
 not = C.not l (const l)
   where l = ["not - child must be False"]
-
-wrap
-  :: Text
-  -> (a -> Text)
-  -> (a -> b)
-  -> Pred b
-  -> Pred a
-wrap st dyn wrapper = C.wrap [fromText st] f
-  where
-    f a = Annotated [fromText . dyn $ a] (wrapper a)
 
