@@ -1,12 +1,51 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Prednote.Prebuilt where
+module Prednote.Prebuilt
+  ( -- * Predicates
+    C.Pred
+    -- * Simple predicates
+  , true
+  , false
+  , same
+
+    -- * Describing types
+  , Typedesc(..)
+  , renderTypedesc
+  , renderInnerTypedesc
+
+    -- * Creating predicates
+  , predicate
+
+    -- * Predicate combinators - boolean
+  , (&&&)
+  , (|||)
+  , not
+
+    -- * Predicate combinators - sum types
+  , either
+  , maybe
+  , eitherShower
+  , maybeShower
+
+    -- * Predicate combinators - lists
+  , any
+  , all
+  , anyShower
+  , allShower
+
+    -- * Wrapping
+  , wrap
+  ) where
 
 import Rainbow
 import qualified Prednote.Core as C
 import Prednote.Core (Pred, Annotated(..))
 import Data.Text (Text)
 import qualified Data.Text as X
-import Prelude hiding (any)
+import qualified Prelude
+import Prelude
+  ( Bool(..), const, Show(..), id, ($), (.), fst, snd,
+    Either(..), Maybe(..), Ord(..), Eq(..), map, null,
+    otherwise )
 import Data.Monoid
 import Prednote.Format
 import Data.List (intersperse)
@@ -14,16 +53,6 @@ import Data.List (intersperse)
 -- # Wrapping - handles newtypes
 
 wrap
-  :: Text
-  -> (a -> Text)
-  -> (a -> b)
-  -> Pred b
-  -> Pred a
-wrap st dyn wrapper = C.wrap [fromText st] f
-  where
-    f a = Annotated [fromText . dyn $ a] (wrapper a)
-
-wrap'
   :: (Typedesc, (a -> Text))
   -- ^ Describes the input type of the resulting 'Pred'
   -> (Typedesc, (b -> Text))
@@ -32,7 +61,7 @@ wrap'
   -- ^ Converts the type of the result 'Pred' to the type of the input 'Pred'
   -> Pred b
   -> Pred a
-wrap' (descA, shwA) (descB, shwB) conv = C.wrap [fromText lbl] f
+wrap (descA, shwA) (descB, shwB) conv = C.wrap [fromText lbl] f
   where
     lbl = renderTypedesc descA <+> "is transformed to"
           <+> renderTypedesc descB
@@ -46,20 +75,20 @@ wrap' (descA, shwA) (descB, shwB) conv = C.wrap [fromText lbl] f
 -- # Constants
 
 true :: Pred a
-true = predicate l (const l) (const True)
-  where l = "always True"
+true = predicate (User "a" []) "ignored - always returns True"
+  (const "unknown") (const True)
 
 false :: Pred a
-false = predicate l (const l) (const False)
-  where l = "always False"
+false = predicate (User "a" []) "ignored - always returns False"
+  (const "unknown") (const False)
 
 same :: Pred Bool
-same = predicate l (const l) id
-  where l = "same as subject"
+same = predicate (User "Bool" []) "returned as is"
+  (X.pack . show) id
 
 -- # Predicates
 
-predicate'
+predicate
   :: Typedesc
   -- ^ Describes the type being matched by the predicate, e.g. 'Int'.
   -- Used for the static label.
@@ -73,7 +102,7 @@ predicate'
   -> (a -> Bool)
   -- ^ Predicate
   -> Pred a
-predicate' desc cond shw pd = C.predicate [fromText lbl] f
+predicate desc cond shw pd = C.predicate [fromText lbl] f
   where
     lbl = "value of type" <+> renderTypedesc desc <+> "is" <+> cond
     f a = Annotated [fromText dyn] (pd a)
@@ -81,20 +110,11 @@ predicate' desc cond shw pd = C.predicate [fromText lbl] f
         dyn = "value" <+> shw a <+> "of type" <+> renderTypedesc desc
           <+> "is" <+> cond
 
-predicate
-  :: Text
-  -> (a -> Text)
-  -> (a -> Bool)
-  -> Pred a
-predicate st shw pd = C.predicate [fromText st] f
-  where
-    f a = Annotated [fromText . shw $ a] (pd a)
-
 -- # Lists
 
 anyShower :: Typedesc -> (a -> Text) -> Pred a -> Pred [a]
 anyShower desc shwA pd
-  = wrap' (List desc, (const "List"))
+  = wrap (List desc, (const "List"))
           (User "Either" [desc, Unit], showEi)
           conv
 
@@ -105,8 +125,8 @@ anyShower desc shwA pd
   where
     tyConsCell = Tuple2 desc (List desc)
     predCons = predFst ||| predSnd
-    predFst = wrap' (tyConsCell, showCons) (desc, shwA) fst pd
-    predSnd = wrap' (tyConsCell, showCons)
+    predFst = wrap (tyConsCell, showCons) (desc, shwA) fst pd
+    predSnd = wrap (tyConsCell, showCons)
       (List desc, const "(rest of list)") snd (anyShower desc shwA pd)
     conv ls = case ls of
       [] -> Right ()
@@ -126,7 +146,7 @@ any desc = anyShower desc (X.pack . show)
 
 allShower :: Typedesc -> (a -> Text) -> Pred a -> Pred [a]
 allShower desc shwA pd
-  = wrap' (List desc, (const "List"))
+  = wrap (List desc, (const "List"))
           (User "Either" [desc, Unit], showEi)
           conv
 
@@ -137,8 +157,8 @@ allShower desc shwA pd
   where
     tyConsCell = Tuple2 desc (List desc)
     predCons = predFst &&& predSnd
-    predFst = wrap' (tyConsCell, showCons) (desc, shwA) fst pd
-    predSnd = wrap' (tyConsCell, showCons)
+    predFst = wrap (tyConsCell, showCons) (desc, shwA) fst pd
+    predSnd = wrap (tyConsCell, showCons)
       (List desc, const "(rest of list)") snd (anyShower desc shwA pd)
     conv ls = case ls of
       [] -> Right ()
@@ -159,7 +179,7 @@ maybeShower
   -> Pred a
   -> Pred (Maybe a)
 maybeShower descA shwA
-  = wrap' ( User "Maybe" [descA]
+  = wrap ( User "Maybe" [descA]
           , Prelude.maybe "Nothing" (\x -> "Just" <+> shwA x))
           ( User "Either" [Unit, descA]
           , Prelude.either (const "Left ()") (\x -> "Right" <+> shwA x))
@@ -206,32 +226,60 @@ either dA dB = eitherShower (dA, X.pack . show) (dB, X.pack . show)
 
 -- # Combining or modifying Pred
 
+-- | And - both children must be 'True'; short-circuits if the first
+-- child is 'False'
 (&&&) :: Pred a -> Pred a -> Pred a
 l &&& r = C.and t (const t) l r
   where t = ["and - both children must be True"]
 
 infixr 3 &&&
 
+-- | Or - either child must be 'True'; short-circuits if the first
+-- child is 'True'
 (|||) :: Pred a -> Pred a -> Pred a
 l ||| r = C.or t (const t) l r
   where t = ["or - either child must be True"]
 
 infixr 2 |||
 
+-- | Negation - child must be 'False'
 not :: Pred a -> Pred a
 not = C.not l (const l)
   where l = ["not - child must be False"]
 
+-- | A type to describe types.
 data Typedesc
   = List Typedesc
+  -- ^ Lists; for example, for @['Int']@, use
+  --
+  -- > List (User "Int") []
   | Unit
+  -- ^ The unit type, @()@.
   | Tuple2 Typedesc Typedesc
+  -- ^ A tuple; for example, for @('Int', 'Char')@, use
+  --
+  -- > Tuple2 (User "Int" []) (User "Char" [])
   | Tuple3 Typedesc Typedesc Typedesc
   | Tuple4 Typedesc Typedesc Typedesc Typedesc
   | Tuple5 Typedesc Typedesc Typedesc Typedesc Typedesc
   | User Text [Typedesc]
+  -- ^ Any user defined type; also covers types in the standard
+  -- library that (unlike @[]@ and @(,)@, for example) do not have
+  -- special syntax.  Arbitrary nesting is allowed. Some examples:
+  --
+  -- > {-# LANGUAGE OverloadedStrings #-}
+  -- > -- String
+  -- > User "String" []
+  -- > -- Maybe Int
+  -- > User "Maybe" [User "Int" []]
+  -- > -- Maybe a
+  -- > User "Maybe" [User "a" []]
+  -- > -- Maybe [Either Int Char]
+  -- > User "Maybe" [List (User "Either" [User "Int", User "Char"])]
   deriving (Eq, Ord, Show)
 
+-- | Renders a 'Typedesc' so it looks as it would appear in a type
+-- signature.
 renderTypedesc :: Typedesc -> Text
 renderTypedesc (List t) = "[" <> renderTypedesc t <> "]"
 renderTypedesc Unit = "()"
@@ -248,6 +296,11 @@ renderTypedesc (Tuple5 v w x y z) = "(" <> renderTypedesc v <> ", "
 renderTypedesc (User n cs)
   = n <+> X.concat (intersperse " " . map renderInnerTypedesc $ cs)
 
+-- | Renders a 'Typedesc', as it would appear if it is a parameter
+-- type of a user-defined type.  This means that a user-defined
+-- 'Typedesc' is rendered with surrounding parentheses if necessary;
+-- all other types are rendered just as they would be by
+-- 'renderTypedesc'.
 renderInnerTypedesc :: Typedesc -> Text
 renderInnerTypedesc (User n cs)
   | null cs = n

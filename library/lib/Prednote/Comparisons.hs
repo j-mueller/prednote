@@ -13,7 +13,7 @@ import qualified Prelude
 -- the right hand side is baked into the 'Pred' and that the 'Pred'
 -- compares this single right-hand side to each left-hand side item.
 compareBy
-  :: Text
+  :: Typedesc
   -- ^ Description of the type of thing that is being matched
 
   -> Text
@@ -34,21 +34,21 @@ compareBy
 
   -> C.Pred a
 
-compareBy typeDesc rhsDesc lhsDesc get ord = predicate stat dyn pd
+compareBy typeDesc rhsDesc lhsDesc get ord
+  = predicate typeDesc cond lhsDesc pd
   where
-    stat = typeDesc <+> "is" <+> ordDesc <+> rhsDesc
+    cond = ordDesc <+> rhsDesc
     ordDesc = case ord of
       EQ -> "equal to"
       LT -> "less than"
       GT -> "greater than"
-    dyn a = typeDesc <+> lhsDesc a <+> "is" <+> ordDesc <+> rhsDesc
     pd a = get a == ord
 
 -- | Overloaded version of 'compareBy'.
 
 compare
   :: (Show a, Ord a)
-  => Text
+  => Typedesc
   -- ^ Description of the type of thing that is being matched
 
   -> a
@@ -67,7 +67,7 @@ compare typeDesc rhs ord =
 -- | Builds a 'Pred' that tests items for equality.
 
 equalBy
-  :: Text
+  :: Typedesc
   -- ^ Description of the type of thing that is being matched
 
   -> Text
@@ -81,16 +81,15 @@ equalBy
   -- 'True' if the items are equal; 'False' otherwise.
 
   -> C.Pred a
-equalBy typeDesc rhsDesc lhsDesc get = predicate stat dyn get
+equalBy typeDesc rhsDesc lhsDesc = predicate typeDesc cond lhsDesc
   where
-    stat = typeDesc <+> "is equal to" <+> rhsDesc
-    dyn a = typeDesc <+> lhsDesc a <+> "is equal to" <+> rhsDesc
+    cond = "is equal to" <+> rhsDesc
 
 -- | Overloaded version of 'equalBy'.
 
 equal
   :: (Eq a, Show a)
-  => Text
+  => Typedesc
   -- ^ Description of the type of thing that is being matched
 
   -> a
@@ -103,7 +102,7 @@ equal typeDesc rhs = equalBy typeDesc (X.pack . show $ rhs)
 
 -- | Builds a 'Pred' for items that might fail to return a comparison.
 compareByMaybe
-  :: Text
+  :: Typedesc
   -- ^ Description of the type of thing that is being matched
 
   -> Text
@@ -124,22 +123,22 @@ compareByMaybe
 
   -> C.Pred a
 
-compareByMaybe typeDesc rhsDesc lhsDesc get ord = predicate stat dyn fn
+compareByMaybe typeDesc rhsDesc lhsDesc get ord
+  = predicate typeDesc cond lhsDesc pd
   where
-    stat = typeDesc <+> "is" <+> ordDesc <+> rhsDesc
-    dyn a = typeDesc <+> lhsDesc a <+> "is" <+> ordDesc <+> rhsDesc
+    cond = ordDesc <+> rhsDesc
     ordDesc = case ord of
       EQ -> "equal to"
       LT -> "less than"
       GT -> "greater than"
-    fn a = case get a of
+    pd a = case get a of
       Nothing -> False
       Just o -> o == ord
 
 greater
   :: (Show a, Ord a)
 
-  => Text
+  => Typedesc
   -- ^ Description of the type of thing being matched
 
   -> a
@@ -151,7 +150,7 @@ greater typeDesc rhs = compare typeDesc rhs GT
 less
   :: (Show a, Ord a)
 
-  => Text
+  => Typedesc
   -- ^ Description of the type of thing being matched
 
   -> a
@@ -162,7 +161,7 @@ less typeDesc rhs = compare typeDesc rhs LT
 
 greaterEq
   :: (Show a, Ord a)
-  => Text
+  => Typedesc
   -- ^ Description of the type of thing being matched
 
   -> a
@@ -173,7 +172,7 @@ greaterEq t r = greater t r ||| equal t r
 
 lessEq
   :: (Show a, Ord a)
-  => Text
+  => Typedesc
   -- ^ Description of the type of thing being matched
 
   -> a
@@ -184,7 +183,7 @@ lessEq t r = less t r ||| equal t r
 
 notEq
   :: (Show a, Eq a)
-  => Text
+  => Typedesc
   -- ^ Description of the type of thing being matched
 
   -> a
@@ -194,7 +193,7 @@ notEq
 notEq t r = not $ equal t r
 
 greaterBy
-  :: Text
+  :: Typedesc
   -- ^ Description of the type of thing being matched
 
   -> Text
@@ -213,7 +212,7 @@ greaterBy dT dR dL get = compareBy dT dR dL get GT
 
 
 lessBy
-  :: Text
+  :: Typedesc
   -- ^ Description of the type of thing being matched
 
   -> Text
@@ -231,7 +230,7 @@ lessBy
 lessBy dT dR dL get = compareBy dT dR dL get LT
 
 greaterEqBy
-  :: Text
+  :: Typedesc
   -- ^ Description of the type of thing being matched
 
   -> Text
@@ -251,7 +250,7 @@ greaterEqBy dT dR dL f = greaterBy dT dR dL f ||| equalBy dT dR dL f'
     f' = fmap (== EQ) f
 
 lessEqBy
-  :: Text
+  :: Typedesc
   -- ^ Description of the type of thing being matched
 
   -> Text
@@ -271,7 +270,7 @@ lessEqBy dT dR dL f = lessBy dT dR dL f ||| equalBy dT dR dL f'
     f' = fmap (== EQ) f
 
 notEqBy
-  :: Text
+  :: Typedesc
   -- ^ Description of the type of thing being matched
 
   -> Text
