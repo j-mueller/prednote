@@ -9,6 +9,7 @@ import qualified Data.Text as X
 import Prelude hiding (any)
 import Data.Monoid
 import Prednote.Format
+import Data.List (intersperse)
 
 -- # Wrapping - handles newtypes
 
@@ -23,9 +24,9 @@ wrap st dyn wrapper = C.wrap [fromText st] f
     f a = Annotated [fromText . dyn $ a] (wrapper a)
 
 wrap'
-  :: (Text, (a -> Text))
+  :: (Typedesc, (a -> Text))
   -- ^ Describes the input type of the resulting 'Pred'
-  -> (Text, (b -> Text))
+  -> (Typedesc, (b -> Text))
   -- ^ Describes the input type of the input 'Pred'
   -> (a -> b)
   -- ^ Converts the type of the result 'Pred' to the type of the input 'Pred'
@@ -33,12 +34,14 @@ wrap'
   -> Pred a
 wrap' (descA, shwA) (descB, shwB) conv = C.wrap [fromText lbl] f
   where
-    lbl = descA <+> "is transformed to" <+> descB
+    lbl = renderTypedesc descA <+> "is transformed to"
+          <+> renderTypedesc descB
     f a = Annotated [fromText dyn] b
       where
         b = conv a
-        dyn = descA <+> shwA a <+> "is transformed to" <+> descB
-          <+> shwB b
+        dyn = "value" <+> shwA a <+> "of type" <+> renderTypedesc descA
+          <+> "is transformed to value" <+> shwB b <+> "of type"
+          <+> renderTypedesc descB
 
 -- # Constants
 
@@ -57,7 +60,7 @@ same = predicate l (const l) id
 -- # Predicates
 
 predicate'
-  :: Text
+  :: Typedesc
   -- ^ Describes the type being matched by the predicate, e.g. 'Int'.
   -- Used for the static label.
   -> Text
@@ -72,10 +75,11 @@ predicate'
   -> Pred a
 predicate' desc cond shw pd = C.predicate [fromText lbl] f
   where
-    lbl = desc <> " is " <> cond
+    lbl = "value of type" <+> renderTypedesc desc <+> "is" <+> cond
     f a = Annotated [fromText dyn] (pd a)
       where
-        dyn = desc <> " " <> shw a <> " is " <> cond
+        dyn = "value" <+> shw a <+> "of type" <+> renderTypedesc desc
+          <+> "is" <+> cond
 
 predicate
   :: Text
@@ -88,104 +92,117 @@ predicate st shw pd = C.predicate [fromText st] f
 
 -- # Lists
 
-anyShower :: Text -> (a -> Text) -> Pred a -> Pred [a]
+anyShower :: Typedesc -> (a -> Text) -> Pred a -> Pred [a]
 anyShower desc shwA pd
-  = wrap' (listDesc, (const "List"))
-          ("Either (" <> desc <> ", " <> listDesc <> ") ()", showEi)
+  = wrap' (List desc, (const "List"))
+          (User "Either" [desc, Unit], showEi)
           conv
 
-  $ eitherShower ("(" <> desc <> ", (List " <> desc <> "))")
-                 "Nil"
-                 showCons
-                 (const "[]")
+  $ eitherShower (tyConsCell, showCons)
+                 (Unit, X.pack . show)
                  predCons
                  false
   where
+    tyConsCell = Tuple2 desc (List desc)
     predCons = predFst ||| predSnd
-    predFst = wrap' ("cons cell", showCons) (desc, shwA) fst pd
-    predSnd = wrap' ("cons cell", showCons) (listDesc, const listDesc) snd
-      (anyShower desc shwA pd)
-    listDesc = "[" <> desc <> "]"
+    predFst = wrap' (tyConsCell, showCons) (desc, shwA) fst pd
+    predSnd = wrap' (tyConsCell, showCons)
+      (List desc, const "(rest of list)") snd (anyShower desc shwA pd)
     conv ls = case ls of
       [] -> Right ()
       (x:xs) -> Left (x, xs)
-    showEi ei = case ei of
-      Left cons -> showCons cons
-      Right () -> "End of list"
+    showEi = Prelude.either showCons (const "end of list")
     showCons (x, _) = "Cons cell with head: " <> shwA x
 
 
 any
   :: Show a
-  => Text
+  => Typedesc
   -- ^ Describes the type of the list; for example, if your input list
   -- is @['Int']@, use @Int@ here.
   -> Pred a
   -> Pred [a]
 any desc = anyShower desc (X.pack . show)
 
-allShower :: (a -> Text) -> Pred a -> Pred [a]
-allShower = undefined
+allShower :: Typedesc -> (a -> Text) -> Pred a -> Pred [a]
+allShower desc shwA pd
+  = wrap' (List desc, (const "List"))
+          (User "Either" [desc, Unit], showEi)
+          conv
+
+  $ eitherShower (tyConsCell, showCons)
+                 (Unit, X.pack . show)
+                 predCons
+                 true
+  where
+    tyConsCell = Tuple2 desc (List desc)
+    predCons = predFst &&& predSnd
+    predFst = wrap' (tyConsCell, showCons) (desc, shwA) fst pd
+    predSnd = wrap' (tyConsCell, showCons)
+      (List desc, const "(rest of list)") snd (anyShower desc shwA pd)
+    conv ls = case ls of
+      [] -> Right ()
+      (x:xs) -> Left (x, xs)
+    showEi = Prelude.either showCons (const "end of list")
+    showCons (x, _) = "Cons cell with head: " <> shwA x
 
 
-all :: Show a => Pred a -> Pred [a]
-all = allShower (X.pack . show)
+all :: Show a => Typedesc -> Pred a -> Pred [a]
+all ty = allShower ty (X.pack . show)
 
 -- # Other Prelude types - maybe, either
 
 maybeShower
-  :: Text
+  :: Typedesc
   -- ^ Describes type @a@
   -> (a -> Text)
   -> Pred a
   -> Pred (Maybe a)
 maybeShower descA shwA
-  = wrap' ( "Maybe" <+> descA
+  = wrap' ( User "Maybe" [descA]
           , Prelude.maybe "Nothing" (\x -> "Just" <+> shwA x))
-          ( "Either ()" <+> descA
+          ( User "Either" [Unit, descA]
           , Prelude.either (const "Left ()") (\x -> "Right" <+> shwA x))
           (Prelude.maybe (Left ()) Right)
-  . eitherShower "()" descA (X.pack . show) shwA false
+  . eitherShower (Unit, (X.pack . show)) (descA, shwA) false
 
 maybe
   :: Show a
-  => Text
+  => Typedesc
   -- ^ Describes type @a@
   -> Pred a
   -> Pred (Maybe a)
 maybe desc = maybeShower desc (X.pack . show)
 
 eitherShower
-  :: Text
+  :: (Typedesc, a -> Text)
   -- ^ Describes type @a@
-  -> Text
+  -> (Typedesc, b -> Text)
   -- ^ Describes type @b@
-  -> (a -> Text)
-  -> (b -> Text)
   -> Pred a
   -> Pred b
   -> Pred (Either a b)
-eitherShower descA descB shwA shwB = C.switch [fromText stat] f
+eitherShower (descA, shwA) (descB, shwB) = C.switch [fromText stat] f
   where
-    stat = "Either" <+> descA <+> descB
+    stat = renderTypedesc (User "Either" [descA, descB])
     f a = Annotated [fromText dyn] val
       where
-        dyn = "value has type" <+> side <+> ("(" <> typeDesc <> ")")
-          <+> "with value" <+> shown
-        (side, typeDesc, shown, val) = case a of
-          Left l -> ("Left", descA, shwA l, Left l)
-          Right r -> ("Right", descB, shwB r, Right r)
+        dyn = "value of" <+> shown <+> "has type"
+          <+> renderTypedesc (User "Either" [descA, descB])
+        (shown, val) = case a of
+          Left l -> (shwA l, Left l)
+          Right r -> (shwB r, Right r)
 
 either
   :: (Show a, Show b)
-  => Text
-  -- ^ Describes type A
-  -> Text
-  -- ^ Describes type B
+  => Typedesc
+  -- ^ Describes type @a@
+  -> Typedesc
+  -- ^ Describes type @b@
   -> Pred a
   -> Pred b
   -> Pred (Either a b)
-either shwA shwB = eitherShower shwA shwB (X.pack . show) (X.pack . show)
+either dA dB = eitherShower (dA, X.pack . show) (dB, X.pack . show)
 
 -- # Combining or modifying Pred
 
@@ -205,3 +222,34 @@ not :: Pred a -> Pred a
 not = C.not l (const l)
   where l = ["not - child must be False"]
 
+data Typedesc
+  = List Typedesc
+  | Unit
+  | Tuple2 Typedesc Typedesc
+  | Tuple3 Typedesc Typedesc Typedesc
+  | Tuple4 Typedesc Typedesc Typedesc Typedesc
+  | Tuple5 Typedesc Typedesc Typedesc Typedesc Typedesc
+  | User Text [Typedesc]
+  deriving (Eq, Ord, Show)
+
+renderTypedesc :: Typedesc -> Text
+renderTypedesc (List t) = "[" <> renderTypedesc t <> "]"
+renderTypedesc Unit = "()"
+renderTypedesc (Tuple2 x y) = "(" <> renderTypedesc x
+  <> ", " <> renderTypedesc y <> ")"
+renderTypedesc (Tuple3 x y z) = "(" <> renderTypedesc x
+  <> ", " <> renderTypedesc y <> ", " <> renderTypedesc z <> ")"
+renderTypedesc (Tuple4 w x y z) = "(" <> renderTypedesc w
+  <> ", " <> renderTypedesc x <> ", " <> renderTypedesc y
+  <> ", " <> renderTypedesc z <> ")"
+renderTypedesc (Tuple5 v w x y z) = "(" <> renderTypedesc v <> ", "
+  <> renderTypedesc w <> ", " <> renderTypedesc x <> ", "
+  <> renderTypedesc y <> ", " <> renderTypedesc z <> ")"
+renderTypedesc (User n cs)
+  = n <+> X.concat (intersperse " " . map renderInnerTypedesc $ cs)
+
+renderInnerTypedesc :: Typedesc -> Text
+renderInnerTypedesc (User n cs)
+  | null cs = n
+  | otherwise = "(" <> X.concat (map renderInnerTypedesc cs) <> ")"
+renderInnerTypedesc x = renderTypedesc x
