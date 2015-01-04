@@ -5,24 +5,16 @@ import Prelude hiding (all, any, maybe, and, or, not)
 import qualified Prelude
 import Data.Functor.Contravariant (Contravariant(..))
 
-data Tree a = Tree a (Children a)
+data Static = Static [Chunk] Children
   deriving (Eq, Ord, Show)
 
-instance Functor Tree where
-  fmap f (Tree a c) = Tree (f a) (fmap f c)
-
-data Children a
+data Children
   = Empty
-  | One (Tree a)
-  | Two (Tree a) (Tree a)
+  | One Static
+  | Two Static Static
   deriving (Eq, Ord, Show)
 
-instance Functor Children where
-  fmap _ Empty = Empty
-  fmap f (One t) = One (fmap f t)
-  fmap f (Two x y) = Two (fmap f x) (fmap f y)
-
-data Pred a = Pred (Tree [Chunk]) (a -> Out)
+data Pred a = Pred Static (a -> Out)
 
 data Out = Out [Chunk] OutC
 
@@ -123,7 +115,7 @@ predicate
   -- ^ Static label
   -> (a -> Annotated Bool)
   -> Pred a
-predicate lbl f = Pred (Tree lbl Empty) f'
+predicate lbl f = Pred (Static lbl Empty) f'
   where
     f' a = Out cks (Terminal r)
       where
@@ -139,7 +131,7 @@ splitAnd
   -> Pred a
 splitAnd st spawn (Pred lblB fB) (Pred lblC fC) = Pred lbls f
   where
-    lbls = Tree st (Two lblB lblC)
+    lbls = Static st (Two lblB lblC)
     f a = Out cks res
       where
         Annotated cks (b, c) = spawn a
@@ -160,7 +152,7 @@ splitOr
   -> Pred a
 splitOr st spawn (Pred lblB fB) (Pred lblC fC) = Pred lbls f
   where
-    lbls = Tree st (Two lblB lblC)
+    lbls = Static st (Two lblB lblC)
     f a = Out cks res
       where
         Annotated cks (b, c) = spawn a
@@ -179,7 +171,7 @@ wrap
   -> Pred a
 wrap st spawn (Pred lbl f) = Pred lbl' f'
   where
-    lbl' = Tree st (One lbl)
+    lbl' = Static st (One lbl)
     f' a = Out ann res
       where
         Annotated ann b = spawn a
@@ -192,7 +184,7 @@ switch
   -> Pred a
 switch st split (Pred lblB fB) (Pred lblC fC) = Pred lbl' f
   where
-    lbl' = Tree st (Two lblB lblC)
+    lbl' = Static st (Two lblB lblC)
     f a = Out ann (Hollow child)
       where
         Annotated ann ei = split a
@@ -209,7 +201,7 @@ and
   -> Pred a
 and st fDyn (Pred lblA fA) (Pred lblB fB) = Pred lbls f
   where
-    lbls = Tree st (Two lblA lblB)
+    lbls = Static st (Two lblA lblB)
     f a = Out dyn c
       where
         dyn = fDyn a
@@ -228,7 +220,7 @@ or
   -> Pred a
 or st fDyn (Pred lblA fA) (Pred lblB fB) = Pred lbls f
   where
-    lbls = Tree st (Two lblA lblB)
+    lbls = Static st (Two lblA lblB)
     f a = Out dyn c
       where
         dyn = fDyn a
@@ -246,7 +238,7 @@ not
   -> Pred a
 not st fDyn (Pred lbl f) = Pred lbl' f'
   where
-    lbl' = Tree st (One lbl)
+    lbl' = Static st (One lbl)
     f' a = Out (fDyn a) (Child1 res showChildren child)
       where
         child@(Out _ c) = f a

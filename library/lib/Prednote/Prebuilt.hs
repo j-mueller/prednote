@@ -8,6 +8,7 @@ import Data.Text (Text)
 import qualified Data.Text as X
 import Prelude hiding (any)
 import Data.Monoid
+import Prednote.Format
 
 -- # Wrapping - handles newtypes
 
@@ -20,6 +21,28 @@ wrap
 wrap st dyn wrapper = C.wrap [fromText st] f
   where
     f a = Annotated [fromText . dyn $ a] (wrapper a)
+
+wrap'
+  :: Text
+  -- ^ Describes the input type of the resulting 'Pred'
+  -> Text
+  -- ^ Describes the input type of the input 'Pred'
+  -> (a -> Text)
+  -- ^ Shows the input type of the resulting 'Pred'
+  -> (b -> Text)
+  -- ^ Shows the input type of the input 'Pred'
+  -> (a -> b)
+  -- ^ Converts the type of the result 'Pred' to the type of the input 'Pred'
+  -> Pred b
+  -> Pred a
+wrap' descA descB shwA shwB conv = C.wrap [fromText lbl] f
+  where
+    lbl = descA <+> "is transformed to" <+> descB
+    f a = Annotated [fromText dyn] b
+      where
+        b = conv a
+        dyn = descA <+> shwA a <+> "is transformed to" <+> descB
+          <+> shwB b
 
 -- # Constants
 
