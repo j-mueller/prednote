@@ -54,7 +54,6 @@ library ms = C.Library
   , C.defaultLanguage C.Haskell2010
   ]
 
-{-
 executable :: [String] -> C.Executable
 executable ms = C.Executable "prednote-test"
   [ C.hsSourceDirs ["lib", "exe"]
@@ -65,6 +64,7 @@ executable ms = C.Executable "prednote-test"
   , C.buildDepends depends
   ]
 
+{-
 visual :: C.Executable
 visual = C.Executable "prednote-visual-test"
   [ C.hsSourceDirs ["lib", "visual"]
@@ -84,6 +84,7 @@ cabal msLib msExe = C.empty
   { C.cProperties = properties
   , C.cRepositories = [repo]
   , C.cLibrary = Just $ library msLib
+  , C.cExecutables = [executable (msLib ++ msExe)]
   -- , C.cExecutables = [executable (msLib ++ msExe), visual]
   }
 

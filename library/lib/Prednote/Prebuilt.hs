@@ -34,6 +34,9 @@ module Prednote.Prebuilt
 
     -- * Wrapping
   , wrap
+
+    -- * Evaluating predicates
+  , C.test
   ) where
 
 import Rainbow
