@@ -2,7 +2,7 @@
 module Prednote.Prebuilt.Properties where
 
 import Prednote.Core.Generators
-import Prednote.Prebuilt.Generators
+import Prednote.Prebuilt.Generators hiding (text)
 import Prelude.Generators
 import qualified Prelude.Generators as PG
 import Test.QuickCheck
@@ -14,6 +14,7 @@ import Prednote.Prebuilt ((&&&), (|||))
 import qualified Data.Tree as E
 import Prednote.Core (Pred)
 import Prelude hiding (pred)
+import qualified Prelude
 import Data.Maybe
 
 genInt :: Gen Int
@@ -88,6 +89,52 @@ prop_either =
         Left i -> P.test pd1 i
         Right i -> P.test pd2 i
   in r == expected
+
+prop_all =
+  forAll typedesc $ \td1 ->
+  forAll typedesc $ \td2 ->
+  forAll (fmap Blind $ function1 coarbitrary (text arbitrary))
+    $ \(Blind fDesc) ->
+  forAll (fmap Blind $ function1 coarbitrary arbitrary) $ \(Blind fpd) ->
+  forAll (resize 2 $ listOf genInt) $ \ls ->
+  forAll (text arbitrary) $ \txt ->
+  let pd = P.predicate td1 txt fDesc fpd in
+  within (seconds 10) $ P.test (P.all td2 pd) ls == Prelude.all fpd ls
+
+prop_any =
+  forAll typedesc $ \td1 ->
+  forAll typedesc $ \td2 ->
+  forAll (fmap Blind $ function1 coarbitrary (text arbitrary))
+    $ \(Blind fDesc) ->
+  forAll (fmap Blind $ function1 coarbitrary arbitrary) $ \(Blind fpd) ->
+  forAll (listOf genInt) $ \ls ->
+  forAll (text arbitrary) $ \txt ->
+  let pd = P.predicate td1 txt fDesc fpd in
+  within (seconds 10) $ P.test (P.any td2 pd) ls == Prelude.any fpd ls
+
+-- a :: Int; b :: Char
+prop_wrap =
+  let genShower = fmap Blind $ function1 coarbitrary (text arbitrary) in
+  forAll typedesc $ \td1 ->
+  forAll (text arbitrary) $ \txt ->
+  forAll genShower $ \(Blind shw1) ->
+  forAll (fmap Blind $ function1 coarbitrary arbitrary )
+    $ \(Blind pd) ->
+  forAll typedesc $ \td2 ->
+  forAll genShower $ \(Blind shw2) ->
+  forAll typedesc $ \td3 ->
+  forAll genShower $ \(Blind shw3) ->
+  forAll (fmap Blind $ function1 coarbitrary arbitrary)
+    $ \(Blind conv) ->
+  forAll genInt $ \i ->
+  let p1 = P.predicate td1 txt shw1 pd 
+      wrapped = P.wrap (td2, shw2) (td3, shw3) conv p1
+      expected = pd . conv $ i
+      actual = P.test wrapped i
+  in expected == actual
+
+seconds :: Int -> Int
+seconds = (* 10 ^ (6 :: Int))
 
 -- -- # tests for visibility
 -- isShown :: Pred Int -> Property

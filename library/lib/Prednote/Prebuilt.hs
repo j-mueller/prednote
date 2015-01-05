@@ -162,7 +162,7 @@ allShower desc shwA pd
     predCons = predFst &&& predSnd
     predFst = wrap (tyConsCell, showCons) (desc, shwA) fst pd
     predSnd = wrap (tyConsCell, showCons)
-      (List desc, const "(rest of list)") snd (anyShower desc shwA pd)
+      (List desc, const "(rest of list)") snd (allShower desc shwA pd)
     conv ls = case ls of
       [] -> Right ()
       (x:xs) -> Left (x, xs)
