@@ -26,6 +26,9 @@ showValue ts@(Typeshow _ f) a = describe ts <+> "of value" <+> f a
 instance Show (Typeshow a) where
   show (Typeshow d _) = "Typeshow (" <> show d <> ")"
 
+data Pdct a = Pdct (C.Pred a) (Typeshow a)
+  deriving Show
+
 
 -- # Wrapping - handles newtypes
 
@@ -121,6 +124,33 @@ predicate ts cond pd = C.predicate [fromText lbl] f
       where
         dyn = showValue ts a <+> "is" <+> cond
 
+predicate'
+  :: Typeshow a
+  -> Text
+  -> (a -> Bool)
+  -> Pdct a
+predicate' ts cond pd = Pdct (C.predicate [fromText lbl] f) ts
+  where
+    lbl = "value of type" <+> describe ts <+> "is" <+> cond
+    f a = Annotated [fromText dyn] (pd a)
+      where
+        dyn = showValue ts a <+> "is" <+> cond
+
+consCellPred
+  :: Pred [a]
+  -> Typeshow a
+  -> Pred a
+  -> (Pred (a, [a]) -> Pred (a, [a]) -> Pred (a, [a]))
+  -> Pred (a, [a])
+consCellPred pLs ts@(Typeshow tA shwA) pd comb
+  = xOfPair ts tsLs tsPair id pd pLs
+  where
+    tsLs = Typeshow (List tA) (const "(rest of list")
+    tsPair = Typeshow (Tuple2 tA (List tA))
+      (\(x, _) -> "cons cell with head: " <> shwA x)
+    xOfPair = predOnPair comb
+
+
 -- # Lists
 
 anyShower :: Typeshow a -> Pred a -> Pred [a]
@@ -154,21 +184,6 @@ eiPredToListPred (Typeshow desc shwA) = wrap listDesc eiDesc conv
     conv ls = case ls of
       [] -> Right ()
       (x:xs) -> Left (x, xs)
-
-consCellPred
-  :: Pred [a]
-  -> Typeshow a
-  -> Pred a
-  -> (Pred (a, [a]) -> Pred (a, [a]) -> Pred (a, [a]))
-  -> Pred (a, [a])
-consCellPred pLs ts@(Typeshow tA shwA) pd comb
-  = xOfPair ts tsLs tsPair id pd pLs
-  where
-    tsLs = Typeshow (List tA) (const "(rest of list")
-    tsPair = Typeshow (Tuple2 tA (List tA))
-      (\(x, _) -> "cons cell with head: " <> shwA x)
-    xOfPair = predOnPair comb
-
 
 any
   :: Show a
