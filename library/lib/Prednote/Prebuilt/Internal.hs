@@ -10,99 +10,144 @@ import qualified Prelude
 import Prelude
   ( Bool(..), const, Show(..), id, ($), (.), fst, snd,
     Either(..), Maybe(..), Ord(..), Eq(..), map, null,
-    otherwise )
+    otherwise, undefined )
 import Data.Monoid
 import Prednote.Format
 import Data.List (intersperse)
 
+data Typeshow a = Typeshow Typedesc (a -> Text)
+
+describe :: Typeshow a -> Text
+describe (Typeshow t _) = renderTypedesc t
+
+showValue :: Typeshow a -> a -> Text
+showValue ts@(Typeshow _ f) a = describe ts <+> "of value" <+> f a
+
+instance Show (Typeshow a) where
+  show (Typeshow d _) = "Typeshow (" <> show d <> ")"
+
+
 -- # Wrapping - handles newtypes
 
 wrap
-  :: (Typedesc, (a -> Text))
+  :: Typeshow a
   -- ^ Describes the input type of the resulting 'Pred'
-  -> (Typedesc, (b -> Text))
+  -> Typeshow b
   -- ^ Describes the input type of the input 'Pred'
   -> (a -> b)
   -- ^ Converts the type of the result 'Pred' to the type of the input 'Pred'
   -> Pred b
   -> Pred a
-wrap (descA, shwA) (descB, shwB) conv = C.wrap [fromText lbl] f
+wrap tsA tsB conv = C.wrap [fromText lbl] f
   where
-    lbl = renderTypedesc descA <+> "is transformed to"
-          <+> renderTypedesc descB
+    lbl = describe tsA <+> "is transformed to" <+> describe tsB
     f a = Annotated [fromText dyn] b
       where
         b = conv a
-        dyn = "value" <+> shwA a <+> "of type" <+> renderTypedesc descA
-          <+> "is transformed to value" <+> shwB b <+> "of type"
-          <+> renderTypedesc descB
+        dyn = showValue tsA a
+          <+> "is transformed to" <+> showValue tsB b
+
+anyOfPair
+  :: Typeshow a
+  -> Typeshow b
+  -> Typeshow o
+  -> (o -> (a, b))
+  -> Pred a
+  -> Pred b
+  -> Pred o
+anyOfPair = predOnPair (|||)
+
+bothOfPair
+  :: Typeshow a
+  -> Typeshow b
+  -> Typeshow o
+  -> (o -> (a, b))
+  -> Pred a
+  -> Pred b
+  -> Pred o
+bothOfPair = predOnPair (&&&)
+
+
+predOnPair
+  :: (Pred (a, b) -> Pred (a, b) -> Pred (a, b))  
+  -> Typeshow a
+  -> Typeshow b
+  -> Typeshow o
+  -> (o -> (a, b))
+  -> Pred a
+  -> Pred b
+  -> Pred o
+
+predOnPair comb tsA@(Typeshow descA shwA) tsB@(Typeshow descB shwB)
+  tsO split pa pb = wrap tsO tsComb split (pa' `comb` pb')
+  where
+    tsComb = Typeshow descTup showTup
+    showTup (a, b) = "(" <> shwA a <> ", " <> shwB b <> ")"
+    descTup = Tuple2 descA descB
+    pa' = wrap tsComb tsA fst pa
+    pb' = wrap tsComb tsB snd pb
 
 -- # Constants
 
 true :: Pred a
-true = predicate (User "a" []) "ignored - always returns True"
-  (const "unknown") (const True)
+true = predicate (Typeshow (User "a" []) (const "unknown"))
+  "ignored - always returns True"
+  (const True)
 
 false :: Pred a
-false = predicate (User "a" []) "ignored - always returns False"
-  (const "unknown") (const False)
+false = predicate (Typeshow (User "a" []) (const "unknown"))
+  "ignored - always returns False"
+  (const False)
 
 same :: Pred Bool
-same = predicate (User "Bool" []) "returned as is"
-  (X.pack . show) id
+same = predicate (Typeshow (User "Bool" []) (X.pack . show))
+  "returned as is" id
 
 -- # Predicates
 
 predicate
-  :: Typedesc
-  -- ^ Describes the type being matched by the predicate, e.g. 'Int'.
-  -- Used for the static label.
+  :: Typeshow a
   -> Text
   -- ^ Describes the condition the type being matched must meet,
   -- e.g. @greater than 5@.  Used in both the static and dynamic
   -- labels.
-  -> (a -> Text)
-  -- ^ Describes the value being matched, such as @'X.pack' . 'show'@.
-  -- Used for the dynamic label.
   -> (a -> Bool)
   -- ^ Predicate
   -> Pred a
-predicate desc cond shw pd = C.predicate [fromText lbl] f
+predicate ts cond pd = C.predicate [fromText lbl] f
   where
-    lbl = "value of type" <+> renderTypedesc desc <+> "is" <+> cond
+    lbl = "value of type" <+> describe ts <+> "is" <+> cond
     f a = Annotated [fromText dyn] (pd a)
       where
-        dyn = "value" <+> shw a <+> "of type" <+> renderTypedesc desc
-          <+> "is" <+> cond
+        dyn = showValue ts a <+> "is" <+> cond
 
 -- # Lists
 
-anyShower :: Typedesc -> (a -> Text) -> Pred a -> Pred [a]
-anyShower desc shwA pd
-  = eiPredToListPred (desc, shwA)
-  $ eitherShower (tyConsCell, showCons)
-                 (Unit, X.pack . show)
+anyShower :: Typeshow a -> Pred a -> Pred [a]
+anyShower tw@(Typeshow desc shwA) pd
+  = eiPredToListPred tw
+  $ eitherShower (Typeshow tyConsCell showCons)
+                 (Typeshow Unit (X.pack . show))
                  predCons
                  false
   where
     tyConsCell = Tuple2 desc (List desc)
     predCons = predFst ||| predSnd
-    predFst = wrap (tyConsCell, showCons) (desc, shwA) fst pd
-    predSnd = wrap (tyConsCell, showCons)
-      (List desc, const "(rest of list)") snd (anyShower desc shwA pd)
+    predFst = wrap (Typeshow tyConsCell showCons) tw fst pd
+    predSnd = wrap (Typeshow tyConsCell showCons)
+      (Typeshow (List desc) (const "(rest of list)"))
+      snd (anyShower tw pd)
     showCons (x, _) = "Cons cell with head: " <> shwA x
 
 
-
-
 eiPredToListPred
-  :: (Typedesc, a -> Text)
+  :: Typeshow a
   -> Pred (Either (a, [a]) ())
   -> Pred [a]
-eiPredToListPred (desc, shwA) = wrap listDesc eiDesc conv
+eiPredToListPred (Typeshow desc shwA) = wrap listDesc eiDesc conv
   where
-    listDesc = (List desc, const "List")
-    eiDesc = (User "Either" [Tuple2 desc (List desc), Unit], showEi)
+    listDesc = Typeshow (List desc) (const "List")
+    eiDesc = Typeshow (User "Either" [Tuple2 desc (List desc), Unit]) showEi
     showEi ei = case ei of
       Left (x, _) -> "cons cell with head: " <> shwA x
       Right () -> "(end of list)"
@@ -110,14 +155,20 @@ eiPredToListPred (desc, shwA) = wrap listDesc eiDesc conv
       [] -> Right ()
       (x:xs) -> Left (x, xs)
 
-listEiPred
-  :: (Typedesc, a -> Text)
+consCellPred
+  :: Pred [a]
+  -> Typeshow a
   -> Pred a
-  -> ( Pred (Either (a, [a]) ())
-     -> Pred (Either (a, [a]) ())
-     -> Pred (Either (a, [a]) ()))
-  -> Pred ()
-  -> 
+  -> (Pred (a, [a]) -> Pred (a, [a]) -> Pred (a, [a]))
+  -> Pred (a, [a])
+consCellPred pLs ts@(Typeshow tA shwA) pd comb
+  = xOfPair ts tsLs tsPair id pd pLs
+  where
+    tsLs = Typeshow (List tA) (const "(rest of list")
+    tsPair = Typeshow (Tuple2 tA (List tA))
+      (\(x, _) -> "cons cell with head: " <> shwA x)
+    xOfPair = predOnPair comb
+
 
 any
   :: Show a
@@ -126,42 +177,41 @@ any
   -- is @['Int']@, use @Int@ here.
   -> Pred a
   -> Pred [a]
-any desc = anyShower desc (X.pack . show)
+any desc = anyShower (Typeshow desc (X.pack . show))
 
-allShower :: Typedesc -> (a -> Text) -> Pred a -> Pred [a]
-allShower desc shwA pd
-  = eiPredToListPred (desc, shwA)
-  $ eitherShower (tyConsCell, showCons)
-                 (Unit, X.pack . show)
+allShower :: Typeshow a -> Pred a -> Pred [a]
+allShower tw@(Typeshow desc shwA) pd
+  = eiPredToListPred tw
+  $ eitherShower twCons
+                 (Typeshow Unit (X.pack . show))
                  predCons
                  true
   where
-    tyConsCell = Tuple2 desc (List desc)
+    twCons = Typeshow (Tuple2 desc (List desc))
+      (\(x, _) -> "Cons cell with head: " <> shwA x)
     predCons = predFst &&& predSnd
-    predFst = wrap (tyConsCell, showCons) (desc, shwA) fst pd
-    predSnd = wrap (tyConsCell, showCons)
-      (List desc, const "(rest of list)") snd (allShower desc shwA pd)
-    showCons (x, _) = "Cons cell with head: " <> shwA x
+    predFst = wrap twCons tw fst pd
+    predSnd = wrap twCons
+      (Typeshow (List desc) (const "(rest of list)"))
+      snd (allShower tw pd)
 
 
 all :: Show a => Typedesc -> Pred a -> Pred [a]
-all ty = allShower ty (X.pack . show)
+all ty = allShower (Typeshow ty (X.pack . show))
 
 -- # Other Prelude types - maybe, either
 
 maybeShower
-  :: Typedesc
-  -- ^ Describes type @a@
-  -> (a -> Text)
+  :: Typeshow a
   -> Pred a
   -> Pred (Maybe a)
-maybeShower descA shwA
-  = wrap ( User "Maybe" [descA]
-          , Prelude.maybe "Nothing" (\x -> "Just" <+> shwA x))
-          ( User "Either" [Unit, descA]
-          , Prelude.either (const "Left ()") (\x -> "Right" <+> shwA x))
+maybeShower tw@(Typeshow descA shwA)
+  = wrap ( Typeshow (User "Maybe" [descA])
+          (Prelude.maybe "Nothing" (\x -> "Just" <+> shwA x)))
+          ( Typeshow (User "Either" [Unit, descA])
+            (Prelude.either (const "Left ()") (\x -> "Right" <+> shwA x)))
           (Prelude.maybe (Left ()) Right)
-  . eitherShower (Unit, (X.pack . show)) (descA, shwA) false
+  . eitherShower (Typeshow Unit (X.pack . show)) tw false
 
 maybe
   :: Show a
@@ -169,17 +219,18 @@ maybe
   -- ^ Describes type @a@
   -> Pred a
   -> Pred (Maybe a)
-maybe desc = maybeShower desc (X.pack . show)
+maybe desc = maybeShower (Typeshow desc (X.pack . show))
 
 eitherShower
-  :: (Typedesc, a -> Text)
+  :: Typeshow a
   -- ^ Describes type @a@
-  -> (Typedesc, b -> Text)
+  -> Typeshow b
   -- ^ Describes type @b@
   -> Pred a
   -> Pred b
   -> Pred (Either a b)
-eitherShower (descA, shwA) (descB, shwB) = C.switch [fromText stat] f
+eitherShower (Typeshow descA shwA) (Typeshow descB shwB)
+  = C.switch [fromText stat] f
   where
     stat = renderTypedesc (User "Either" [descA, descB])
     f a = Annotated [fromText dyn] val
@@ -199,7 +250,8 @@ either
   -> Pred a
   -> Pred b
   -> Pred (Either a b)
-either dA dB = eitherShower (dA, X.pack . show) (dB, X.pack . show)
+either dA dB = eitherShower (Typeshow dA (X.pack . show))
+                            (Typeshow dB (X.pack . show))
 
 -- # Combining or modifying Pred
 
