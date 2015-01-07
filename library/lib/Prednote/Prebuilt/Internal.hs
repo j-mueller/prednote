@@ -15,6 +15,66 @@ import Data.Monoid
 import Prednote.Format
 import Data.List (intersperse)
 
+-- | A type to describe types.
+data Typedesc
+  = List Typedesc
+  -- ^ Lists; for example, for @['Int']@, use
+  --
+  -- > List (User "Int") []
+  | Unit
+  -- ^ The unit type, @()@.
+  | Tuple2 Typedesc Typedesc
+  -- ^ A tuple; for example, for @('Int', 'Char')@, use
+  --
+  -- > Tuple2 (User "Int" []) (User "Char" [])
+  | Tuple3 Typedesc Typedesc Typedesc
+  | Tuple4 Typedesc Typedesc Typedesc Typedesc
+  | Tuple5 Typedesc Typedesc Typedesc Typedesc Typedesc
+  | User Text [Typedesc]
+  -- ^ Any user defined type; also covers types in the standard
+  -- library that (unlike @[]@ and @(,)@, for example) do not have
+  -- special syntax.  Arbitrary nesting is allowed. Some examples:
+  --
+  -- > {-# LANGUAGE OverloadedStrings #-}
+  -- > -- String
+  -- > User "String" []
+  -- > -- Maybe Int
+  -- > User "Maybe" [User "Int" []]
+  -- > -- Maybe a
+  -- > User "Maybe" [User "a" []]
+  -- > -- Maybe [Either Int Char]
+  -- > User "Maybe" [List (User "Either" [User "Int", User "Char"])]
+  deriving (Eq, Ord, Show)
+
+-- | Renders a 'Typedesc' so it looks as it would appear in a type
+-- signature.
+renderTypedesc :: Typedesc -> Text
+renderTypedesc (List t) = "[" <> renderTypedesc t <> "]"
+renderTypedesc Unit = "()"
+renderTypedesc (Tuple2 x y) = "(" <> renderTypedesc x
+  <> ", " <> renderTypedesc y <> ")"
+renderTypedesc (Tuple3 x y z) = "(" <> renderTypedesc x
+  <> ", " <> renderTypedesc y <> ", " <> renderTypedesc z <> ")"
+renderTypedesc (Tuple4 w x y z) = "(" <> renderTypedesc w
+  <> ", " <> renderTypedesc x <> ", " <> renderTypedesc y
+  <> ", " <> renderTypedesc z <> ")"
+renderTypedesc (Tuple5 v w x y z) = "(" <> renderTypedesc v <> ", "
+  <> renderTypedesc w <> ", " <> renderTypedesc x <> ", "
+  <> renderTypedesc y <> ", " <> renderTypedesc z <> ")"
+renderTypedesc (User n cs)
+  = n <+> X.concat (intersperse " " . map renderInnerTypedesc $ cs)
+
+-- | Renders a 'Typedesc', as it would appear if it is a parameter
+-- type of a user-defined type.  This means that a user-defined
+-- 'Typedesc' is rendered with surrounding parentheses if necessary;
+-- all other types are rendered just as they would be by
+-- 'renderTypedesc'.
+renderInnerTypedesc :: Typedesc -> Text
+renderInnerTypedesc (User n cs)
+  | null cs = n
+  | otherwise = "(" <> X.concat (map renderInnerTypedesc cs) <> ")"
+renderInnerTypedesc x = renderTypedesc x
+
 data Typeshow a = Typeshow Typedesc (a -> Text)
 
 describe :: Typeshow a -> Text
@@ -30,18 +90,14 @@ data Pdct a = Pdct (C.Pred a) (Typeshow a)
   deriving Show
 
 
--- # Wrapping - handles newtypes
-
 wrap
   :: Typeshow a
   -- ^ Describes the input type of the resulting 'Pred'
-  -> Typeshow b
-  -- ^ Describes the input type of the input 'Pred'
   -> (a -> b)
   -- ^ Converts the type of the result 'Pred' to the type of the input 'Pred'
-  -> Pred b
-  -> Pred a
-wrap tsA tsB conv = C.wrap [fromText lbl] f
+  -> Pdct b
+  -> Pdct a
+wrap tsA conv (Pdct pb tsB) = Pdct (C.wrap [fromText lbl] f pb) tsA
   where
     lbl = describe tsA <+> "is transformed to" <+> describe tsB
     f a = Annotated [fromText dyn] b
@@ -49,6 +105,29 @@ wrap tsA tsB conv = C.wrap [fromText lbl] f
         b = conv a
         dyn = showValue tsA a
           <+> "is transformed to" <+> showValue tsB b
+
+
+predOnPair
+  :: (Pdct (a, b) -> Pdct (a, b) -> Pdct (a, b))  
+  -> Typeshow o
+  -> (o -> (a, b))
+  -> Pdct a
+  -> Pdct b
+  -> Pdct o
+
+predOnPair = undefined
+{-
+predOnPair comb tsA@(Typeshow descA shwA) tsB@(Typeshow descB shwB)
+  tsO split pa pb = wrap tsO tsComb split (pa' `comb` pb')
+  where
+    tsComb = Typeshow descTup showTup
+    showTup (a, b) = "(" <> shwA a <> ", " <> shwB b <> ")"
+    descTup = Tuple2 descA descB
+    pa' = wrap tsComb tsA fst pa
+    pb' = wrap tsComb tsB snd pb
+-}
+{-
+-- # Wrapping - handles newtypes
 
 anyOfPair
   :: Typeshow a
@@ -70,25 +149,6 @@ bothOfPair
   -> Pred o
 bothOfPair = predOnPair (&&&)
 
-
-predOnPair
-  :: (Pred (a, b) -> Pred (a, b) -> Pred (a, b))  
-  -> Typeshow a
-  -> Typeshow b
-  -> Typeshow o
-  -> (o -> (a, b))
-  -> Pred a
-  -> Pred b
-  -> Pred o
-
-predOnPair comb tsA@(Typeshow descA shwA) tsB@(Typeshow descB shwB)
-  tsO split pa pb = wrap tsO tsComb split (pa' `comb` pb')
-  where
-    tsComb = Typeshow descTup showTup
-    showTup (a, b) = "(" <> shwA a <> ", " <> shwB b <> ")"
-    descTup = Tuple2 descA descB
-    pa' = wrap tsComb tsA fst pa
-    pb' = wrap tsComb tsB snd pb
 
 -- # Constants
 
@@ -291,62 +351,4 @@ not :: Pred a -> Pred a
 not = C.not l (const l)
   where l = ["not - child must be False"]
 
--- | A type to describe types.
-data Typedesc
-  = List Typedesc
-  -- ^ Lists; for example, for @['Int']@, use
-  --
-  -- > List (User "Int") []
-  | Unit
-  -- ^ The unit type, @()@.
-  | Tuple2 Typedesc Typedesc
-  -- ^ A tuple; for example, for @('Int', 'Char')@, use
-  --
-  -- > Tuple2 (User "Int" []) (User "Char" [])
-  | Tuple3 Typedesc Typedesc Typedesc
-  | Tuple4 Typedesc Typedesc Typedesc Typedesc
-  | Tuple5 Typedesc Typedesc Typedesc Typedesc Typedesc
-  | User Text [Typedesc]
-  -- ^ Any user defined type; also covers types in the standard
-  -- library that (unlike @[]@ and @(,)@, for example) do not have
-  -- special syntax.  Arbitrary nesting is allowed. Some examples:
-  --
-  -- > {-# LANGUAGE OverloadedStrings #-}
-  -- > -- String
-  -- > User "String" []
-  -- > -- Maybe Int
-  -- > User "Maybe" [User "Int" []]
-  -- > -- Maybe a
-  -- > User "Maybe" [User "a" []]
-  -- > -- Maybe [Either Int Char]
-  -- > User "Maybe" [List (User "Either" [User "Int", User "Char"])]
-  deriving (Eq, Ord, Show)
-
--- | Renders a 'Typedesc' so it looks as it would appear in a type
--- signature.
-renderTypedesc :: Typedesc -> Text
-renderTypedesc (List t) = "[" <> renderTypedesc t <> "]"
-renderTypedesc Unit = "()"
-renderTypedesc (Tuple2 x y) = "(" <> renderTypedesc x
-  <> ", " <> renderTypedesc y <> ")"
-renderTypedesc (Tuple3 x y z) = "(" <> renderTypedesc x
-  <> ", " <> renderTypedesc y <> ", " <> renderTypedesc z <> ")"
-renderTypedesc (Tuple4 w x y z) = "(" <> renderTypedesc w
-  <> ", " <> renderTypedesc x <> ", " <> renderTypedesc y
-  <> ", " <> renderTypedesc z <> ")"
-renderTypedesc (Tuple5 v w x y z) = "(" <> renderTypedesc v <> ", "
-  <> renderTypedesc w <> ", " <> renderTypedesc x <> ", "
-  <> renderTypedesc y <> ", " <> renderTypedesc z <> ")"
-renderTypedesc (User n cs)
-  = n <+> X.concat (intersperse " " . map renderInnerTypedesc $ cs)
-
--- | Renders a 'Typedesc', as it would appear if it is a parameter
--- type of a user-defined type.  This means that a user-defined
--- 'Typedesc' is rendered with surrounding parentheses if necessary;
--- all other types are rendered just as they would be by
--- 'renderTypedesc'.
-renderInnerTypedesc :: Typedesc -> Text
-renderInnerTypedesc (User n cs)
-  | null cs = n
-  | otherwise = "(" <> X.concat (map renderInnerTypedesc cs) <> ")"
-renderInnerTypedesc x = renderTypedesc x
+-}
