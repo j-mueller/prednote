@@ -115,56 +115,83 @@ predOnPair
   -> Pdct b
   -> Pdct o
 
-predOnPair = undefined
-{-
-predOnPair comb tsA@(Typeshow descA shwA) tsB@(Typeshow descB shwB)
-  tsO split pa pb = wrap tsO tsComb split (pa' `comb` pb')
+predOnPair comb tso split
+  pa@(Pdct _ (Typeshow descA shwA)) pb@(Pdct _ (Typeshow descB shwB))
+  = wrap tso split (pa' `comb` pb')
   where
     tsComb = Typeshow descTup showTup
     showTup (a, b) = "(" <> shwA a <> ", " <> shwB b <> ")"
     descTup = Tuple2 descA descB
-    pa' = wrap tsComb tsA fst pa
-    pb' = wrap tsComb tsB snd pb
--}
-{-
--- # Wrapping - handles newtypes
+    pa' = wrap tsComb fst pa
+    pb' = wrap tsComb snd pb
+
+-- | And - both children must be 'True'; short-circuits if the first
+-- child is 'False'
+(&&&) :: Pdct a -> Pdct a -> Pdct a
+(Pdct pL dL) &&& (Pdct pR _) = Pdct (C.and t (const t) pL pR) dL 
+  where t = ["and - both children must be True"]
+
+infixr 3 &&&
+
+-- | Or - either child must be 'True'; short-circuits if the first
+-- child is 'True'
+(|||) :: Pdct a -> Pdct a -> Pdct a
+(Pdct pL dL) ||| (Pdct pR _) = Pdct (C.or t (const t) pL pR) dL
+  where t = ["or - either child must be True"]
+
+infixr 2 |||
+
+-- | Negation - child must be 'False'
+not :: Pdct a -> Pdct a
+not (Pdct p d) = Pdct (C.not l (const l) p) d
+  where l = ["not - child must be False"]
+
 
 anyOfPair
-  :: Typeshow a
-  -> Typeshow b
-  -> Typeshow o
+  :: Typeshow o
   -> (o -> (a, b))
-  -> Pred a
-  -> Pred b
-  -> Pred o
+  -> Pdct a
+  -> Pdct b
+  -> Pdct o
 anyOfPair = predOnPair (|||)
 
 bothOfPair
-  :: Typeshow a
-  -> Typeshow b
-  -> Typeshow o
+  :: Typeshow o
   -> (o -> (a, b))
-  -> Pred a
-  -> Pred b
-  -> Pred o
+  -> Pdct a
+  -> Pdct b
+  -> Pdct o
 bothOfPair = predOnPair (&&&)
 
+predicate
+  :: Typeshow a
+  -> Text
+  -> (a -> Bool)
+  -> Pdct a
+predicate ts cond pd = Pdct (C.predicate [fromText lbl] f) ts
+  where
+    lbl = "value of type" <+> describe ts <+> "is" <+> cond
+    f a = Annotated [fromText dyn] (pd a)
+      where
+        dyn = showValue ts a <+> "is" <+> cond
 
--- # Constants
-
-true :: Pred a
+true :: Pdct a
 true = predicate (Typeshow (User "a" []) (const "unknown"))
   "ignored - always returns True"
   (const True)
 
-false :: Pred a
+false :: Pdct a
 false = predicate (Typeshow (User "a" []) (const "unknown"))
   "ignored - always returns False"
   (const False)
 
-same :: Pred Bool
+same :: Pdct Bool
 same = predicate (Typeshow (User "Bool" []) (X.pack . show))
   "returned as is" id
+
+{-
+
+-- # Constants
 
 -- # Predicates
 
@@ -178,18 +205,6 @@ predicate
   -- ^ Predicate
   -> Pred a
 predicate ts cond pd = C.predicate [fromText lbl] f
-  where
-    lbl = "value of type" <+> describe ts <+> "is" <+> cond
-    f a = Annotated [fromText dyn] (pd a)
-      where
-        dyn = showValue ts a <+> "is" <+> cond
-
-predicate'
-  :: Typeshow a
-  -> Text
-  -> (a -> Bool)
-  -> Pdct a
-predicate' ts cond pd = Pdct (C.predicate [fromText lbl] f) ts
   where
     lbl = "value of type" <+> describe ts <+> "is" <+> cond
     f a = Annotated [fromText dyn] (pd a)
@@ -329,26 +344,5 @@ either dA dB = eitherShower (Typeshow dA (X.pack . show))
                             (Typeshow dB (X.pack . show))
 
 -- # Combining or modifying Pred
-
--- | And - both children must be 'True'; short-circuits if the first
--- child is 'False'
-(&&&) :: Pred a -> Pred a -> Pred a
-l &&& r = C.and t (const t) l r
-  where t = ["and - both children must be True"]
-
-infixr 3 &&&
-
--- | Or - either child must be 'True'; short-circuits if the first
--- child is 'True'
-(|||) :: Pred a -> Pred a -> Pred a
-l ||| r = C.or t (const t) l r
-  where t = ["or - either child must be True"]
-
-infixr 2 |||
-
--- | Negation - child must be 'False'
-not :: Pred a -> Pred a
-not = C.not l (const l)
-  where l = ["not - child must be False"]
 
 -}
