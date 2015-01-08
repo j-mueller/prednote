@@ -9,9 +9,6 @@ import qualified Cartel as C
 
 -- Dependencies
 
-contravariant :: C.Package
-contravariant = C.closedOpen "contravariant" [0,2,0,1] [1,3]
-
 split :: C.Package
 split = C.closedOpen "split" [0,2,2] [0,3]
 
@@ -46,7 +43,6 @@ library ms = C.Library
   [ C.LibExposedModules ms
   , C.buildDepends
     [ base
-    , contravariant
     , rainbow
     , split
     , text

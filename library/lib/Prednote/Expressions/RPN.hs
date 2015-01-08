@@ -6,23 +6,17 @@
 -- where @and@ and @or@ are binary and @not@ is unary.
 module Prednote.Expressions.RPN where
 
-import Data.Functor.Contravariant
 import qualified Data.Foldable as Fdbl
+import Prednote.Prebuilt (Pdct)
 import qualified Prednote.Prebuilt as P
-import Prednote.Core (Pred)
 import Prednote.Prebuilt ((&&&), (|||))
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as X
 
 data RPNToken a
-  = TokOperand (Pred a)
+  = TokOperand (Pdct a)
   | TokOperator Operator
-
-instance Contravariant RPNToken where
-  contramap f t = case t of
-    TokOperand p -> TokOperand . contramap f $ p
-    TokOperator o -> TokOperator o
 
 data Operator
   = OpAnd
@@ -30,13 +24,13 @@ data Operator
   | OpNot
   deriving Show
 
-pushOperand :: Pred a -> [Pred a] -> [Pred a]
+pushOperand :: Pdct a -> [Pdct a] -> [Pdct a]
 pushOperand p ts = p : ts
 
 pushOperator
   :: Operator
-  -> [Pred a]
-  -> Either Text [Pred a]
+  -> [Pdct a]
+  -> Either Text [Pdct a]
 pushOperator o ts = case o of
   OpAnd -> case ts of
     x:y:zs -> return $ (y &&& x) : zs
@@ -52,23 +46,23 @@ pushOperator o ts = case o of
             <> "\" operator\n"
 
 pushToken
-  :: [Pred a]
+  :: [Pdct a]
   -> RPNToken a
-  -> Either Text [Pred a]
+  -> Either Text [Pdct a]
 pushToken ts t = case t of
   TokOperand p -> return $ pushOperand p ts
   TokOperator o -> pushOperator o ts
 
 -- TODO improve "Bad expression" error message?
 
--- | Parses an RPN expression and returns the resulting Predbox. Fails if
+-- | Parses an RPN expression and returns the resulting 'Pdct'. Fails if
 -- there are no operands left on the stack or if there are multiple
 -- operands left on the stack; the stack must contain exactly one
 -- operand in order to succeed.
 parseRPN
   :: Fdbl.Foldable f
   => f (RPNToken a)
-  -> Either Text (Pred a)
+  -> Either Text (Pdct a)
 parseRPN ts = do
   trees <- Fdbl.foldlM pushToken [] ts
   case trees of

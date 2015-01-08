@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Prednote.Prebuilt
   ( -- * Predicates
-    C.Pred
+    Pdct
     -- * Simple predicates
   , true
   , false
@@ -23,14 +23,10 @@ module Prednote.Prebuilt
     -- * Predicate combinators - sum types
   , either
   , maybe
-  , eitherShower
-  , maybeShower
 
     -- * Predicate combinators - lists
   , any
   , all
-  , anyShower
-  , allShower
 
     -- * Wrapping
   , wrap

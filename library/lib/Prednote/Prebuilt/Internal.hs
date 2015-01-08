@@ -3,14 +3,13 @@ module Prednote.Prebuilt.Internal where
 
 import Rainbow
 import qualified Prednote.Core as C
-import Prednote.Core (Pred, Annotated(..))
+import Prednote.Core (Annotated(..))
 import Data.Text (Text)
 import qualified Data.Text as X
-import qualified Prelude
 import Prelude
   ( Bool(..), const, Show(..), id, ($), (.), fst, snd,
     Either(..), Maybe(..), Ord(..), Eq(..), map, null,
-    otherwise, undefined )
+    otherwise )
 import Data.Monoid
 import Prednote.Format
 import Data.List (intersperse)
@@ -83,6 +82,9 @@ describe (Typeshow t _) = renderTypedesc t
 showValue :: Typeshow a -> a -> Text
 showValue ts@(Typeshow _ f) a = describe ts <+> "of value" <+> f a
 
+typeshow :: Show a => Typedesc -> Typeshow a
+typeshow d = Typeshow d (X.pack . show)
+
 instance Show (Typeshow a) where
   show (Typeshow d _) = "Typeshow (" <> show d <> ")"
 
@@ -108,14 +110,14 @@ wrap tsA conv (Pdct pb tsB) = Pdct (C.wrap [fromText lbl] f pb) tsA
 
 
 predOnPair
-  :: (Pdct (a, b) -> Pdct (a, b) -> Pdct (a, b))  
+  :: Combiner (a, b)
   -> Typeshow o
   -> (o -> (a, b))
   -> Pdct a
   -> Pdct b
   -> Pdct o
 
-predOnPair comb tso split
+predOnPair (Combiner comb) tso split
   pa@(Pdct _ (Typeshow descA shwA)) pb@(Pdct _ (Typeshow descB shwB))
   = wrap tso split (pa' `comb` pb')
   where
@@ -153,7 +155,7 @@ anyOfPair
   -> Pdct a
   -> Pdct b
   -> Pdct o
-anyOfPair = predOnPair (|||)
+anyOfPair = predOnPair (Combiner (|||))
 
 bothOfPair
   :: Typeshow o
@@ -161,7 +163,7 @@ bothOfPair
   -> Pdct a
   -> Pdct b
   -> Pdct o
-bothOfPair = predOnPair (&&&)
+bothOfPair = predOnPair (Combiner (&&&))
 
 predicate
   :: Typeshow a
@@ -189,160 +191,67 @@ same :: Pdct Bool
 same = predicate (Typeshow (User "Bool" []) (X.pack . show))
   "returned as is" id
 
-{-
-
--- # Constants
-
--- # Predicates
-
-predicate
-  :: Typeshow a
-  -> Text
-  -- ^ Describes the condition the type being matched must meet,
-  -- e.g. @greater than 5@.  Used in both the static and dynamic
-  -- labels.
-  -> (a -> Bool)
-  -- ^ Predicate
-  -> Pred a
-predicate ts cond pd = C.predicate [fromText lbl] f
-  where
-    lbl = "value of type" <+> describe ts <+> "is" <+> cond
-    f a = Annotated [fromText dyn] (pd a)
-      where
-        dyn = showValue ts a <+> "is" <+> cond
-
-consCellPred
-  :: Pred [a]
-  -> Typeshow a
-  -> Pred a
-  -> (Pred (a, [a]) -> Pred (a, [a]) -> Pred (a, [a]))
-  -> Pred (a, [a])
-consCellPred pLs ts@(Typeshow tA shwA) pd comb
-  = xOfPair ts tsLs tsPair id pd pLs
-  where
-    tsLs = Typeshow (List tA) (const "(rest of list")
-    tsPair = Typeshow (Tuple2 tA (List tA))
-      (\(x, _) -> "cons cell with head: " <> shwA x)
-    xOfPair = predOnPair comb
-
-
--- # Lists
-
-anyShower :: Typeshow a -> Pred a -> Pred [a]
-anyShower tw@(Typeshow desc shwA) pd
-  = eiPredToListPred tw
-  $ eitherShower (Typeshow tyConsCell showCons)
-                 (Typeshow Unit (X.pack . show))
-                 predCons
-                 false
-  where
-    tyConsCell = Tuple2 desc (List desc)
-    predCons = predFst ||| predSnd
-    predFst = wrap (Typeshow tyConsCell showCons) tw fst pd
-    predSnd = wrap (Typeshow tyConsCell showCons)
-      (Typeshow (List desc) (const "(rest of list)"))
-      snd (anyShower tw pd)
-    showCons (x, _) = "Cons cell with head: " <> shwA x
-
-
-eiPredToListPred
-  :: Typeshow a
-  -> Pred (Either (a, [a]) ())
-  -> Pred [a]
-eiPredToListPred (Typeshow desc shwA) = wrap listDesc eiDesc conv
-  where
-    listDesc = Typeshow (List desc) (const "List")
-    eiDesc = Typeshow (User "Either" [Tuple2 desc (List desc), Unit]) showEi
-    showEi ei = case ei of
-      Left (x, _) -> "cons cell with head: " <> shwA x
-      Right () -> "(end of list)"
-    conv ls = case ls of
-      [] -> Right ()
-      (x:xs) -> Left (x, xs)
-
-any
-  :: Show a
-  => Typedesc
-  -- ^ Describes the type of the list; for example, if your input list
-  -- is @['Int']@, use @Int@ here.
-  -> Pred a
-  -> Pred [a]
-any desc = anyShower (Typeshow desc (X.pack . show))
-
-allShower :: Typeshow a -> Pred a -> Pred [a]
-allShower tw@(Typeshow desc shwA) pd
-  = eiPredToListPred tw
-  $ eitherShower twCons
-                 (Typeshow Unit (X.pack . show))
-                 predCons
-                 true
-  where
-    twCons = Typeshow (Tuple2 desc (List desc))
-      (\(x, _) -> "Cons cell with head: " <> shwA x)
-    predCons = predFst &&& predSnd
-    predFst = wrap twCons tw fst pd
-    predSnd = wrap twCons
-      (Typeshow (List desc) (const "(rest of list)"))
-      snd (allShower tw pd)
-
-
-all :: Show a => Typedesc -> Pred a -> Pred [a]
-all ty = allShower (Typeshow ty (X.pack . show))
-
--- # Other Prelude types - maybe, either
-
-maybeShower
-  :: Typeshow a
-  -> Pred a
-  -> Pred (Maybe a)
-maybeShower tw@(Typeshow descA shwA)
-  = wrap ( Typeshow (User "Maybe" [descA])
-          (Prelude.maybe "Nothing" (\x -> "Just" <+> shwA x)))
-          ( Typeshow (User "Either" [Unit, descA])
-            (Prelude.either (const "Left ()") (\x -> "Right" <+> shwA x)))
-          (Prelude.maybe (Left ()) Right)
-  . eitherShower (Typeshow Unit (X.pack . show)) tw false
-
-maybe
-  :: Show a
-  => Typedesc
-  -- ^ Describes type @a@
-  -> Pred a
-  -> Pred (Maybe a)
-maybe desc = maybeShower (Typeshow desc (X.pack . show))
-
-eitherShower
-  :: Typeshow a
-  -- ^ Describes type @a@
-  -> Typeshow b
-  -- ^ Describes type @b@
-  -> Pred a
-  -> Pred b
-  -> Pred (Either a b)
-eitherShower (Typeshow descA shwA) (Typeshow descB shwB)
-  = C.switch [fromText stat] f
+either
+  :: Pdct a
+  -> Pdct b
+  -> Pdct (Either a b)
+either (Pdct pA (Typeshow descA shwA))
+       (Pdct pB (Typeshow descB shwB))
+  = Pdct (C.switch [fromText stat] f pA pB) tw
   where
     stat = renderTypedesc (User "Either" [descA, descB])
-    f a = Annotated [fromText dyn] val
-      where
-        dyn = "value of" <+> shown <+> "has type"
-          <+> renderTypedesc (User "Either" [descA, descB])
-        (shown, val) = case a of
-          Left l -> (shwA l, Left l)
-          Right r -> (shwB r, Right r)
+    f a = Annotated [fromText (shwEi a)] a
+    tw = Typeshow (User "Either" [descA, descB]) shwEi
+    shwEi ei = case ei of
+      Left x -> "Left (" <> shwA x <> ")"
+      Right x -> "Right (" <> shwB x <> ")"
 
-either
-  :: (Show a, Show b)
-  => Typedesc
-  -- ^ Describes type @a@
-  -> Typedesc
-  -- ^ Describes type @b@
-  -> Pred a
-  -> Pred b
-  -> Pred (Either a b)
-either dA dB = eitherShower (Typeshow dA (X.pack . show))
-                            (Typeshow dB (X.pack . show))
+newtype Combiner a = Combiner (Pdct a -> Pdct a -> Pdct a)
 
--- # Combining or modifying Pred
+consCellPred
+  :: Pdct a
+  -> Pdct [a]
+  -> Combiner (a, [a])
+  -> Pdct (a, [a])
+consCellPred pOne@(Pdct _ (Typeshow descA shwA))
+  pLs@(Pdct _ (Typeshow descLs _)) comb
+  = predOnPair comb tw id pOne pLs
+  where
+    tw = Typeshow (Tuple2 descA descLs) f
+    f (x, _) = "cons cell with head: " <> shwA x
 
--}
+listPred
+  :: Pdct ()
+  -- ^ What to do on an empty list
+  -> Combiner (a, [a])
+  -- ^ How to combine a 'Pdct' on an item and a 'Pdct' on the rest of the list
+  -> Pdct a
+  -> Pdct [a]
+listPred pEmpty comb pa@(Pdct _ (Typeshow descA _))
+  = wrap tsLs toEi
+  $ either pCons pEmpty
+  where
+    tsLs = Typeshow (List descA) (const "List")
+    toEi ls = case ls of
+      x:xs -> Left (x, xs)
+      [] -> Right ()
+    pCons = consCellPred pa (listPred pEmpty comb pa) comb
+
+any :: Pdct a -> Pdct [a]
+any = listPred false (Combiner (|||))
+
+all :: Pdct a -> Pdct [a]
+all = listPred true (Combiner (&&&))
+
+maybe :: Pdct () -> Pdct a -> Pdct (Maybe a)
+maybe pNothing pa@(Pdct _ (Typeshow descA shwA))
+  = wrap tsMaybe toEi
+  $ either pa pNothing
+  where
+    tsMaybe = Typeshow (User "Maybe" [descA]) shwMaybe
+    shwMaybe a = case a of
+      Nothing -> "Nothing"
+      Just x -> "Just (" <> shwA x <> ")"
+    toEi a = case a of
+      Nothing -> Right ()
+      Just x -> Left x

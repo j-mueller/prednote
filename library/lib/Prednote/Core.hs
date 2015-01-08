@@ -3,7 +3,6 @@ module Prednote.Core where
 import Rainbow
 import Prelude hiding (all, any, maybe, and, or, not)
 import qualified Prelude
-import Data.Functor.Contravariant (Contravariant(..))
 
 data Static = Static [Chunk] Children
   deriving (Eq, Ord, Show)
@@ -100,9 +99,6 @@ instance Show (Pred a) where
 test :: Pred a -> a -> Bool
 test (Pred _ f) a = let Out _ c = f a in outResult c
 
-
-instance Contravariant Pred where
-  contramap f (Pred t e) = Pred t (e . f)
 
 data Annotated a = Annotated [Chunk] a
 
