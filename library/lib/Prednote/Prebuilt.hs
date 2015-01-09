@@ -9,6 +9,8 @@ module Prednote.Prebuilt
 
     -- * Describing types
   , Typedesc(..)
+  , Typeshow(..)
+  , typeshow
   , renderTypedesc
   , renderInnerTypedesc
 

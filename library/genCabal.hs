@@ -47,6 +47,7 @@ library ms = C.Library
     , split
     , text
     , containers
+    , quickcheck
     ]
   , C.hsSourceDirs ["lib"]
   , C.ghcOptions ghcOptions

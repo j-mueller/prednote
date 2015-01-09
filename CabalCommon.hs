@@ -29,6 +29,9 @@ containers = C.closedOpen "containers" [0,4,2,1] [0,6]
 barecheck :: C.Package
 barecheck = C.closedOpen "barecheck" [0,2,0,0] [0,3]
 
+quickcheck :: C.Package
+quickcheck = C.closedOpen "QuickCheck" [2,5] [2,8]
+
 commonProperties :: C.Properties
 commonProperties = C.empty
   { C.prVersion = C.Version versionInts

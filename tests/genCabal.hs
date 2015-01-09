@@ -10,9 +10,6 @@ import qualified Cartel as C
 prednote :: C.Package
 prednote = C.exactly "prednote" versionInts
 
-quickcheck :: C.Package
-quickcheck = C.closedOpen "QuickCheck" [2,7,5] [2,8]
-
 quickpull :: C.Package
 quickpull = C.closedOpen "quickpull" [0,4] [0,5]
 

@@ -167,29 +167,35 @@ bothOfPair = predOnPair (Combiner (&&&))
 
 predicate
   :: Typeshow a
+  -- ^ Description of the type of the resulting 'Pdct', and how to
+  -- show it.
   -> Text
+  -- ^ Describes the condition; for example, for a @'Pdct' 'Int'@,
+  -- this might be @is greater than 5@; for a @'Pdct' 'String'@, this
+  -- might be @begins with \"Hello\"@.
   -> (a -> Bool)
+  -- ^ The predicate.
   -> Pdct a
 predicate ts cond pd = Pdct (C.predicate [fromText lbl] f) ts
   where
     lbl = "value of type" <+> describe ts <+> "is" <+> cond
     f a = Annotated [fromText dyn] (pd a)
       where
-        dyn = showValue ts a <+> "is" <+> cond
+        dyn = showValue ts a <+> cond
 
 true :: Pdct a
 true = predicate (Typeshow (User "a" []) (const "unknown"))
-  "ignored - always returns True"
+  "is ignored - always returns True"
   (const True)
 
 false :: Pdct a
 false = predicate (Typeshow (User "a" []) (const "unknown"))
-  "ignored - always returns False"
+  "is ignored - always returns False"
   (const False)
 
 same :: Pdct Bool
 same = predicate (Typeshow (User "Bool" []) (X.pack . show))
-  "returned as is" id
+  "is returned as is" id
 
 either
   :: Pdct a
