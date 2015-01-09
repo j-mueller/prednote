@@ -10,5 +10,11 @@ import qualified Prednote.Prebuilt.Properties
 decrees :: [Decree]
 decrees =
 
-  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Prebuilt/Properties.hs", modName = ["Prednote","Prebuilt","Properties"]}, linenum = 11, qName = "prop_trueReturnsTrue"} ) ( Single Prednote.Prebuilt.Properties.prop_trueReturnsTrue )
+  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Prebuilt/Properties.hs", modName = ["Prednote","Prebuilt","Properties"]}, linenum = 15, qName = "prop_trueReturnsTrue"} ) ( Single Prednote.Prebuilt.Properties.prop_trueReturnsTrue )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Prebuilt/Properties.hs", modName = ["Prednote","Prebuilt","Properties"]}, linenum = 17, qName = "prop_falseReturnsFalse"} ) ( Single Prednote.Prebuilt.Properties.prop_falseReturnsFalse )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Prebuilt/Properties.hs", modName = ["Prednote","Prebuilt","Properties"]}, linenum = 19, qName = "prop_sameReturnsSame"} ) ( Single Prednote.Prebuilt.Properties.prop_sameReturnsSame )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Prebuilt/Properties.hs", modName = ["Prednote","Prebuilt","Properties"]}, linenum = 21, qName = "prop_predicateDoesSameAsFunction"} ) ( Single Prednote.Prebuilt.Properties.prop_predicateDoesSameAsFunction )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Prebuilt/Properties.hs", modName = ["Prednote","Prebuilt","Properties"]}, linenum = 24, qName = "prop_andDoesSameAsPreludeAnd"} ) ( Single Prednote.Prebuilt.Properties.prop_andDoesSameAsPreludeAnd )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Prebuilt/Properties.hs", modName = ["Prednote","Prebuilt","Properties"]}, linenum = 31, qName = "prop_orDoesSameAsPreludeOr"} ) ( Single Prednote.Prebuilt.Properties.prop_orDoesSameAsPreludeOr )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Prebuilt/Properties.hs", modName = ["Prednote","Prebuilt","Properties"]}, linenum = 38, qName = "prop_andShortCircuitsOnFalse"} ) ( Single Prednote.Prebuilt.Properties.prop_andShortCircuitsOnFalse )
   ]

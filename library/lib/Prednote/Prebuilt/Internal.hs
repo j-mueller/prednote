@@ -130,8 +130,10 @@ predOnPair (Combiner comb) tso split
 -- | And - both children must be 'True'; short-circuits if the first
 -- child is 'False'
 (&&&) :: Pdct a -> Pdct a -> Pdct a
-(Pdct pL dL) &&& (Pdct pR _) = Pdct (C.and t (const t) pL pR) dL 
-  where t = ["and - both children must be True"]
+pdL &&& pdR = Pdct (C.and t (const t) pL pR) dL
+  where
+    (Pdct pL dL, Pdct pR _) = (pdL, pdR)
+    t = ["and - both children must be True"]
 
 infixr 3 &&&
 

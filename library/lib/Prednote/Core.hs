@@ -155,9 +155,10 @@ and
   -> Pred a
   -> Pred a
   -> Pred a
-and st fDyn (Pred lblA fA) (Pred lblB fB) = Pred lbls f
+and st fDyn pA pB = Pred lbls f
   where
     lbls = Static st (Two lblA lblB)
+    (Pred lblA fA, Pred lblB fB) = (pA, pB)
     f a = Out dyn c
       where
         dyn = fDyn a
