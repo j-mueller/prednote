@@ -36,7 +36,7 @@ commonProperties :: C.Properties
 commonProperties = C.empty
   { C.prVersion = C.Version versionInts
   , C.prLicenseFile = "LICENSE"
-  , C.prCopyright = "Copyright 2013-2014 Omari Norman"
+  , C.prCopyright = "Copyright 2013-2015 Omari Norman"
   , C.prAuthor = "Omari Norman"
   , C.prMaintainer = "omari@smileystation.com"
   , C.prStability = "Experimental"

@@ -35,36 +35,94 @@ properties = commonProperties
     ]
   }
 
+libDepends :: [C.Package]
+libDepends =
+  [ base
+  , rainbow
+  , split
+  , text
+  , containers
+  ]
+
 library
   :: [String]
   -- ^ Library modules
   -> C.Library
 library ms = C.Library
   [ C.LibExposedModules ms
-  , C.buildDepends
-    [ base
-    , rainbow
-    , split
-    , text
-    , containers
-    , quickcheck
-    ]
+  , C.buildDepends libDepends
   , C.hsSourceDirs ["lib"]
   , C.ghcOptions ghcOptions
   , C.defaultLanguage C.Haskell2010
   ]
 
+tests
+  :: [String]
+  -- ^ Library modules
+  -> [String]
+  -- ^ Test modules
+  -> (C.TestSuite, C.Executable)
+tests ls ts =
+  ( C.TestSuite "prednote-tests" $
+    commonTestOpts ls ts ++
+    [ C.TestMainIs "prednote-tests.hs"
+    , C.TestType C.ExitcodeStdio
+    ]
+  , C.Executable "prednote-visual-tests" $
+    [ C.ExeMainIs "prednote-visual-tests.hs"
+    , C.cif (C.flag "visual-tests")
+       ( commonTestOpts ls ts ++
+        [ C.buildable True
+        ]
+       )
+      [ C.buildable False
+      ]
+    ]
+  )
+
+commonTestOpts
+  :: C.Field a
+  => [String]
+  -- ^ Library modules
+  -> [String]
+  -- ^ Test modules
+  -> [a]
+commonTestOpts ls ts =
+  [ C.hsSourceDirs ["lib", "tests"]
+  , C.otherModules (ls ++ ts)
+  , C.ghcOptions ghcOptions
+  , C.defaultLanguage C.Haskell2010
+  , C.buildDepends $ quickcheck : libDepends
+  ]
+
+visualTests :: C.Flag
+visualTests = C.Flag
+  { C.flName = "visual-tests"
+  , C.flDescription = "Build the prednote-visual-tests executable"
+  , C.flDefault = False
+  , C.flManual = True
+  }
+
+
 cabal
   :: [String]
   -- ^ Modules for library
+  -> [String]
+  -- ^ Modules for tests
   -> C.Cabal
-cabal ms = C.empty
+cabal ls ts = C.empty
   { C.cProperties = properties
   , C.cRepositories = [repo]
-  , C.cLibrary = Just $ library ms
+  , C.cLibrary = Just $ library ls
+  , C.cTestSuites = [testSuite]
+  , C.cExecutables = [executable]
+  , C.cFlags = [visualTests]
   }
+  where
+    (testSuite, executable) = tests ls ts
 
 main :: IO ()
 main = do
-  mods <- C.modules "lib"
-  C.render "genCabal.hs" $ cabal mods
+  libMods <- C.modules "lib"
+  testMods <- C.modules "tests"
+  C.render "genCabal.hs" $ cabal libMods testMods
