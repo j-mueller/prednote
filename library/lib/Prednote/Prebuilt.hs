@@ -34,8 +34,7 @@ module Prednote.Prebuilt
   , wrap
 
     -- * Evaluating predicates
-  , C.test
+  , test
   ) where
 
 import Prednote.Prebuilt.Internal
-import qualified Prednote.Core as C

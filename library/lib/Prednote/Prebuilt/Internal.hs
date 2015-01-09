@@ -261,3 +261,6 @@ maybe pNothing pa@(Pdct _ (Typeshow descA shwA))
     toEi a = case a of
       Nothing -> Right ()
       Just x -> Left x
+
+test :: Pdct a -> a -> Bool
+test (Pdct p _) = C.test p

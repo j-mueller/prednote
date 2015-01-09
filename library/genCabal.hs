@@ -12,6 +12,9 @@ import qualified Cartel as C
 split :: C.Package
 split = C.closedOpen "split" [0,2,2] [0,3]
 
+quickpull :: C.Package
+quickpull = C.closedOpen "quickpull" [0,4] [0,5]
+
 properties :: C.Properties
 properties = commonProperties
   { C.prName = "prednote"
@@ -92,7 +95,7 @@ commonTestOpts ls ts =
   , C.otherModules (ls ++ ts)
   , C.ghcOptions ghcOptions
   , C.defaultLanguage C.Haskell2010
-  , C.buildDepends $ quickcheck : libDepends
+  , C.buildDepends $ quickcheck : quickpull : libDepends
   ]
 
 visualTests :: C.Flag
