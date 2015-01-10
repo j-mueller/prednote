@@ -2,6 +2,7 @@
 module Prednote.Core where
 
 import Rainbow
+import Data.Functor.Contravariant
 import Prelude hiding (all, any, maybe, and, or, not)
 import qualified Prelude
 
@@ -15,6 +16,9 @@ data Children
   deriving (Eq, Ord, Show)
 
 data Pred a = Pred Static (a -> Out)
+
+instance Contravariant Pred where
+  contramap f (Pred s g) = Pred s (g . f)
 
 data Out = Out [Chunk] OutC
   deriving (Eq, Ord, Show)

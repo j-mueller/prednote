@@ -71,6 +71,7 @@ import Data.Monoid
 import Prednote.Format
 import Data.List (intersperse)
 import qualified System.IO as IO
+import Data.Functor.Contravariant
 
 -- # Describing types
 
@@ -137,6 +138,9 @@ renderInnerTypedesc x = renderTypedesc x
 -- | A type description, with how to show values of that type.
 data Typeshow a = Typeshow Typedesc (a -> Text)
 
+instance Contravariant Typeshow where
+  contramap f (Typeshow d g) = Typeshow d (g . f)
+
 -- | Show a type's description.
 showType :: Typeshow a -> Text
 showType (Typeshow t _) = renderTypedesc t
@@ -160,6 +164,9 @@ instance Show (Typeshow a) where
 -- type.
 data Pdct a = Pdct (C.Pred a) (Typeshow a)
   deriving Show
+
+instance Contravariant Pdct where
+  contramap f (Pdct p ts) = Pdct (contramap f p) (contramap f ts)
 
 -- | Creates new 'Pdct'.  The most important 'Pdct' creating function.
 predicate
@@ -263,14 +270,14 @@ predOnPair
   -> Pdct o
 
 predOnPair (Combiner comb) tso split pa pb
-  = obscure (wrap tso split (pa' `comb` pb'))
+  = wrap tso split (pa' `comb` pb')
   where
     Pdct _ (Typeshow descA shwA) = pa
     Pdct _ (Typeshow descB shwB) = pb
     tsComb = Typeshow descTup showTup
     showTup (a, b) = "(" <> shwA a <> ", " <> shwB b <> ")"
     descTup = Tuple2 descA descB
-    pa' = obscure $ wrap tsComb fst pa
+    pa' = wrap tsComb fst pa
     pb' = wrap tsComb snd pb
 
 newtype Combiner a = Combiner (Pdct a -> Pdct a -> Pdct a)
@@ -329,13 +336,11 @@ consCellPred
   -> Pdct [a]
   -> Combiner (a, [a])
   -> Pdct (a, [a])
-consCellPred pOne pLs comb
-  = predOnPair comb tw id pOne pLs
+consCellPred pOne pLs comb = pOne' `fComb` pLs'
   where
-    Pdct _ (Typeshow descA shwA) = pOne
-    Pdct _ (Typeshow descLs _) = pLs
-    tw = Typeshow (Tuple2 descA descLs) f
-    f (x, _) = "cons cell with head: " <> shwA x
+    Combiner fComb = comb
+    pOne' = contramap fst pOne
+    pLs' = contramap snd pLs
 
 
 listPred
@@ -354,7 +359,7 @@ listPred pEmpty comb pa
     toEi ls = case ls of
       x:xs -> Left (x, xs)
       [] -> Right ()
-    pCons = consCellPred pa (obscure $ listPred pEmpty comb pa) comb
+    pCons = consCellPred pa (id $ listPred pEmpty comb pa) comb
 
 -- | Like 'Prelude.any'.  'True' if any value in the list is 'True';
 -- 'False' if the list is empty.  Short circuits if any value in the

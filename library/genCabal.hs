@@ -15,6 +15,9 @@ split = C.closedOpen "split" [0,2,2] [0,3]
 quickpull :: C.Package
 quickpull = C.closedOpen "quickpull" [0,4] [0,5]
 
+contravariant :: C.Package
+contravariant = C.closedOpen "contravariant" [1,2] [1,3]
+
 properties :: C.Properties
 properties = commonProperties
   { C.prName = "prednote"
@@ -45,6 +48,7 @@ libDepends =
   , split
   , text
   , containers
+  , contravariant
   ]
 
 library

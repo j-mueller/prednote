@@ -16,11 +16,11 @@ indentAmt = 2
 
 -- | A colorful label for 'True' values.
 lblTrue :: [Chunk]
-lblTrue = ["[", fore green <> "TRUE", "]"]
+lblTrue = [fore green <> "TRUE"]
 
 -- | A colorful label for 'False' values.
 lblFalse :: [Chunk]
-lblFalse = ["[", fore red <> "FALSE", "]"]
+lblFalse = [fore red <> "FALSE"]
 
 -- | Prefixes the given list of 'Chunk' with colorful text to indicate
 -- 'True' or 'False' as appropriate.  Appends a newline.
