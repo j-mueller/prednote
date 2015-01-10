@@ -46,6 +46,16 @@ module Prednote.Prebuilt
 
   -- * Running predicates
   , test
+  , verboseTest
+
+  -- * Formatting results
+  , formatOut
+  , formatStatic
+  , plan
+
+  -- * Displaying results on stdout
+  , ioTest
+  , ioPlan
   ) where
 
 import Rainbow
@@ -53,13 +63,11 @@ import qualified Prednote.Core as C
 import Prednote.Core (Annotated(..))
 import Data.Text (Text)
 import qualified Data.Text as X
-import Prelude
-  ( Bool(..), const, Show(..), id, ($), (.), fst, snd,
-    Either(..), Maybe(..), Ord(..), Eq(..), map, null,
-    otherwise )
+import Prelude hiding (either, not, any, all, maybe)
 import Data.Monoid
 import Prednote.Format
 import Data.List (intersperse)
+import qualified System.IO as IO
 
 -- # Describing types
 
@@ -334,7 +342,7 @@ listPred pEmpty comb pa
   = wrap tsLs toEi
   $ either pCons pEmpty
   where
-    Pdct _ (Typeshow descA _) = pa
+    pdct _ (Typeshow descA _) = pa
     tsLs = Typeshow (List descA) (const "List")
     toEi ls = case ls of
       x:xs -> Left (x, xs)
@@ -356,7 +364,12 @@ all = listPred true (Combiner (&&&))
 -- | Returns the result of the first 'Pdct' if the value is 'Nothing';
 -- returns the result of applying the second predicate if the value is
 -- 'Just'.
-maybe :: Pdct () -> Pdct a -> Pdct (Maybe a)
+maybe
+  :: Pdct ()
+  -- ^ Return this if the value is 'Nothing' (typically you will use
+  -- 'true' or 'false')
+  -> Pdct a
+  -> Pdct (Maybe a)
 maybe pNothing pa
   = wrap tsMaybe toEi
   $ either pa pNothing
@@ -376,3 +389,60 @@ maybe pNothing pa
 -- | Applies a 'Pdct' to a value.
 test :: Pdct a -> a -> Bool
 test (Pdct p _) = C.test p
+
+-- | Applies a 'Pdct' to a value; also returns the list of 'Chunk'
+-- showing evaluation.
+verboseTest :: Pdct a -> a -> ([Chunk], Bool)
+verboseTest pd a = (formatOut 0 out, res)
+  where
+    (Pdct (C.Pred _ f) _) = pd
+    out@(C.Out _ oc) = f a
+    res = C.outResult oc
+
+-- # Displaying results
+
+formatOut :: Int -> C.Out -> [Chunk]
+formatOut idt (C.Out cs oc) = case oc of
+  C.Terminal r -> lblLine idt r cs
+  C.Hollow o -> indent idt cs ++ rest
+    where
+      rest = formatOut (idt + 1) o
+  C.Child1 r v o -> lblLine idt r cs ++ rest
+    where
+      rest | v == C.showChildren = formatOut (idt + 1) o
+           | otherwise = []
+  C.Child2 r v o1 o2 -> lblLine idt r cs ++ rest
+    where
+      rest | v == C.showChildren = rst1 ++ rst2
+           | otherwise = []
+      rst1 = formatOut (idt + 1) o1
+      rst2 = formatOut (idt + 1) o2
+
+-- | Applies a 'Pdct' to a value and displays the results on stdout;
+-- primarily for testing use or in a REPL.
+ioTest :: Pdct a -> a -> IO Bool
+ioTest pd a = do
+  let (cks, r) = verboseTest pd a
+  e <- smartTermFromEnv IO.stdout
+  putChunks e cks
+  return r
+
+-- | The plan for how a 'Pdct' will be evaluated.
+plan :: Pdct a -> [Chunk]
+plan (Pdct (C.Pred st _) _) = formatStatic 0 st
+
+formatStatic :: Int -> C.Static -> [Chunk]
+formatStatic i (C.Static cs kids) = indent i cs ++ kidChunks
+  where
+    kidChunks = case kids of
+      C.Empty -> []
+      C.One s -> fmt s
+      C.Two s1 s2 -> fmt s1 ++ fmt s2
+    fmt = formatStatic (i + 1)
+
+-- | Shows the evaluation plan on stdout; primarily for testing use or
+-- in a REPL.
+ioPlan :: Pdct a -> IO ()
+ioPlan p = do
+  e <- smartTermFromEnv IO.stdout
+  putChunks e $ plan p

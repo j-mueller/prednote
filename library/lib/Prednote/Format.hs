@@ -22,26 +22,27 @@ lblTrue = ["[", fore green <> "TRUE", "]"]
 lblFalse :: [Chunk]
 lblFalse = ["[", fore red <> "FALSE", "]"]
 
--- | Prefixes the given 'Text' with colorful text to indicate 'True'
--- or 'False' as appropriate.
-lblLine :: Bool -> Text -> [Chunk]
-lblLine b t = lbl ++ [" ", fromText t]
+-- | Prefixes the given list of 'Chunk' with colorful text to indicate
+-- 'True' or 'False' as appropriate.  Appends a newline.
+lblLine
+  :: Int
+  -- ^ Indentation
+  -> Bool
+  -> [Chunk]
+  -> [Chunk]
+lblLine idt tf cs = (spaces : lbl) ++ (" " : cs) ++ ["\n"]
   where
-    lbl | b = lblTrue
+    lbl | tf = lblTrue
         | otherwise = lblFalse
+    spaces = fromText (X.replicate (indentAmt * idt) (X.singleton ' '))
 
 -- | Indents the given list of 'Chunk' by the given 'Int' multipled by
 -- 'indentAmt'.  Appends a newline.
-indent :: [Chunk] -> Int -> [Chunk]
-indent cs i = spaces : cs ++ [fromText "\n"]
+indent :: Int -> [Chunk] -> [Chunk]
+indent i cs = spaces : cs ++ [fromText "\n"]
   where
     spaces = fromText . X.replicate (indentAmt * i)
       . X.singleton $ ' '
-
--- | Indents a 'Text' by the given 'Int' multiplied by
--- 'indentAmt'.
-indentTxt :: Text -> Int -> [Chunk]
-indentTxt = indent . (:[]) . fromText
 
 -- | Append two 'Text', with an intervening space if both 'Text' are
 -- not empty.
