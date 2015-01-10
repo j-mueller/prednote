@@ -1,4 +1,0 @@
-#!/bin/sh
-
-quickpull exe > exe/Decrees.hs
-runghc genCabal.hs > prednote-test.cabal
