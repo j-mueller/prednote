@@ -17,13 +17,29 @@ module Prednote.Prebuilt
   , same
 
   -- * Predicate combinators
+  --
+  -- ** Primitive combinators
+  --
+  -- | You might consider these combinators to be \"primitive\" in the
+  -- sense that you can build a 'Pdct' for any user-defined type by
+  -- using these combinators alone.  Use '&&&', '|||', and 'wrap' to
+  -- analyze product types.  Use 'either' and 'wrap' to analyze sum
+  -- types.  For a simple example, see the source code for 'maybe',
+  -- which is a simple sum type.  For more complicated examples, see
+  -- the source code for 'any' and 'all', as a list is a sum type
+  -- where one of the summands is a (recursive!) product type.
   , wrap
   , (&&&)
   , (|||)
   , not
+  , either
+
+  -- ** Convenience combinators
+  --
+  -- | These were written using entirely the \"primitive\" combinators
+  -- given above.
   , anyOfPair
   , bothOfPair
-  , either
   , any
   , all
   , maybe
