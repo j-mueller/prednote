@@ -3,6 +3,7 @@ module Prednote.Prebuilt.Internal.Instances where
 
 import Test.QuickCheck
 import Prednote.Prebuilt.Internal
+import Test.QuickCheck.Function
 import Prednote.Core.Instances ()
 import qualified Data.Text as X
 import Control.Monad
@@ -60,3 +61,17 @@ instance (Arbitrary a, CoArbitrary a, Show a)
   => Arbitrary (Combiner a) where
   arbitrary = fmap Combiner arbitrary
 
+data PdctParts a = PdctParts
+  { ppTypeshow :: Typeshow a
+  , ppText :: X.Text
+  , ppFunction :: Fun a Bool
+  , ppPdct :: Pdct a
+  } deriving Show
+
+instance (CoArbitrary a, Arbitrary a, Show a, Function a)
+  => Arbitrary (PdctParts a) where
+  arbitrary = do
+    ts <- arbitrary
+    txt <- arbitrary
+    f@(Fun _ fn) <- arbitrary
+    return $ PdctParts ts txt f (predicate ts txt fn)

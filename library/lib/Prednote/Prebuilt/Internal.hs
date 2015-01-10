@@ -99,8 +99,9 @@ wrap
   -- ^ Converts the type of the result 'Pred' to the type of the input 'Pred'
   -> Pdct b
   -> Pdct a
-wrap tsA conv (Pdct pb tsB) = Pdct (C.wrap [fromText lbl] f pb) tsA
+wrap tsA conv pd = Pdct (C.wrap [fromText lbl] f pb) tsA
   where
+    Pdct pb tsB = pd
     lbl = describe tsA <+> "is transformed to" <+> describe tsB
     f a = Annotated [fromText dyn] b
       where
@@ -117,10 +118,11 @@ predOnPair
   -> Pdct b
   -> Pdct o
 
-predOnPair (Combiner comb) tso split
-  pa@(Pdct _ (Typeshow descA shwA)) pb@(Pdct _ (Typeshow descB shwB))
+predOnPair (Combiner comb) tso split pa pb
   = wrap tso split (pa' `comb` pb')
   where
+    Pdct _ (Typeshow descA shwA) = pa
+    Pdct _ (Typeshow descB shwB) = pb
     tsComb = Typeshow descTup showTup
     showTup (a, b) = "(" <> shwA a <> ", " <> shwB b <> ")"
     descTup = Tuple2 descA descB
@@ -132,7 +134,8 @@ predOnPair (Combiner comb) tso split
 (&&&) :: Pdct a -> Pdct a -> Pdct a
 pdL &&& pdR = Pdct (C.and t (const t) pL pR) dL
   where
-    (Pdct pL dL, Pdct pR _) = (pdL, pdR)
+    Pdct pL dL = pdL
+    Pdct pR _ =  pdR
     t = ["and - both children must be True"]
 
 infixr 3 &&&
@@ -140,8 +143,11 @@ infixr 3 &&&
 -- | Or - either child must be 'True'; short-circuits if the first
 -- child is 'True'
 (|||) :: Pdct a -> Pdct a -> Pdct a
-(Pdct pL dL) ||| (Pdct pR _) = Pdct (C.or t (const t) pL pR) dL
-  where t = ["or - either child must be True"]
+pdL ||| pdR = Pdct (C.or t (const t) pL pR) dL
+  where
+    t = ["or - either child must be True"]
+    Pdct pL dL = pdL
+    Pdct pR _ = pdR
 
 infixr 2 |||
 
@@ -203,10 +209,12 @@ either
   :: Pdct a
   -> Pdct b
   -> Pdct (Either a b)
-either (Pdct pA (Typeshow descA shwA))
-       (Pdct pB (Typeshow descB shwB))
-  = Pdct (C.switch [fromText stat] f pA pB) tw
+either pdctA pdctB = Pdct (C.switch [fromText stat] f pA pB) tw
   where
+    Pdct pA tsA = pdctA
+    Pdct pB tsB = pdctB
+    Typeshow descA shwA = tsA
+    Typeshow descB shwB = tsB
     stat = renderTypedesc (User "Either" [descA, descB])
     f a = Annotated [fromText (shwEi a)] a
     tw = Typeshow (User "Either" [descA, descB]) shwEi

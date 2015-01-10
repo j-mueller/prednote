@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Prednote.Core where
 
 import Rainbow
@@ -16,6 +17,7 @@ data Children
 data Pred a = Pred Static (a -> Out)
 
 data Out = Out [Chunk] OutC
+  deriving (Eq, Ord, Show)
 
 data OutC
 
@@ -36,6 +38,7 @@ data OutC
   | Child2 Bool Visible Out Out
   -- ^ The value of this result is determined independently.  Produced
   -- by 'splitAnd', 'splitOr', 'and', and 'or'.
+  deriving (Eq, Ord, Show)
 
 -- | Is this result visible?  If not, 'Prednote.report' will not show it.
 newtype Visible = Visible Bool
@@ -102,6 +105,9 @@ test (Pred _ f) a = let Out _ c = f a in outResult c
 
 data Annotated a = Annotated [Chunk] a
 
+instance Show (Annotated a) where
+  show (Annotated cks _) = "Annotated " ++ show cks
+
 instance Functor Annotated where
   fmap f (Annotated c a) = Annotated c (f a)
 
@@ -117,6 +123,21 @@ predicate lbl f = Pred (Static lbl Empty) f'
       where
         Annotated cks r = f a
 
+
+true :: Pred a
+true = predicate lbl (const (Annotated lbl True))
+  where
+    lbl = [fromText "always returns True"]
+
+false :: Pred a
+false = predicate lbl (const (Annotated lbl False))
+  where
+    lbl = [fromText "always returns False"]
+
+same :: Pred Bool
+same = predicate lbl (Annotated lbl)
+  where
+    lbl = [fromText "returns its argument"]
 
 wrap
   :: [Chunk]
@@ -138,8 +159,10 @@ switch
   -> Pred b
   -> Pred c
   -> Pred a
-switch st split (Pred lblB fB) (Pred lblC fC) = Pred lbl' f
+switch st split pB pC = Pred lbl' f
   where
+    Pred lblB fB = pB
+    Pred lblC fC = pC
     lbl' = Static st (Two lblB lblC)
     f a = Out ann (Hollow child)
       where
@@ -149,25 +172,43 @@ switch st split (Pred lblB fB) (Pred lblC fC) = Pred lbl' f
           Right c -> fC c
 
 
+combiningPred
+  :: (Bool -> Bool)
+  -- ^ What to do to the leftmost result
+  -> (Bool -> Bool -> Bool)
+  -- ^ How to obtain a result if short-circuiting fails
+  -> [Chunk]
+  -- ^ Static name
+  -> (a -> [Chunk])
+  -- ^ Obtains dynamic name
+  -> Pred a
+  -- ^ Left-hand side
+  -> Pred a
+  -- ^ Right-hand side
+  -> Pred a
+combiningPred chLeft comb st fDyn pA pB = Pred lbls f
+  where
+    lbls = Static st (Two lblA lblB)
+    Pred lblA fA = pA
+    Pred lblB fB = pB
+    f a = Out dyn c
+      where
+        dyn = fDyn a
+        outA@(Out _ oA) = fA a
+        outB@(Out _ oB) = fB a
+        resA = outResult oA
+        resB = outResult oB
+        c | chLeft resA = Child1 resA showChildren outA
+          | otherwise = Child2 (resA `comb` resB) showChildren outA outB
+
+
 and
   :: [Chunk]
   -> (a -> [Chunk])
   -> Pred a
   -> Pred a
   -> Pred a
-and st fDyn pA pB = Pred lbls f
-  where
-    lbls = Static st (Two lblA lblB)
-    (Pred lblA fA, Pred lblB fB) = (pA, pB)
-    f a = Out dyn c
-      where
-        dyn = fDyn a
-        outA@(Out _ oA) = fA a
-        outB@(Out _ oB) = fB a
-        (resA, resB) = (outResult oA, outResult oB)
-        c | Prelude.not resA = Child1 False showChildren outA
-          | otherwise = Child2 (resA && resB) showChildren outA outB
-
+and = combiningPred Prelude.not (&&)
 
 or
   :: [Chunk]
@@ -175,18 +216,7 @@ or
   -> Pred a
   -> Pred a
   -> Pred a
-or st fDyn (Pred lblA fA) (Pred lblB fB) = Pred lbls f
-  where
-    lbls = Static st (Two lblA lblB)
-    f a = Out dyn c
-      where
-        dyn = fDyn a
-        outA@(Out _ oA) = fA a
-        outB@(Out _ oB) = fB a
-        (resA, resB) = (outResult oA, outResult oB)
-        c | resA = Child1 True showChildren outA
-          | otherwise = Child2 (resA || resB) showChildren outA outB
-
+or = combiningPred id (||)
 
 not
   :: [Chunk]
