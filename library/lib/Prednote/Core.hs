@@ -24,36 +24,46 @@ data OutC
   = Terminal Bool
   -- ^ The bottom of a tree.  Produced by 'predicate'.
 
-  | Hollow Out
+  | Hollow ShowInfo Out
   -- ^ The value of this result is the same as its child.  Produced by
-  -- 'wrap' and 'either'.  Has no independent visibility; if this
+  -- 'wrap' and 'switch'.  Has no independent visibility; if this
   -- result is shown, its child is also shown.  Whether this result is
   -- shown depends on the parent's visibility
 
-  | Child1 Bool Visible Out
+  | Child1 Bool ShowKids Out
   -- ^ The value of this result is determined independently.  Produced
   -- by 'splitAnd', 'splitOr', 'and', 'or', and 'not'.  Children are
   -- not shown if the visibiliy is 'hidden'.
 
-  | Child2 Bool Visible Out Out
+  | Child2 Bool ShowKids Out Out
   -- ^ The value of this result is determined independently.  Produced
   -- by 'splitAnd', 'splitOr', 'and', and 'or'.
   deriving (Eq, Ord, Show)
 
--- | Is this result visible?  If not, 'Prednote.report' will not show it.
-newtype Visible = Visible Bool
+-- | Show the children of this level?
+newtype ShowKids = ShowKids Bool
   deriving (Eq, Ord, Show)
 
-showChildren :: Visible
-showChildren = Visible True
+showKids :: ShowKids
+showKids = ShowKids True
 
-hideChildren :: Visible
-hideChildren = Visible False
+hideKids :: ShowKids
+hideKids = ShowKids False
+
+-- | Show this level?  If not, levels underneath are still shown.
+newtype ShowInfo = ShowInfo Bool
+  deriving (Eq, Ord, Show)
+
+showInfo :: ShowInfo
+showInfo = ShowInfo True
+
+hideInfo :: ShowInfo
+hideInfo = ShowInfo False
 
 outResult :: OutC -> Bool
 outResult c = case c of
   Terminal b -> b
-  Hollow (Out _ c') -> outResult c'
+  Hollow _ (Out _ c') -> outResult c'
   Child1 b _ _ -> b
   Child2 b _ _ _ -> b
 
@@ -61,11 +71,34 @@ outResult c = case c of
 runPred :: Pred a -> a -> Bool
 runPred (Pred _ f) a = let Out _ c = f a in outResult c
 
+-- | Change the level of information shown.  Only affects 'Pred' built
+-- with 'wrap' or 'switch'.
+changeInfo :: ShowInfo -> Pred a -> Pred a
+changeInfo si pd = Pred lbl f'
+  where
+    Pred lbl f = pd
+    f' a = Out cks o'
+      where
+        Out cks o = f a
+        o' = case o of
+          Hollow _ out -> Hollow si out
+          x -> x
+
+-- | Change a 'Pred' so it is 'showInfo'.  Only affects 'Pred' built
+-- with 'wrap' or 'switch'.
+inform :: Pred a -> Pred a
+inform = changeInfo showInfo
+
+-- | Change a 'Pred' so it is 'hideInfo'.  Only affects 'Pred' built
+-- with 'wrap' or 'switch'.
+obscure :: Pred a -> Pred a
+obscure = changeInfo hideInfo
+
 -- | Set visibility of children depending on whether the 'Pred' is
 -- 'True' or 'False'.  Does not affect 'Pred' built with 'predicate',
--- 'wrap', or 'either'.
+-- 'wrap', or 'switch'.
 
-visibility :: (Bool -> Visible) -> Pred a -> Pred a
+visibility :: (Bool -> ShowKids) -> Pred a -> Pred a
 visibility fVis (Pred lbl f) = Pred lbl f'
   where
     f' a = Out cks o'
@@ -80,14 +113,14 @@ visibility fVis (Pred lbl f) = Pred lbl f'
 showTrue :: Pred a -> Pred a
 showTrue = visibility f
   where
-    f b | b = showChildren
-        | otherwise = hideChildren
+    f b | b = showKids
+        | otherwise = hideKids
 
 showFalse :: Pred a -> Pred a
 showFalse = visibility f
   where
-    f b | Prelude.not b = showChildren
-        | otherwise = hideChildren
+    f b | Prelude.not b = showKids
+        | otherwise = hideKids
 
 hideTrue :: Pred a -> Pred a
 hideTrue = showFalse
@@ -150,7 +183,7 @@ wrap st spawn (Pred lbl f) = Pred lbl' f'
     f' a = Out ann res
       where
         Annotated ann b = spawn a
-        res = Hollow (f b)
+        res = Hollow showInfo (f b)
 
 
 switch
@@ -164,7 +197,7 @@ switch st split pB pC = Pred lbl' f
     Pred lblB fB = pB
     Pred lblC fC = pC
     lbl' = Static st (Two lblB lblC)
-    f a = Out ann (Hollow child)
+    f a = Out ann (Hollow showInfo child)
       where
         Annotated ann ei = split a
         child = case ei of
@@ -198,8 +231,8 @@ combiningPred chLeft comb st fDyn pA pB = Pred lbls f
         outB@(Out _ oB) = fB a
         resA = outResult oA
         resB = outResult oB
-        c | chLeft resA = Child1 resA showChildren outA
-          | otherwise = Child2 (resA `comb` resB) showChildren outA outB
+        c | chLeft resA = Child1 resA showKids outA
+          | otherwise = Child2 (resA `comb` resB) showKids outA outB
 
 
 and
@@ -226,7 +259,7 @@ not
 not st fDyn (Pred lbl f) = Pred lbl' f'
   where
     lbl' = Static st (One lbl)
-    f' a = Out (fDyn a) (Child1 res showChildren child)
+    f' a = Out (fDyn a) (Child1 res showKids child)
       where
         child@(Out _ c) = f a
         res = Prelude.not . outResult $ c

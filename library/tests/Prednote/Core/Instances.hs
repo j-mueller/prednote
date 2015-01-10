@@ -34,7 +34,7 @@ instance Arbitrary a => CoArbitrary (Pred a) where
 instance Arbitrary OutC where
   arbitrary = oneof
     [ fmap Terminal arbitrary
-    , fmap Hollow arbitrary
+    , liftM2 Hollow arbitrary arbitrary
     , liftM3 Child1 arbitrary arbitrary arbitrary
     , liftM4 Child2 arbitrary arbitrary arbitrary arbitrary
     ]
@@ -45,7 +45,7 @@ varInt = variant
 instance CoArbitrary OutC where
   coarbitrary x = case x of
     Terminal a -> varInt 0 . coarbitrary a
-    Hollow a -> varInt 1 . coarbitrary a
+    Hollow a b -> varInt 1 . coarbitrary a . coarbitrary b
     Child1 a b c -> varInt 2 . coarbitrary a . coarbitrary b
       . coarbitrary c
     Child2 a b c d -> varInt 3 . coarbitrary a . coarbitrary b
@@ -57,11 +57,17 @@ instance Arbitrary Out where
 instance CoArbitrary Out where
   coarbitrary (Out a b) = coarbitrary a . coarbitrary b
 
-instance Arbitrary Visible where
-  arbitrary = fmap Visible arbitrary
+instance Arbitrary ShowKids where
+  arbitrary = fmap ShowKids arbitrary
 
-instance CoArbitrary Visible where
-  coarbitrary (Visible a) = coarbitrary a
+instance CoArbitrary ShowKids where
+  coarbitrary (ShowKids a) = coarbitrary a
+
+instance Arbitrary ShowInfo where
+  arbitrary = fmap ShowInfo arbitrary
+
+instance CoArbitrary ShowInfo where
+  coarbitrary (ShowInfo a) = coarbitrary a
 
 instance Arbitrary a => Arbitrary (Annotated a) where
   arbitrary = liftM2 Annotated arbitrary arbitrary

@@ -16,6 +16,9 @@ module Prednote.Prebuilt
   , false
   , same
 
+  -- * Visibility control
+  , obscure
+
   -- * Predicate combinators
   --
   -- ** Primitive combinators
@@ -194,6 +197,10 @@ same :: Pdct Bool
 same = predicate (Typeshow (User "Bool" []) (X.pack . show))
   "is returned as is" id
 
+-- # Visibility control
+obscure :: Pdct a -> Pdct a
+obscure (Pdct pd ts) = Pdct (C.obscure pd) ts
+
 -- # Predicate combinators
 
 -- | Creates a new 'Pdct' that unwraps an input type and applies a
@@ -256,14 +263,14 @@ predOnPair
   -> Pdct o
 
 predOnPair (Combiner comb) tso split pa pb
-  = wrap tso split (pa' `comb` pb')
+  = obscure (wrap tso split (pa' `comb` pb'))
   where
     Pdct _ (Typeshow descA shwA) = pa
     Pdct _ (Typeshow descB shwB) = pb
     tsComb = Typeshow descTup showTup
     showTup (a, b) = "(" <> shwA a <> ", " <> shwB b <> ")"
     descTup = Tuple2 descA descB
-    pa' = wrap tsComb fst pa
+    pa' = obscure $ wrap tsComb fst pa
     pb' = wrap tsComb snd pb
 
 newtype Combiner a = Combiner (Pdct a -> Pdct a -> Pdct a)
@@ -340,14 +347,14 @@ listPred
   -> Pdct [a]
 listPred pEmpty comb pa
   = wrap tsLs toEi
-  $ either pCons pEmpty
+  $ obscure (either pCons pEmpty)
   where
-    pdct _ (Typeshow descA _) = pa
+    Pdct _ (Typeshow descA _) = pa
     tsLs = Typeshow (List descA) (const "List")
     toEi ls = case ls of
       x:xs -> Left (x, xs)
       [] -> Right ()
-    pCons = consCellPred pa (listPred pEmpty comb pa) comb
+    pCons = consCellPred pa (obscure $ listPred pEmpty comb pa) comb
 
 -- | Like 'Prelude.any'.  'True' if any value in the list is 'True';
 -- 'False' if the list is empty.  Short circuits if any value in the
@@ -404,16 +411,19 @@ verboseTest pd a = (formatOut 0 out, res)
 formatOut :: Int -> C.Out -> [Chunk]
 formatOut idt (C.Out cs oc) = case oc of
   C.Terminal r -> lblLine idt r cs
-  C.Hollow o -> indent idt cs ++ rest
+  C.Hollow shw o -> this ++ rest
     where
-      rest = formatOut (idt + 1) o
+      rest = formatOut nextLvl o
+      (this, nextLvl)
+        | shw == C.showInfo = (indent idt cs, idt + 1)
+        | otherwise = ([], idt)
   C.Child1 r v o -> lblLine idt r cs ++ rest
     where
-      rest | v == C.showChildren = formatOut (idt + 1) o
+      rest | v == C.showKids = formatOut (idt + 1) o
            | otherwise = []
   C.Child2 r v o1 o2 -> lblLine idt r cs ++ rest
     where
-      rest | v == C.showChildren = rst1 ++ rst2
+      rest | v == C.showKids = rst1 ++ rst2
            | otherwise = []
       rst1 = formatOut (idt + 1) o1
       rst2 = formatOut (idt + 1) o2
