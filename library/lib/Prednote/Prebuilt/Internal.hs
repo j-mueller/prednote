@@ -153,8 +153,10 @@ infixr 2 |||
 
 -- | Negation - child must be 'False'
 not :: Pdct a -> Pdct a
-not (Pdct p d) = Pdct (C.not l (const l) p) d
-  where l = ["not - child must be False"]
+not pd = Pdct (C.not l (const l) p) d
+  where
+    l = ["not - child must be False"]
+    Pdct p d = pd
 
 
 anyOfPair
@@ -229,12 +231,14 @@ consCellPred
   -> Pdct [a]
   -> Combiner (a, [a])
   -> Pdct (a, [a])
-consCellPred pOne@(Pdct _ (Typeshow descA shwA))
-  pLs@(Pdct _ (Typeshow descLs _)) comb
+consCellPred pOne pLs comb
   = predOnPair comb tw id pOne pLs
   where
+    Pdct _ (Typeshow descA shwA) = pOne
+    Pdct _ (Typeshow descLs _) = pLs
     tw = Typeshow (Tuple2 descA descLs) f
     f (x, _) = "cons cell with head: " <> shwA x
+
 
 listPred
   :: Pdct ()
@@ -243,10 +247,11 @@ listPred
   -- ^ How to combine a 'Pdct' on an item and a 'Pdct' on the rest of the list
   -> Pdct a
   -> Pdct [a]
-listPred pEmpty comb pa@(Pdct _ (Typeshow descA _))
+listPred pEmpty comb pa
   = wrap tsLs toEi
   $ either pCons pEmpty
   where
+    Pdct _ (Typeshow descA _) = pa
     tsLs = Typeshow (List descA) (const "List")
     toEi ls = case ls of
       x:xs -> Left (x, xs)
@@ -260,10 +265,11 @@ all :: Pdct a -> Pdct [a]
 all = listPred true (Combiner (&&&))
 
 maybe :: Pdct () -> Pdct a -> Pdct (Maybe a)
-maybe pNothing pa@(Pdct _ (Typeshow descA shwA))
+maybe pNothing pa
   = wrap tsMaybe toEi
   $ either pa pNothing
   where
+    Pdct _ (Typeshow descA shwA) = pa
     tsMaybe = Typeshow (User "Maybe" [descA]) shwMaybe
     shwMaybe a = case a of
       Nothing -> "Nothing"
