@@ -7,15 +7,15 @@
 module Prednote.Expressions.RPN where
 
 import qualified Data.Foldable as Fdbl
-import Prednote.Prebuilt (Pdct)
-import qualified Prednote.Prebuilt as P
-import Prednote.Prebuilt ((&&&), (|||))
+import Prednote.Core (Pred)
+import qualified Prednote.Core as P
+import Prednote.Core ((&&&), (|||))
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as X
 
 data RPNToken a
-  = TokOperand (Pdct a)
+  = TokOperand (Pred a)
   | TokOperator Operator
 
 data Operator
@@ -24,13 +24,13 @@ data Operator
   | OpNot
   deriving Show
 
-pushOperand :: Pdct a -> [Pdct a] -> [Pdct a]
+pushOperand :: Pred a -> [Pred a] -> [Pred a]
 pushOperand p ts = p : ts
 
 pushOperator
   :: Operator
-  -> [Pdct a]
-  -> Either Text [Pdct a]
+  -> [Pred a]
+  -> Either Text [Pred a]
 pushOperator o ts = case o of
   OpAnd -> case ts of
     x:y:zs -> return $ (y &&& x) : zs
@@ -46,23 +46,23 @@ pushOperator o ts = case o of
             <> "\" operator\n"
 
 pushToken
-  :: [Pdct a]
+  :: [Pred a]
   -> RPNToken a
-  -> Either Text [Pdct a]
+  -> Either Text [Pred a]
 pushToken ts t = case t of
   TokOperand p -> return $ pushOperand p ts
   TokOperator o -> pushOperator o ts
 
 -- TODO improve "Bad expression" error message?
 
--- | Parses an RPN expression and returns the resulting 'Pdct'. Fails if
+-- | Parses an RPN expression and returns the resulting 'Pred'. Fails if
 -- there are no operands left on the stack or if there are multiple
 -- operands left on the stack; the stack must contain exactly one
 -- operand in order to succeed.
 parseRPN
   :: Fdbl.Foldable f
   => f (RPNToken a)
-  -> Either Text (Pdct a)
+  -> Either Text (Pred a)
 parseRPN ts = do
   trees <- Fdbl.foldlM pushToken [] ts
   case trees of

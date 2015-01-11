@@ -15,9 +15,9 @@
 module Prednote
   ( module Prednote.Comparisons
   , module Prednote.Expressions
-  , module Prednote.Prebuilt
+  , module Prednote.Core
   ) where
 
 import Prednote.Comparisons
 import Prednote.Expressions
-import Prednote.Prebuilt
+import Prednote.Core

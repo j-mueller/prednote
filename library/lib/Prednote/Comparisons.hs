@@ -1,10 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Prednote.Comparisons where
 
-import Prednote.Prebuilt
+import Prednote.Core
 import Prednote.Format
-import Data.Text (Text)
-import qualified Data.Text as X
 import Prelude hiding (compare, not)
 import qualified Prelude
 
@@ -12,11 +10,8 @@ import qualified Prelude
 -- the right hand side is baked into the 'Pred' and that the 'Pred'
 -- compares this single right-hand side to each left-hand side item.
 compareBy
-  :: Typeshow a
-  -- ^ Description of the type of thing that is being matched, and how
-  -- to show left-hand side values
-
-  -> Text
+  :: Show a
+  => String
   -- ^ Description of the right-hand side
 
   -> (a -> Ordering)
@@ -29,9 +24,9 @@ compareBy
   -- order for the Predbox to be True; otherwise it is False. The subject
   -- will be on the left hand side.
 
-  -> Pdct a
+  -> Pred a
 
-compareBy tw rhsDesc get ord = predicate tw cond pd
+compareBy rhsDesc get ord = predicate "" cond pd
   where
     cond = "is" <+> ordDesc <+> rhsDesc
     ordDesc = case ord of
@@ -44,10 +39,7 @@ compareBy tw rhsDesc get ord = predicate tw cond pd
 
 compare
   :: (Show a, Ord a)
-  => Typedesc
-  -- ^ Description of the type of thing that is being matched
-
-  -> a
+  => a
   -- ^ Right-hand side
 
   -> Ordering
@@ -55,27 +47,24 @@ compare
   -- order for the Predbox to be True; otherwise it is False. The subject
   -- will be on the left hand side.
 
-  -> Pdct a
-compare typeDesc rhs ord =
-  compareBy (typeshow typeDesc) (X.pack . show $ rhs)
-          (`Prelude.compare` rhs) ord
+  -> Pred a
+compare rhs ord =
+  compareBy (show rhs) (`Prelude.compare` rhs) ord
 
 -- | Builds a 'Pred' that tests items for equality.
 
 equalBy
-  :: Typeshow a
-  -- ^ Description of the type of thing that is being matched, and how
-  -- to show the left-hand side
+  :: Show a
 
-  -> Text
+  => String
   -- ^ Description of the right-hand side
 
   -> (a -> Bool)
   -- ^ How to compare an item against the right hand side.  Return
   -- 'True' if the items are equal; 'False' otherwise.
 
-  -> Pdct a
-equalBy tw rhsDesc = predicate tw cond
+  -> Pred a
+equalBy rhsDesc = predicate "" cond
   where
     cond = "is equal to" <+> rhsDesc
 
@@ -83,25 +72,17 @@ equalBy tw rhsDesc = predicate tw cond
 
 equal
   :: (Eq a, Show a)
-  => Typedesc
-  -- ^ Description of the type of thing that is being matched
-
-  -> a
+  => a
   -- ^ Right-hand side
 
-  -> Pdct a
-equal typeDesc rhs = equalBy (typeshow typeDesc) (X.pack . show $ rhs)
-  (== rhs)
-
+  -> Pred a
+equal rhs = equalBy (show rhs) (== rhs)
 
 
 -- | Builds a 'Pred' for items that might fail to return a comparison.
 compareByMaybe
-  :: Typeshow a
-  -- ^ Description of the type of thing that is being matched, and how
-  -- to show the left-hand side
-
-  -> Text
+  :: Show a
+  => String
   -- ^ Description of the right-hand side
 
   -> (a -> Maybe Ordering)
@@ -114,9 +95,9 @@ compareByMaybe
   -- order for the Predbox to be True; otherwise it is False. The subject
   -- will be on the left hand side.
 
-  -> Pdct a
+  -> Pred a
 
-compareByMaybe tw rhsDesc get ord = predicate tw cond pd
+compareByMaybe rhsDesc get ord = predicate "" cond pd
   where
     cond = "is" <+> ordDesc <+> rhsDesc
     ordDesc = case ord of
@@ -130,65 +111,48 @@ compareByMaybe tw rhsDesc get ord = predicate tw cond pd
 greater
   :: (Show a, Ord a)
 
-  => Typedesc
-  -- ^ Description of the type of thing being matched
-
-  -> a
+  => a
   -- ^ Right-hand side
 
-  -> Pdct a
-greater typeDesc rhs = compare typeDesc rhs GT
+  -> Pred a
+greater rhs = compare rhs GT
 
 less
   :: (Show a, Ord a)
 
-  => Typedesc
-  -- ^ Description of the type of thing being matched
-
-  -> a
+  => a
   -- ^ Right-hand side
 
-  -> Pdct a
-less typeDesc rhs = compare typeDesc rhs LT
+  -> Pred a
+less rhs = compare rhs LT
 
 greaterEq
   :: (Show a, Ord a)
-  => Typedesc
-  -- ^ Description of the type of thing being matched
-
-  -> a
+  => a
   -- ^ Right-hand side
 
-  -> Pdct a
-greaterEq t r = greater t r ||| equal t r
+  -> Pred a
+greaterEq r = greater r ||| equal r
 
 lessEq
   :: (Show a, Ord a)
-  => Typedesc
-  -- ^ Description of the type of thing being matched
-
-  -> a
+  => a
   -- ^ Right-hand side
 
-  -> Pdct a
-lessEq t r = less t r ||| equal t r
+  -> Pred a
+lessEq r = less r ||| equal r
 
 notEq
   :: (Show a, Eq a)
-  => Typedesc
-  -- ^ Description of the type of thing being matched
-
-  -> a
+  => a
   -- ^ Right-hand side
 
-  -> Pdct a
-notEq t r = not $ equal t r
+  -> Pred a
+notEq = not . equal
 
 greaterBy
-  :: Typeshow a
-  -- ^ Description of the type of thing being matched
-
-  -> Text
+  :: Show a
+  => String
   -- ^ Description of right-hand side
 
   -> (a -> Ordering)
@@ -196,15 +160,13 @@ greaterBy
   -- if the item is less than the right hand side; GT if greater; EQ
   -- if equal to the right hand side.
 
-  -> Pdct a
-greaterBy tw desc get = compareBy tw desc get GT
+  -> Pred a
+greaterBy desc get = compareBy desc get GT
 
 
 lessBy
-  :: Typeshow a
-  -- ^ Description of the type of thing being matched
-
-  -> Text
+  :: Show a
+  => String
   -- ^ Description of right-hand side
 
   -> (a -> Ordering)
@@ -212,14 +174,12 @@ lessBy
   -- if the item is less than the right hand side; GT if greater; EQ
   -- if equal to the right hand side.
 
-  -> Pdct a
-lessBy tw desc get = compareBy tw desc get LT
+  -> Pred a
+lessBy desc get = compareBy desc get LT
 
 greaterEqBy
-  :: Typeshow a
-  -- ^ Description of the type of thing being matched
-
-  -> Text
+  :: Show a
+  => String
   -- ^ Description of right-hand side
 
   -> (a -> Ordering)
@@ -227,16 +187,14 @@ greaterEqBy
   -- if the item is less than the right hand side; GT if greater; EQ
   -- if equal to the right hand side.
 
-  -> Pdct a
-greaterEqBy tw desc get = greaterBy tw desc get ||| equalBy tw desc f'
+  -> Pred a
+greaterEqBy desc get = greaterBy desc get ||| equalBy desc f'
   where
     f' = fmap (== EQ) get
 
 lessEqBy
-  :: Typeshow a
-  -- ^ Description of the type of thing being matched
-
-  -> Text
+  :: Show a
+  => String
   -- ^ Description of right-hand side
 
   -> (a -> Ordering)
@@ -244,40 +202,38 @@ lessEqBy
   -- if the item is less than the right hand side; GT if greater; EQ
   -- if equal to the right hand side.
 
-  -> Pdct a
-lessEqBy tw desc get = lessBy tw desc get ||| equalBy tw desc f'
+  -> Pred a
+lessEqBy desc get = lessBy desc get ||| equalBy desc f'
   where
     f' = fmap (== EQ) get
 
 notEqBy
-  :: Typeshow a
-  -- ^ Description of the type of thing being matched
-
-  -> Text
+  :: Show a
+  => String
   -- ^ Description of right-hand side
 
   -> (a -> Bool)
   -- ^ How to compare an item against the right hand side.  Return
   -- 'True' if equal; 'False' otherwise.
 
-  -> Pdct a
-notEqBy tw desc = not . equalBy tw desc
+  -> Pred a
+notEqBy desc = not . equalBy desc
 
 
 -- | Parses a string that contains text, such as @>=@, which indicates
 -- which comparer to use.  Returns the comparer.
 parseComparer
-  :: Text
+  :: String
   -- ^ The string with the comparer to be parsed
 
-  -> (Ordering -> Pdct a)
-  -- ^ A function that, when given an ordering, returns a 'Pdct'.
+  -> (Ordering -> Pred a)
+  -- ^ A function that, when given an ordering, returns a 'Pred'.
   -- Typically you will get this by partial application of 'compare',
   -- 'compareBy', or 'compareByMaybe'.
 
-  -> Maybe (Pdct a)
+  -> Maybe (Pred a)
   -- ^ If an invalid comparer string is given, Nothing; otherwise, the
-  -- 'Pdct'.
+  -- 'Pred'.
 parseComparer t f
   | t == ">" = Just (f GT)
   | t == "<" = Just (f LT)

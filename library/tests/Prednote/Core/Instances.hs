@@ -6,6 +6,59 @@ import Test.QuickCheck
 import Control.Monad
 import Prednote.Core
 
+instance Arbitrary Label where
+  arbitrary = fmap Label arbitrary
+
+instance CoArbitrary Label where
+  coarbitrary (Label cs) = coarbitrary cs
+
+instance Arbitrary Condition where
+  arbitrary = fmap Condition arbitrary
+
+instance CoArbitrary Condition where
+  coarbitrary (Condition cs) = coarbitrary cs
+
+instance Arbitrary Value where
+  arbitrary = fmap Value arbitrary
+
+instance CoArbitrary Value where
+  coarbitrary (Value s) = coarbitrary s
+
+instance Arbitrary Passed where
+  arbitrary = sized f
+    where
+      f s | s < 10 = liftM3 PTerminal arbitrary arbitrary arbitrary
+          | otherwise = oneof
+              [ liftM3 PTerminal arbitrary arbitrary arbitrary
+              , liftM2 PAnd nestPass nestPass
+              , fmap POr (oneof [ fmap Left nestPass,
+                                  fmap Right (liftM2 (,) nestFail nestPass) ])
+              , fmap PNot nestFail
+              ]
+        where
+          nestPass = resize (s `mod` 4) arbitrary
+          nestFail = resize (s `mod` 4) arbitrary
+
+instance Arbitrary Failed where
+  arbitrary = sized f
+    where
+      f s | s < 10 = liftM3 FTerminal arbitrary arbitrary arbitrary
+          | otherwise = oneof
+              [ liftM3 FTerminal arbitrary arbitrary arbitrary
+              , fmap FAnd (oneof [ fmap Left nestFail
+                                 , fmap Right (liftM2 (,) nestPass nestFail) ])
+              , liftM2 FOr nestFail nestFail
+              , fmap FNot nestPass
+              ]
+        where
+          nestPass = resize (s `mod` 4) arbitrary
+          nestFail = resize (s `mod` 4) arbitrary
+
+instance CoArbitrary a => Arbitrary (Pred a) where
+  arbitrary = fmap Pred arbitrary
+
+{-
+
 instance Arbitrary Static where
   arbitrary = liftM2 Static arbitrary arbitrary
 
@@ -71,3 +124,4 @@ instance CoArbitrary ShowInfo where
 
 instance Arbitrary a => Arbitrary (Annotated a) where
   arbitrary = liftM2 Annotated arbitrary arbitrary
+-}

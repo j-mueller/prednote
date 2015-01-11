@@ -7,6 +7,7 @@ import Prelude hiding (all, any, maybe, and, or, not)
 import Data.String
 import Prednote.Format
 import qualified System.IO as IO
+import qualified Data.Text as X
 
 newtype Label = Label [Chunk]
   deriving (Eq, Ord, Show)
@@ -168,8 +169,12 @@ failedToChunks i fld = lblLine i False cks ++ rest
 
 labelTerminal :: Label -> String -> Condition -> [Chunk]
 labelTerminal (Label l) shwn (Condition c)
-  = l ++ [" - "] ++ [fromString shwn] ++ [" - "]
+  = begin ++ [fromString shwn] ++ [" - "]
     ++ c
+  where
+    begin | empty l = []
+          | otherwise = l ++ [" - "]
+    empty = (== 0) . sum . map X.length . concat . map text
 
 labelAnd :: [Chunk]
 labelAnd = ["and - no child may be False"]

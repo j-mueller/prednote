@@ -5,7 +5,6 @@
 module Prednote.Format where
 
 import Rainbow
-import Data.Text (Text)
 import qualified Data.Text as X
 import Data.Monoid
 
@@ -44,12 +43,12 @@ indent i cs = spaces : cs ++ [fromText "\n"]
     spaces = fromText . X.replicate (indentAmt * i)
       . X.singleton $ ' '
 
--- | Append two 'Text', with an intervening space if both 'Text' are
--- not empty.
-(<+>) :: Text -> Text -> Text
+-- | Append two 'String', with an intervening space if both 'String'
+-- are not empty.
+(<+>) :: String -> String -> String
 l <+> r
   | full l && full r = l <> " " <> r
   | otherwise = l <> r
   where
-    full = Prelude.not . X.null
+    full = Prelude.not . null
 
