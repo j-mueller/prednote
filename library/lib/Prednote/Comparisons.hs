@@ -1,16 +1,36 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Prednote.Comparisons where
+module Prednote.Comparisons
+  ( compareBy
+  , compare
+  , equalBy
+  , equal
+  , compareByMaybe
+  , greater
+  , less
+  , greaterEq
+  , lessEq
+  , notEq
+  , greaterBy
+  , lessBy
+  , greaterEqBy
+  , lessEqBy
+  , notEqBy
+  , parseComparer
+  ) where
 
 import Prednote.Core
 import Prelude hiding (compare, not)
 import qualified Prelude
+import Data.Monoid
+import qualified Data.Text as X
+import Data.Text (Text)
 
 -- | Build a Pred that compares items.  The idea is that the item on
 -- the right hand side is baked into the 'Pred' and that the 'Pred'
 -- compares this single right-hand side to each left-hand side item.
 compareBy
   :: Show a
-  => String
+  => Text
   -- ^ Description of the right-hand side
 
   -> (a -> Ordering)
@@ -25,7 +45,7 @@ compareBy
 
   -> Pred a
 
-compareBy rhsDesc get ord = predicate "" cond pd
+compareBy rhsDesc get ord = predicate cond pd
   where
     cond = "is" <+> ordDesc <+> rhsDesc
     ordDesc = case ord of
@@ -48,14 +68,14 @@ compare
 
   -> Pred a
 compare rhs ord =
-  compareBy (show rhs) (`Prelude.compare` rhs) ord
+  compareBy (X.pack . show $ rhs) (`Prelude.compare` rhs) ord
 
 -- | Builds a 'Pred' that tests items for equality.
 
 equalBy
   :: Show a
 
-  => String
+  => Text
   -- ^ Description of the right-hand side
 
   -> (a -> Bool)
@@ -63,7 +83,7 @@ equalBy
   -- 'True' if the items are equal; 'False' otherwise.
 
   -> Pred a
-equalBy rhsDesc = predicate "" cond
+equalBy rhsDesc = predicate cond
   where
     cond = "is equal to" <+> rhsDesc
 
@@ -75,13 +95,13 @@ equal
   -- ^ Right-hand side
 
   -> Pred a
-equal rhs = equalBy (show rhs) (== rhs)
+equal rhs = equalBy (X.pack . show $ rhs) (== rhs)
 
 
 -- | Builds a 'Pred' for items that might fail to return a comparison.
 compareByMaybe
   :: Show a
-  => String
+  => Text
   -- ^ Description of the right-hand side
 
   -> (a -> Maybe Ordering)
@@ -96,7 +116,7 @@ compareByMaybe
 
   -> Pred a
 
-compareByMaybe rhsDesc get ord = predicate "" cond pd
+compareByMaybe rhsDesc get ord = predicate cond pd
   where
     cond = "is" <+> ordDesc <+> rhsDesc
     ordDesc = case ord of
@@ -151,7 +171,7 @@ notEq = not . equal
 
 greaterBy
   :: Show a
-  => String
+  => Text
   -- ^ Description of right-hand side
 
   -> (a -> Ordering)
@@ -165,7 +185,7 @@ greaterBy desc get = compareBy desc get GT
 
 lessBy
   :: Show a
-  => String
+  => Text
   -- ^ Description of right-hand side
 
   -> (a -> Ordering)
@@ -178,7 +198,7 @@ lessBy desc get = compareBy desc get LT
 
 greaterEqBy
   :: Show a
-  => String
+  => Text
   -- ^ Description of right-hand side
 
   -> (a -> Ordering)
@@ -193,7 +213,7 @@ greaterEqBy desc get = greaterBy desc get ||| equalBy desc f'
 
 lessEqBy
   :: Show a
-  => String
+  => Text
   -- ^ Description of right-hand side
 
   -> (a -> Ordering)
@@ -208,7 +228,7 @@ lessEqBy desc get = lessBy desc get ||| equalBy desc f'
 
 notEqBy
   :: Show a
-  => String
+  => Text
   -- ^ Description of right-hand side
 
   -> (a -> Bool)
@@ -222,7 +242,7 @@ notEqBy desc = not . equalBy desc
 -- | Parses a string that contains text, such as @>=@, which indicates
 -- which comparer to use.  Returns the comparer.
 parseComparer
-  :: String
+  :: Text
   -- ^ The string with the comparer to be parsed
 
   -> (Ordering -> Pred a)
@@ -243,4 +263,13 @@ parseComparer t f
   | t == "/=" = Just (not $ f EQ)
   | t == "!=" = Just (not $ f EQ)
   | otherwise = Nothing
+
+-- | Append two 'X.Text', with an intervening space if both 'X.Text'
+-- are not empty.
+(<+>) :: Text -> Text -> Text
+l <+> r
+  | full l && full r = l <> " " <> r
+  | otherwise = l <> r
+  where
+    full = Prelude.not . X.null
 
