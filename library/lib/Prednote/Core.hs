@@ -2,37 +2,45 @@
 module Prednote.Core where
 
 import Rainbow
+import Data.Monoid
 import Data.Functor.Contravariant
 import Prelude hiding (all, any, maybe, and, or, not)
-import Data.String
-import Prednote.Format
+import qualified Prelude
 import qualified System.IO as IO
 import qualified Data.Text as X
-
-newtype Label = Label [Chunk]
-  deriving (Eq, Ord, Show)
+import Data.Text (Text)
+import Data.List (intersperse)
 
 newtype Condition = Condition [Chunk]
   deriving (Eq, Ord, Show)
 
-newtype Value = Value String
+newtype Value = Value Text
+  deriving (Eq, Ord, Show)
+
+newtype Label = Label Text
   deriving (Eq, Ord, Show)
 
 data Passed
-  = PTerminal Label String Condition
+  = PTerminal Value Condition
   | PAnd Passed Passed
   | POr (Either Passed (Failed, Passed))
   | PNot Failed
   deriving (Eq, Ord, Show)
 
 data Failed
-  = FTerminal Label String Condition
+  = FTerminal Value Condition
   | FAnd (Either Failed (Passed, Failed))
   | FOr Failed Failed
   | FNot Passed
   deriving (Eq, Ord, Show)
 
-newtype Pred a = Pred (a -> Either Failed Passed)
+data Result = Result [Label] (Either Failed Passed)
+  deriving (Eq, Ord, Show)
+
+failedOrPassed :: Result -> Either Failed Passed
+failedOrPassed (Result _ r) = r
+
+newtype Pred a = Pred (a -> Result)
 
 instance Show (Pred a) where
   show _ = "Pred"
@@ -42,48 +50,54 @@ instance Contravariant Pred where
 
 predicate
   :: Show a
-  => String
-  -- ^ Label
-  -> String
+  => Text
   -- ^ Condition
   -> (a -> Bool)
   -> Pred a
-predicate sLbl sCond p = Pred f
+predicate tCond p = Pred f
   where
-    f a
-      | p a = Right (PTerminal lbl (show a) cond)
-      | otherwise = Left (FTerminal lbl (show a) cond)
-    cond = Condition [fromString sCond]
-    lbl = Label [fromString sLbl]
+    f a = Result [] r
+      where
+        r | p a = Right (PTerminal val cond)
+          | otherwise = Left (FTerminal val cond)
+        cond = Condition [fromText tCond]
+        val = Value . X.pack . show $ a
+
 
 (&&&) :: Pred a -> Pred a -> Pred a
 (Pred fL) &&& r = Pred f
   where
-    f a = case fL a of
-      Left b -> Left (FAnd (Left b))
-      Right g -> case fR a of
-        Left b -> Left (FAnd (Right (g, b)))
-        Right g' -> Right (PAnd g g')
-    Pred fR = r
+    f a = Result [] rslt
+      where
+        rslt = case failedOrPassed $ fL a of
+          Left b -> Left (FAnd (Left b))
+          Right g -> case failedOrPassed $ fR a of
+            Left b -> Left (FAnd (Right (g, b)))
+            Right g' -> Right (PAnd g g')
+        Pred fR = r
 infixr 3 &&&
 
 (|||) :: Pred a -> Pred a -> Pred a
 (Pred fL) ||| r = Pred f
   where
     Pred fR = r
-    f a = case fL a of
-      Left b -> case fR a of
-        Left b' -> Left $ FOr b b'
-        Right g -> Right $ POr (Right (b, g))
-      Right g -> Right $ POr (Left g)
+    f a = Result [] rslt
+      where
+        rslt = case failedOrPassed $ fL a of
+          Left b -> case failedOrPassed $ fR a of
+            Left b' -> Left $ FOr b b'
+            Right g -> Right $ POr (Right (b, g))
+          Right g -> Right $ POr (Left g)
 infixr 2 |||
 
 not :: Pred a -> Pred a
 not (Pred f) = Pred g
   where
-    g a = case f a of
-      Left b -> Right (PNot b)
-      Right y -> Left (FNot y)
+    g a = Result [] rslt
+      where
+        rslt = case failedOrPassed $ f a of
+          Left b -> Right (PNot b)
+          Right y -> Left (FNot y)
 
 switch
   :: Pred a
@@ -94,26 +108,24 @@ switch pa pb = Pred (either fa fb)
     Pred fa = pa
     Pred fb = pb
 
-resultToBool :: Either a b -> Bool
-resultToBool = either (const False) (const True)
+resultToBool :: Result -> Bool
+resultToBool (Result _ ei) = either (const False) (const True) ei
 
 true :: Show a => Pred a
-true = predicate "" "is ignored - always returns True" (const True)
+true = predicate "is ignored - always returns True" (const True)
 
 false :: Show a => Pred a
-false = predicate "" "is ignored - always returns False" (const False)
+false = predicate "is ignored - always returns False" (const False)
 
 same :: Pred Bool
-same = predicate "" "is returned" id
+same = predicate "is returned" id
 
-relabel :: String -> Pred a -> Pred a
-relabel lbl (Pred f) = Pred f'
+addLabel :: Text -> Pred a -> Pred a
+addLabel s (Pred f) = Pred f'
   where
-    f' a = case f a of
-      Left (FTerminal _ s c) -> Left (FTerminal l s c)
-      Right (PTerminal _ s c) -> Right (PTerminal l s c)
-      x -> x
-    l = Label [fromString lbl]
+    f' a = Result (Label s : ss) ei
+      where
+        Result ss ei = f a
 
 any :: Pred a -> Pred [a]
 any pa = contramap f (switch pConsCell pEnd)
@@ -122,7 +134,7 @@ any pa = contramap f (switch pConsCell pEnd)
     f ls = case ls of
       [] -> Right ()
       x:xs -> Left (x, xs)
-    pEnd = relabel "end of list" false
+    pEnd = addLabel "end of list" false
 
 all :: Pred a -> Pred [a]
 all pa = contramap f (switch pConsCell pEnd)
@@ -131,8 +143,10 @@ all pa = contramap f (switch pConsCell pEnd)
     f ls = case ls of
       x:xs -> Left (x, xs)
       [] -> Right ()
-    pEnd = relabel "end of list" true
+    pEnd = addLabel "end of list" true
 
+
+{-
 resultToChunks :: Either Failed Passed -> [Chunk]
 resultToChunks = either (failedToChunks 0) (passedToChunks 0)
 
@@ -202,3 +216,83 @@ verboseTestStdout p a = do
   putChunks t cks
   return res
 
+-}
+
+-- | A colorful label for 'True' values.
+lblTrue :: [Chunk]
+lblTrue = ["[", fore green <> "TRUE", "]"]
+
+-- | A colorful label for 'False' values.
+lblFalse :: [Chunk]
+lblFalse = ["[", fore red <> "FALSE", "]"]
+
+-- | Append two lists of 'Chunk', with an intervening space if both 'String'
+-- are not empty.
+(<+>) :: [Chunk] -> [Chunk] -> [Chunk]
+l <+> r
+  | full l && full r = l <> [" "] <> r
+  | otherwise = l <> r
+  where
+    full = Prelude.not . chunksNull
+
+-- | Append two lists of 'Chunk' with an intervening hyphen if both
+-- lists are not zero length.
+(<->) :: [Chunk] -> [Chunk] -> [Chunk]
+l <-> r
+  | full l && full r = l <> [" - "] <> r
+  | otherwise = l <> r
+  where
+    full = Prelude.not . chunksNull
+
+hyphen :: [Chunk]
+hyphen = [" - "]
+
+-- | Length of a list of 'Chunk' in characters.
+chunksLength :: [Chunk] -> Int
+chunksLength = sum . map X.length . concat . map text
+
+chunksNull :: [Chunk] -> Bool
+chunksNull = Prelude.all $ Prelude.all X.null . text
+
+indentAmt :: Int
+indentAmt = 2
+
+spaces :: Int -> [Chunk]
+spaces i = (:[]) . fromText . X.replicate i . X.singleton $ ' '
+
+passedToChunks :: Int -> Passed -> ([Chunk], [Chunk])
+passedToChunks = undefined
+{-
+passedToChunks i p = case p of
+  PTerminal v c -> (terminalToChunks v c, [])
+  PAnd p1 p2 ->
+    (["and (both children must be True)"], nextPass p1 <> nextPass p2)
+  POr ei -> (["or (either child must be True)"], rest)
+    where
+      rest = either nextPass
+        (\(n, y) -> nextFail n <> nextPass y) ei
+  PNot n -> (["not (child must be False)"], nextFail n)
+  where
+    nextFail = failedToChunks (i + 1)
+    nextPass = passedToChunks (i + 1)
+-}
+failedToChunks :: Int -> Failed -> ([Chunk], [Chunk])
+failedToChunks = undefined
+
+newline :: [Chunk]
+newline = ["\n"]
+
+resultToChunks :: Int -> Result -> [Chunk]
+resultToChunks i (Result lbl ei) = this <> rest
+  where
+    this = spaces i <> ((trueFalse <+> labels) <-> end) <> newline
+    trueFalse = either (const lblFalse) (const lblTrue) ei
+    labels = concat . intersperse hyphen . map labelToChunks $ lbl
+    (end, rest) = either (failedToChunks i) (passedToChunks i) ei
+      
+
+labelToChunks :: Label -> [Chunk]
+labelToChunks (Label txt) = [fore yellow <> fromText txt]
+
+terminalToChunks :: Value -> Condition -> [Chunk]
+terminalToChunks (Value v) (Condition c) = [fromText v] <+> c

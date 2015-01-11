@@ -2,7 +2,6 @@
 module Prednote.Comparisons where
 
 import Prednote.Core
-import Prednote.Format
 import Prelude hiding (compare, not)
 import qualified Prelude
 

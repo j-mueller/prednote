@@ -24,4 +24,5 @@ decrees =
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Core/Properties.hs", modName = ["Prednote","Core","Properties"]}, linenum = 65, qName = "prop_false"} ) ( Single Prednote.Core.Properties.prop_false )
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Core/Properties.hs", modName = ["Prednote","Core","Properties"]}, linenum = 67, qName = "prop_same"} ) ( Single Prednote.Core.Properties.prop_same )
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Core/Properties.hs", modName = ["Prednote","Core","Properties"]}, linenum = 69, qName = "prop_any"} ) ( Single Prednote.Core.Properties.prop_any )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Prednote/Core/Properties.hs", modName = ["Prednote","Core","Properties"]}, linenum = 75, qName = "prop_all"} ) ( Single Prednote.Core.Properties.prop_all )
   ]
