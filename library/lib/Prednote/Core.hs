@@ -4,266 +4,196 @@ module Prednote.Core where
 import Rainbow
 import Data.Functor.Contravariant
 import Prelude hiding (all, any, maybe, and, or, not)
-import qualified Prelude
+import Data.String
+import Prednote.Format
+import qualified System.IO as IO
 
-data Static = Static [Chunk] Children
+newtype Label = Label [Chunk]
   deriving (Eq, Ord, Show)
 
-data Children
-  = Empty
-  | One Static
-  | Two Static Static
+newtype Condition = Condition [Chunk]
   deriving (Eq, Ord, Show)
 
-data Pred a = Pred Static (a -> Out)
-
-instance Contravariant Pred where
-  contramap f (Pred s g) = Pred s (g . f)
-
-data Out = Out [Chunk] OutC
+newtype Value = Value String
   deriving (Eq, Ord, Show)
 
-data OutC
-
-  = Terminal Bool
-  -- ^ The bottom of a tree.  Produced by 'predicate'.
-
-  | Hollow ShowInfo Out
-  -- ^ The value of this result is the same as its child.  Produced by
-  -- 'wrap' and 'switch'.  Has no independent visibility; if this
-  -- result is shown, its child is also shown.  Whether this result is
-  -- shown depends on the parent's visibility
-
-  | Child1 Bool ShowKids Out
-  -- ^ The value of this result is determined independently.  Produced
-  -- by 'splitAnd', 'splitOr', 'and', 'or', and 'not'.  Children are
-  -- not shown if the visibiliy is 'hidden'.
-
-  | Child2 Bool ShowKids Out Out
-  -- ^ The value of this result is determined independently.  Produced
-  -- by 'splitAnd', 'splitOr', 'and', and 'or'.
+data Passed
+  = PTerminal Label String Condition
+  | PAnd Passed Passed
+  | POr (Either Passed (Failed, Passed))
+  | PNot Failed
   deriving (Eq, Ord, Show)
 
--- | Show the children of this level?
-newtype ShowKids = ShowKids Bool
+data Failed
+  = FTerminal Label String Condition
+  | FAnd (Either Failed (Passed, Failed))
+  | FOr Failed Failed
+  | FNot Passed
   deriving (Eq, Ord, Show)
 
-showKids :: ShowKids
-showKids = ShowKids True
-
-hideKids :: ShowKids
-hideKids = ShowKids False
-
--- | Show this level?  If not, levels underneath are still shown.
-newtype ShowInfo = ShowInfo Bool
-  deriving (Eq, Ord, Show)
-
-showInfo :: ShowInfo
-showInfo = ShowInfo True
-
-hideInfo :: ShowInfo
-hideInfo = ShowInfo False
-
-outResult :: OutC -> Bool
-outResult c = case c of
-  Terminal b -> b
-  Hollow _ (Out _ c') -> outResult c'
-  Child1 b _ _ -> b
-  Child2 b _ _ _ -> b
-
-
-runPred :: Pred a -> a -> Bool
-runPred (Pred _ f) a = let Out _ c = f a in outResult c
-
--- | Change the level of information shown.  Only affects 'Pred' built
--- with 'wrap' or 'switch'.
-changeInfo :: ShowInfo -> Pred a -> Pred a
-changeInfo si pd = Pred lbl f'
-  where
-    Pred lbl f = pd
-    f' a = Out cks o'
-      where
-        Out cks o = f a
-        o' = case o of
-          Hollow _ out -> Hollow si out
-          x -> x
-
--- | Change a 'Pred' so it is 'showInfo'.  Only affects 'Pred' built
--- with 'wrap' or 'switch'.
-inform :: Pred a -> Pred a
-inform = changeInfo showInfo
-
--- | Change a 'Pred' so it is 'hideInfo'.  Only affects 'Pred' built
--- with 'wrap' or 'switch'.
-obscure :: Pred a -> Pred a
-obscure = changeInfo hideInfo
-
--- | Set visibility of children depending on whether the 'Pred' is
--- 'True' or 'False'.  Does not affect 'Pred' built with 'predicate',
--- 'wrap', or 'switch'.
-
-visibility :: (Bool -> ShowKids) -> Pred a -> Pred a
-visibility fVis (Pred lbl f) = Pred lbl f'
-  where
-    f' a = Out cks o'
-      where
-        Out cks o = f a
-        o' = case o of
-          Child1 r _ c -> Child1 r (fVis r) c
-          Child2 r _ c1 c2 -> Child2 r (fVis r) c1 c2
-          x -> x
-
-
-showTrue :: Pred a -> Pred a
-showTrue = visibility f
-  where
-    f b | b = showKids
-        | otherwise = hideKids
-
-showFalse :: Pred a -> Pred a
-showFalse = visibility f
-  where
-    f b | Prelude.not b = showKids
-        | otherwise = hideKids
-
-hideTrue :: Pred a -> Pred a
-hideTrue = showFalse
-
-hideFalse :: Pred a -> Pred a
-hideFalse = showTrue
+newtype Pred a = Pred (a -> Either Failed Passed)
 
 instance Show (Pred a) where
   show _ = "Pred"
 
-
-test :: Pred a -> a -> Bool
-test (Pred _ f) a = let Out _ c = f a in outResult c
-
-
-data Annotated a = Annotated [Chunk] a
-
-instance Show (Annotated a) where
-  show (Annotated cks _) = "Annotated " ++ show cks
-
-instance Functor Annotated where
-  fmap f (Annotated c a) = Annotated c (f a)
-
+instance Contravariant Pred where
+  contramap f (Pred g) = Pred (g . f)
 
 predicate
-  :: [Chunk]
-  -- ^ Static label
-  -> (a -> Annotated Bool)
+  :: Show a
+  => String
+  -- ^ Label
+  -> String
+  -- ^ Condition
+  -> (a -> Bool)
   -> Pred a
-predicate lbl f = Pred (Static lbl Empty) f'
+predicate sLbl sCond p = Pred f
   where
-    f' a = Out cks (Terminal r)
-      where
-        Annotated cks r = f a
+    f a
+      | p a = Right (PTerminal lbl (show a) cond)
+      | otherwise = Left (FTerminal lbl (show a) cond)
+    cond = Condition [fromString sCond]
+    lbl = Label [fromString sLbl]
 
-
-true :: Pred a
-true = predicate lbl (const (Annotated lbl True))
+(&&&) :: Pred a -> Pred a -> Pred a
+(Pred fL) &&& r = Pred f
   where
-    lbl = [fromText "always returns True"]
+    f a = case fL a of
+      Left b -> Left (FAnd (Left b))
+      Right g -> case fR a of
+        Left b -> Left (FAnd (Right (g, b)))
+        Right g' -> Right (PAnd g g')
+    Pred fR = r
+infixr 3 &&&
 
-false :: Pred a
-false = predicate lbl (const (Annotated lbl False))
+(|||) :: Pred a -> Pred a -> Pred a
+(Pred fL) ||| r = Pred f
   where
-    lbl = [fromText "always returns False"]
+    Pred fR = r
+    f a = case fL a of
+      Left b -> case fR a of
+        Left b' -> Left $ FOr b b'
+        Right g -> Right $ POr (Right (b, g))
+      Right g -> Right $ POr (Left g)
+infixr 2 |||
 
-same :: Pred Bool
-same = predicate lbl (Annotated lbl)
+not :: Pred a -> Pred a
+not (Pred f) = Pred g
   where
-    lbl = [fromText "returns its argument"]
-
-wrap
-  :: [Chunk]
-  -> (a -> Annotated b)
-  -> Pred b
-  -> Pred a
-wrap st spawn (Pred lbl f) = Pred lbl' f'
-  where
-    lbl' = Static st (One lbl)
-    f' a = Out ann res
-      where
-        Annotated ann b = spawn a
-        res = Hollow showInfo (f b)
-
+    g a = case f a of
+      Left b -> Right (PNot b)
+      Right y -> Left (FNot y)
 
 switch
-  :: [Chunk]
-  -> (a -> Annotated (Either b c))
+  :: Pred a
   -> Pred b
-  -> Pred c
-  -> Pred a
-switch st split pB pC = Pred lbl' f
+  -> Pred (Either a b)
+switch pa pb = Pred (either fa fb)
   where
-    Pred lblB fB = pB
-    Pred lblC fC = pC
-    lbl' = Static st (Two lblB lblC)
-    f a = Out ann (Hollow showInfo child)
-      where
-        Annotated ann ei = split a
-        child = case ei of
-          Left b -> fB b
-          Right c -> fC c
+    Pred fa = pa
+    Pred fb = pb
 
+resultToBool :: Either a b -> Bool
+resultToBool = either (const False) (const True)
 
-combiningPred
-  :: (Bool -> Bool)
-  -- ^ What to do to the leftmost result
-  -> (Bool -> Bool -> Bool)
-  -- ^ How to obtain a result if short-circuiting fails
-  -> [Chunk]
-  -- ^ Static name
-  -> (a -> [Chunk])
-  -- ^ Obtains dynamic name
-  -> Pred a
-  -- ^ Left-hand side
-  -> Pred a
-  -- ^ Right-hand side
-  -> Pred a
-combiningPred chLeft comb st fDyn pA pB = Pred lbls f
+true :: Show a => Pred a
+true = predicate "" "is ignored - always returns True" (const True)
+
+false :: Show a => Pred a
+false = predicate "" "is ignored - always returns False" (const False)
+
+same :: Pred Bool
+same = predicate "" "is returned" id
+
+relabel :: String -> Pred a -> Pred a
+relabel lbl (Pred f) = Pred f'
   where
-    lbls = Static st (Two lblA lblB)
-    Pred lblA fA = pA
-    Pred lblB fB = pB
-    f a = Out dyn c
-      where
-        dyn = fDyn a
-        outA@(Out _ oA) = fA a
-        outB@(Out _ oB) = fB a
-        resA = outResult oA
-        resB = outResult oB
-        c | chLeft resA = Child1 resA showKids outA
-          | otherwise = Child2 (resA `comb` resB) showKids outA outB
+    f' a = case f a of
+      Left (FTerminal _ s c) -> Left (FTerminal l s c)
+      Right (PTerminal _ s c) -> Right (PTerminal l s c)
+      x -> x
+    l = Label [fromString lbl]
 
-
-and
-  :: [Chunk]
-  -> (a -> [Chunk])
-  -> Pred a
-  -> Pred a
-  -> Pred a
-and = combiningPred Prelude.not (&&)
-
-or
-  :: [Chunk]
-  -> (a -> [Chunk])
-  -> Pred a
-  -> Pred a
-  -> Pred a
-or = combiningPred id (||)
-
-not
-  :: [Chunk]
-  -> (a -> [Chunk])
-  -> Pred a
-  -> Pred a
-not st fDyn (Pred lbl f) = Pred lbl' f'
+any :: Pred a -> Pred [a]
+any pa = contramap f (switch pConsCell pEnd)
   where
-    lbl' = Static st (One lbl)
-    f' a = Out (fDyn a) (Child1 res showKids child)
-      where
-        child@(Out _ c) = f a
-        res = Prelude.not . outResult $ c
+    pConsCell = contramap fst pa ||| contramap snd (any pa)
+    f ls = case ls of
+      [] -> Right ()
+      x:xs -> Left (x, xs)
+    pEnd = relabel "end of list" false
+
+all :: Pred a -> Pred [a]
+all pa = contramap f (switch pConsCell pEnd)
+  where
+    pConsCell = contramap fst pa &&& contramap snd (all pa)
+    f ls = case ls of
+      x:xs -> Left (x, xs)
+      [] -> Right ()
+    pEnd = relabel "end of list" true
+
+resultToChunks :: Either Failed Passed -> [Chunk]
+resultToChunks = either (failedToChunks 0) (passedToChunks 0)
+
+passedToChunks :: Int -> Passed -> [Chunk]
+passedToChunks i psd = lblLine i True cks ++ rest
+  where
+    (cks, rest) = case psd of
+      PTerminal l s c -> (labelTerminal l s c, [])
+      PAnd p1 p2 ->
+        (labelAnd, passedToChunks nxt p1 ++ passedToChunks nxt p2)
+      POr ei -> (labelOr, more)
+        where
+          more = case ei of
+            Left y -> passedToChunks nxt y
+            Right (n, y) -> failedToChunks nxt n ++ passedToChunks nxt y
+      PNot n -> (labelNot, failedToChunks nxt n)
+    nxt = succ i
+
+failedToChunks :: Int -> Failed -> [Chunk]
+failedToChunks i fld = lblLine i False cks ++ rest
+  where
+    (cks, rest) = case fld of
+      FTerminal l s c -> (labelTerminal l s c, [])
+      FAnd ei -> (labelAnd, more)
+        where
+          more = case ei of
+            Left f' -> failedToChunks nxt f'
+            Right (p', f') -> passedToChunks nxt p'
+              ++ failedToChunks nxt f'
+      FOr f1 f2 ->
+        (labelOr, failedToChunks nxt f1 ++ failedToChunks nxt f2)
+      FNot p -> (labelNot, passedToChunks nxt p)
+    nxt = succ i
+
+labelTerminal :: Label -> String -> Condition -> [Chunk]
+labelTerminal (Label l) shwn (Condition c)
+  = l ++ [" - "] ++ [fromString shwn] ++ [" - "]
+    ++ c
+
+labelAnd :: [Chunk]
+labelAnd = ["and - no child may be False"]
+
+labelOr :: [Chunk]
+labelOr = ["or - at least one child must be True"]
+
+labelNot :: [Chunk]
+labelNot = ["not - negates child"]
+
+test :: Pred a -> a -> Bool
+test (Pred f) = resultToBool . f
+
+verboseTest :: Pred a -> a -> ([Chunk], Bool)
+verboseTest (Pred f) a = (cks, res)
+  where
+    ei = f a
+    res = resultToBool ei
+    cks = resultToChunks ei
+
+verboseTestStdout :: Pred a -> a -> IO Bool
+verboseTestStdout p a = do
+  t <- smartTermFromEnv IO.stdout
+  let (cks, res) = verboseTest p a
+  putChunks t cks
+  return res
+
