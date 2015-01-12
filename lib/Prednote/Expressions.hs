@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Handles parsing of both infix and RPN Predbox expressions.
+-- | Handles parsing of both infix and RPN 'Pred' expressions.
 module Prednote.Expressions
   ( ExprDesc(..)
   , Error
@@ -27,7 +27,7 @@ newtype Token a = Token { unToken :: I.InfixToken a }
 
 type Error = X.Text
 
--- | Creates Operands from Predbox.
+-- | Creates Operands from 'Pred'.
 operand :: Pred a -> Token a
 operand p = Token (I.TokRPN (R.TokOperand p))
 

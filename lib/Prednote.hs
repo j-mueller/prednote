@@ -9,9 +9,8 @@
 -- > import qualified Prednote as P
 -- > import Prednote ((|||), (&&&))
 --
--- For more documentation, first see "Prednote.Prebuilt", and then
--- "Prednote.Comparisons" and then "Prednote.Expressions".  You will
--- need "Prednote.Core" only if you want to tinker under the hood.
+-- For more documentation, first see "Prednote.Core", and then
+-- "Prednote.Comparisons" and then "Prednote.Expressions".
 module Prednote
   ( module Prednote.Comparisons
   , module Prednote.Expressions

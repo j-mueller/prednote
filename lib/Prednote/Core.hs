@@ -244,7 +244,7 @@ same = predicate "is returned" id
 -- the user.  The label is added to the top 'Pred' in the tree; any
 -- existing labels are also retained.  Labels that were added last
 -- will be printed first.  For an example of this, see the source code
--- for 'any' and 'all' or the source code for "Prednote.Comparisons".
+-- for 'any' and 'all'.
 addLabel :: Text -> Pred a -> Pred a
 addLabel s (Pred f) = Pred f'
   where

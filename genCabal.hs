@@ -7,7 +7,7 @@ module Main where
 import qualified Cartel as C
 
 versionInts :: [Int]
-versionInts = [0,28,0,0]
+versionInts = [0,28,0,2]
 
 base :: C.Package
 base = C.closedOpen "base" [4,5,0,0] [5]
