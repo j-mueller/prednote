@@ -84,14 +84,13 @@ properties = commonProperties
     , "prednote also provides modules to test several subjects against a"
     , "given predicate, and to parse infix or RPN expressions into a tree of"
     , "predicates."
-    , ""
-    , "tests are packaged separately in the prednote-tests package."
     ]
   , C.prTestedWith = map (\ls -> (C.GHC, C.eq ls))
     [ [7,6,3], [7,8,2] ]
   , C.prExtraSourceFiles =
     [ "README.md"
     , "changelog"
+    , "genCabal.hs"
     ]
   }
 
