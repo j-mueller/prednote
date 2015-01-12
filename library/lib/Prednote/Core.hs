@@ -11,6 +11,11 @@ module Prednote.Core
   , switch
   , any
   , all
+  , Nothing
+  , maybe
+
+  -- * Labeling
+  , addLabel
 
   -- * Constant predicates
   , true
@@ -162,10 +167,10 @@ resultToBool (Result (Labeled _ ei))
 
 
 true :: Show a => Pred a
-true = predicate "is ignored - always returns True" (const True)
+true = predicate "always returns True" (const True)
 
 false :: Show a => Pred a
-false = predicate "is ignored - always returns False" (const False)
+false = predicate "always returns False" (const False)
 
 same :: Pred Bool
 same = predicate "is returned" id
@@ -179,32 +184,59 @@ addLabel s (Pred f) = Pred f'
         Result (Labeled ss ei) = f a
 
 
+data EndOfList = EndOfList
+
+instance Show EndOfList where
+  show _ = ""
+
 any :: Pred a -> Pred [a]
-any pa = contramap f (switch pConsCell pEnd)
+any pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
   where
-    pConsCell = contramap fst pa ||| contramap snd (any pa)
+    pConsCell =
+      contramap fst (addLabel "head" pa)
+      ||| contramap snd (addLabel "tail" (any pa))
     f ls = case ls of
-      [] -> Right ()
+      [] -> Right EndOfList
       x:xs -> Left (x, xs)
-    pEnd = addLabel "end of list" false
+    pEnd = addLabel "end of list" $ contramap (const EndOfList) false
 
 all :: Pred a -> Pred [a]
-all pa = contramap f (switch pConsCell pEnd)
+all pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
   where
-    pConsCell = contramap fst pa &&& contramap snd (all pa)
+    pConsCell =
+      contramap fst (addLabel "head" pa)
+      &&& contramap snd (addLabel "tail" (all pa))
     f ls = case ls of
       x:xs -> Left (x, xs)
-      [] -> Right ()
-    pEnd = addLabel "end of list" true
+      [] -> Right EndOfList
+    pEnd = addLabel "end of list" $ contramap (const EndOfList) true
+
+data Nothing = CoreNothing
+
+instance Show Nothing where
+  show _ = ""
+
+maybe
+  :: Pred Nothing
+  -- ^ What to do on 'Nothing'.  Usually you wil use 'true' or 'false'.
+  -> Pred a
+  -> Pred (Maybe a)
+maybe emp pa = contramap f
+  (switch (addLabel "Nothing" emp) (addLabel "Just value" pa))
+  where
+    f may = case may of
+      Nothing -> Left CoreNothing
+      Just a -> Right a
+
 
 explainAnd :: [Chunk]
-explainAnd = ["and (no child may be False)"]
+explainAnd = ["(and)"]
 
 explainOr :: [Chunk]
-explainOr = ["or (at least one child must be True)"]
+explainOr = ["(or)"]
 
 explainNot :: [Chunk]
-explainNot = ["not (negates child)"]
+explainNot = ["(not)"]
 
 test :: Pred a -> a -> Bool
 test (Pred p) = either (const False) (const True)
@@ -232,11 +264,20 @@ lblTrue = ["[", fore green <> "TRUE", "]"]
 lblFalse :: [Chunk]
 lblFalse = ["[", fore red <> "FALSE", "]"]
 
--- | Append two lists of 'Chunk', with an intervening space if both 'String'
--- are not empty.
+-- | Append two lists of 'Chunk', with an intervening space if both
+-- lists are not empty.
 (<+>) :: [Chunk] -> [Chunk] -> [Chunk]
 l <+> r
   | full l && full r = l <> [" "] <> r
+  | otherwise = l <> r
+  where
+    full = Prelude.not . chunksNull
+
+-- | Append two lists of 'Chunk', with an intervening hyphen if both
+-- lists have text.
+(<->) :: [Chunk] -> [Chunk] -> [Chunk]
+l <-> r
+  | full l && full r = l <> hyphen <> r
   | otherwise = l <> r
   where
     full = Prelude.not . chunksNull
@@ -258,10 +299,11 @@ newline :: [Chunk]
 newline = ["\n"]
 
 labelToChunks :: Label -> [Chunk]
-labelToChunks (Label txt) = [fore yellow <> fromText txt]
+labelToChunks (Label txt) = [fromText txt]
 
 explainTerminal :: Value -> Condition -> [Chunk]
-explainTerminal (Value v) (Condition c) = [fromText v] <+> c
+explainTerminal (Value v) (Condition c)
+  = [fromText v] <+> c
 
 resultToChunks :: Result -> [Chunk]
 resultToChunks = either (failedToChunks 0) (passedToChunks 0)
@@ -273,19 +315,19 @@ passedToChunks
   -> [Chunk]
 passedToChunks i (Labeled l p) = this <> rest
   where
-    this = spaces i <> ((lblTrue <+> labels) <+> explain) <> newline
+    this = spaces i <> (lblTrue <+> (labels `sep` explain)) <> newline
     labels = concat . intersperse hyphen . map labelToChunks $ l
     nextPass = passedToChunks (succ i)
     nextFail = failedToChunks (succ i)
-    (explain, rest) = case p of
-      PTerminal v c -> (explainTerminal v c, [])
-      PAnd p1 p2 -> (explainAnd, nextPass p1 <> nextPass p2)
-      POr ei -> (explainOr, more)
+    (explain, rest, sep) = case p of
+      PTerminal v c -> (explainTerminal v c, [], (<->))
+      PAnd p1 p2 -> (explainAnd, nextPass p1 <> nextPass p2, (<+>))
+      POr ei -> (explainOr, more, (<+>))
         where
           more = case ei of
             Left y -> nextPass y
             Right (n, y) -> nextFail n <> nextPass y
-      PNot n -> (explainNot, nextFail n)
+      PNot n -> (explainNot, nextFail n, (<+>))
 
 failedToChunks
   :: Int
@@ -293,16 +335,16 @@ failedToChunks
   -> [Chunk]
 failedToChunks i (Labeled l p) = this <> rest
   where
-    this = spaces i <> ((lblFalse <+> labels) <+> explain) <> newline
+    this = spaces i <> (lblFalse <+> (labels `sep` explain)) <> newline
     labels = concat . intersperse hyphen . map labelToChunks $ l
     nextPass = passedToChunks (succ i)
     nextFail = failedToChunks (succ i)
-    (explain, rest) = case p of
-      FTerminal v c -> (explainTerminal v c, [])
-      FAnd ei -> (explainAnd, more)
+    (explain, rest, sep) = case p of
+      FTerminal v c -> (explainTerminal v c, [], (<->))
+      FAnd ei -> (explainAnd, more, (<+>))
         where
           more = case ei of
             Left n -> nextFail n
             Right (y, n) -> nextPass y <> nextFail n
-      FOr n1 n2 -> (explainOr, nextFail n1 <> nextFail n2)
-      FNot y -> (explainNot, nextPass y)
+      FOr n1 n2 -> (explainOr, nextFail n1 <> nextFail n2, (<+>))
+      FNot y -> (explainNot, nextPass y, (<+>))

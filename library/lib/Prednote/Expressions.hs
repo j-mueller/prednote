@@ -19,6 +19,8 @@ import qualified Data.Text as X
 import qualified Prednote.Expressions.Infix as I
 import qualified Prednote.Expressions.RPN as R
 import Prednote.Core
+import qualified Prelude
+import Prelude hiding (maybe)
 
 -- | A single type for both RPN tokens and infix tokens.
 newtype Token a = Token { unToken :: I.InfixToken a }
@@ -74,10 +76,10 @@ parseExpression
   -> Either Error (Pred a)
 parseExpression e toks = do
   rpnToks <- case e of
-    Infix -> maybe (Left "unbalanced parentheses\n") Right
+    Infix -> Prelude.maybe (Left "unbalanced parentheses\n") Right
              . I.createRPN
              . map unToken
              $ toks
-    RPN -> maybe (Left "parentheses in an RPN expression\n") Right
+    RPN -> Prelude.maybe (Left "parentheses in an RPN expression\n") Right
            $ toksToRPN toks
   R.parseRPN rpnToks

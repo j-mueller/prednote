@@ -159,7 +159,7 @@ lessEq
   -- ^ Right-hand side
 
   -> Pred a
-lessEq r = less r ||| equal r
+lessEq r = addLabel "less than or equal to" $ less r ||| equal r
 
 notEq
   :: (Show a, Eq a)
