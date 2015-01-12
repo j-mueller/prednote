@@ -5,10 +5,26 @@ module Prednote.Core
   , predicate
 
   -- * Predicate combinators
+  -- ** Primitive combinators
+  --
+  -- | You might consider these combinators to be \"primitive\" in the
+  -- sense that you can build a 'Pred' for any user-defined type by
+  -- using these combinators alone, along with 'contramap'.  Use
+  -- '&&&', '|||', and 'contramap' to analyze product types.  Use 'switch'
+  -- and 'contramap' to analyze sum types.  For a simple example, see the
+  -- source code for 'maybe', which is a simple sum type.  For more
+  -- complicated examples, see the source code for 'any' and 'all', as
+  -- a list is a sum type where one of the summands is a (recursive!)
+  -- product type.
   , (&&&)
   , (|||)
   , not
   , switch
+
+  -- ** Convenience combinators
+  --
+  -- | These were written using entirely the \"primitive\" combinators
+  -- given above.
   , any
   , all
   , Nothing
@@ -28,6 +44,11 @@ module Prednote.Core
   , verboseTestStdout
 
   -- * Results and converting them to 'Chunk's
+  --
+  -- | Usually you will not need these functions and types, as the
+  -- functions and types above should meet most use cases; however,
+  -- these are here so the test suites can use them, and in case you
+  -- need them.
   , Condition(..)
   , Value(..)
   , Label(..)
@@ -51,38 +72,59 @@ import qualified Data.Text as X
 import Data.Text (Text)
 import Data.List (intersperse)
 
+-- | Describes the condition; for example, for a @'Pred' 'Int'@,
+-- this might be @is greater than 5@; for a @'Pred' 'String'@, this
+-- might be @begins with \"Hello\"@.
 newtype Condition = Condition [Chunk]
   deriving (Eq, Ord, Show)
 
+-- | Stores the representation of a value; created using @'X.pack' '.'
+-- 'show'@.
 newtype Value = Value Text
   deriving (Eq, Ord, Show)
 
+-- | Gives additional information about a particular 'Pred' to aid the
+-- user when viewing the output.
 newtype Label = Label Text
   deriving (Eq, Ord, Show)
 
+-- | Any type that is accompanied by a set of labels.
 data Labeled a = Labeled [Label] a
   deriving (Eq, Ord, Show)
 
 instance Functor Labeled where
   fmap f (Labeled l a) = Labeled l (f a)
 
+-- | A 'Pred' that returned 'True'
 data Passed
   = PTerminal Value Condition
+  -- ^ A 'Pred' created with 'predicate'
   | PAnd (Labeled Passed) (Labeled Passed)
+  -- ^ A 'Pred' created with '&&&'
   | POr (Either (Labeled Passed) (Labeled Failed, Labeled Passed))
+  -- ^ A 'Pred' created with '|||'
   | PNot (Labeled Failed)
+  -- ^ A 'Pred' created with 'not'
   deriving (Eq, Ord, Show)
 
+-- | A 'Pred' that returned 'False'
 data Failed
   = FTerminal Value Condition
+  -- ^ A 'Pred' created with 'predicate'
   | FAnd (Either (Labeled Failed) (Labeled Passed, Labeled Failed))
+  -- ^ A 'Pred' created with '&&&'
   | FOr (Labeled Failed) (Labeled Failed)
+  -- ^ A 'Pred' created with '|||'
   | FNot (Labeled Passed)
+  -- ^ A 'Pred' created with 'not'
   deriving (Eq, Ord, Show)
 
+
+-- | The result of processing a 'Pred'.
 newtype Result = Result (Labeled (Either Failed Passed))
   deriving (Eq, Ord, Show)
 
+-- | Returns whether this 'Result' failed or passed.
 splitResult
   :: Result
   -> Either (Labeled Failed) (Labeled Passed)
@@ -90,6 +132,10 @@ splitResult (Result (Labeled l ei)) = case ei of
   Left n -> Left (Labeled l n)
   Right g -> Right (Labeled l g)
 
+-- | Predicates.  Is an instance of 'Contravariant', which allows you
+-- to change the type using 'contramap'.  Though the constructor is
+-- exported, ordinarily you shouldn't need to use it; other functions
+-- in this module create 'Pred' and manipulate them as needed.
 newtype Pred a = Pred (a -> Result)
 
 instance Show (Pred a) where
@@ -98,10 +144,13 @@ instance Show (Pred a) where
 instance Contravariant Pred where
   contramap f (Pred g) = Pred (g . f)
 
+-- | Creates a new 'Pred'.  In @predicate cond f@, @cond@ describes
+-- the condition, while @f@ gives the predicate function.  For
+-- example, if @f@ is @(> 5)@, then @cond@ might be @"is greater than
+-- 5"@.
 predicate
   :: Show a
   => Text
-  -- ^ Condition
   -> (a -> Bool)
   -> Pred a
 predicate tCond p = Pred f
@@ -114,6 +163,9 @@ predicate tCond p = Pred f
         val = Value . X.pack . show $ a
 
 
+-- | And.  Returns 'True' if both argument 'Pred' return 'True'.  Is
+-- lazy in its second argment; if the first argument returns 'False',
+-- the second is ignored.
 (&&&) :: Pred a -> Pred a -> Pred a
 (Pred fL) &&& r = Pred f
   where
@@ -128,6 +180,9 @@ predicate tCond p = Pred f
 infixr 3 &&&
 
 
+-- | Or.  Returns 'True' if either argument 'Pred' returns 'True'.  Is
+-- lazy in its second argument; if the first argument returns 'True',
+-- the second argument is ignored.
 (|||) :: Pred a -> Pred a -> Pred a
 (Pred fL) ||| r = Pred f
   where
@@ -142,6 +197,7 @@ infixr 3 &&&
 infixr 2 |||
 
 
+-- | Negation.  Returns 'True' if the argument 'Pred' returns 'False'.
 not :: Pred a -> Pred a
 not (Pred f) = Pred g
   where
@@ -152,6 +208,10 @@ not (Pred f) = Pred g
           Right y -> Left (FNot y)
 
 
+-- | Uses the appropriate 'Pred' depending on the 'Either' value.  In
+-- @'test' ('switch' l r) e@, the resulting 'Pred' returns the result
+-- of @l@ if @e@ is 'Left' or the result of @r@ if @e@ is 'Right'.  Is
+-- lazy, so the the argument 'Pred' that is not used is ignored.
 switch
   :: Pred a
   -> Pred b
@@ -161,21 +221,30 @@ switch pa pb = Pred (either fa fb)
     Pred fa = pa
     Pred fb = pb
 
+-- | Did this 'Result' pass or fail?
 resultToBool :: Result -> Bool
 resultToBool (Result (Labeled _ ei))
   = either (const False) (const True) ei
 
 
+-- | Always returns 'True'
 true :: Show a => Pred a
 true = predicate "always returns True" (const True)
 
+-- | Always returns 'False'
 false :: Show a => Pred a
 false = predicate "always returns False" (const False)
 
+-- | Always returns its argument
 same :: Pred Bool
 same = predicate "is returned" id
 
 
+-- | Adds descriptive text to a 'Pred'.  Gives useful information for
+-- the user.  The label is added to the top 'Pred' in the tree; any
+-- existing labels are also retained.  Labels that were added last
+-- will be printed first.  For an example of this, see the source code
+-- for 'any' and 'all' or the source code for "Prednote.Comparisons".
 addLabel :: Text -> Pred a -> Pred a
 addLabel s (Pred f) = Pred f'
   where
@@ -184,11 +253,15 @@ addLabel s (Pred f) = Pred f'
         Result (Labeled ss ei) = f a
 
 
+-- | Represents the end of a list.
 data EndOfList = EndOfList
 
 instance Show EndOfList where
   show _ = ""
 
+-- | Like 'Prelude.any'; is 'True' if any of the list items are
+-- 'True'.  An empty list returns 'False'.  Is lazy; will stop
+-- processing if it encounters a 'True' item.
 any :: Pred a -> Pred [a]
 any pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
   where
@@ -200,6 +273,9 @@ any pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
       x:xs -> Left (x, xs)
     pEnd = addLabel "end of list" $ contramap (const EndOfList) false
 
+-- | Like 'Prelude.all'; is 'True' if none of the list items is
+-- 'False'.  An empty list returns 'True'.  Is lazy; will stop
+-- processing if it encouters a 'False' item.
 all :: Pred a -> Pred [a]
 all pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
   where
@@ -211,15 +287,18 @@ all pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
       [] -> Right EndOfList
     pEnd = addLabel "end of list" $ contramap (const EndOfList) true
 
+-- | Represents 'Prelude.Nothing' of 'Maybe'.
 data Nothing = CoreNothing
 
 instance Show Nothing where
   show _ = ""
 
+-- | Create a 'Pred' for 'Maybe'.
 maybe
   :: Pred Nothing
   -- ^ What to do on 'Nothing'.  Usually you wil use 'true' or 'false'.
   -> Pred a
+  -- ^ Analyzes 'Just' values.
   -> Pred (Maybe a)
 maybe emp pa = contramap f
   (switch (addLabel "Nothing" emp) (addLabel "Just value" pa))
@@ -238,10 +317,13 @@ explainOr = ["(or)"]
 explainNot :: [Chunk]
 explainNot = ["(not)"]
 
+-- | Runs a 'Pred' against a value.
 test :: Pred a -> a -> Bool
 test (Pred p) = either (const False) (const True)
   . splitResult . p
 
+-- | Runs a 'Pred' against a particular value; also returns a list of
+-- 'Chunk' describing the steps of evaulation.
 verboseTest :: Pred a -> a -> ([Chunk], Bool)
 verboseTest (Pred f) a = (cks, resultToBool rslt)
   where
@@ -249,6 +331,8 @@ verboseTest (Pred f) a = (cks, resultToBool rslt)
     cks = resultToChunks rslt
 
 
+-- | Like 'verboseTest', but results are printed to standard output.
+-- Primarily for use in debugging or in a REPL.
 verboseTestStdout :: Pred a -> a -> IO Bool
 verboseTestStdout p a = do
   let (cks, r) = verboseTest p a
@@ -305,12 +389,15 @@ explainTerminal :: Value -> Condition -> [Chunk]
 explainTerminal (Value v) (Condition c)
   = [fromText v] <+> c
 
+-- | Obtain a list of 'Chunk' describing the evaluation process.
 resultToChunks :: Result -> [Chunk]
 resultToChunks = either (failedToChunks 0) (passedToChunks 0)
   . splitResult
 
+-- | Obtain a list of 'Chunk' describing the evaluation process.
 passedToChunks
   :: Int
+  -- ^ Number of levels of indentation
   -> Labeled Passed
   -> [Chunk]
 passedToChunks i (Labeled l p) = this <> rest
@@ -329,8 +416,10 @@ passedToChunks i (Labeled l p) = this <> rest
             Right (n, y) -> nextFail n <> nextPass y
       PNot n -> (explainNot, nextFail n, (<+>))
 
+-- | Obtain a list of 'Chunk' describing the evaluation process.
 failedToChunks
   :: Int
+  -- ^ Number of levels of indentation
   -> Labeled Failed
   -> [Chunk]
 failedToChunks i (Labeled l p) = this <> rest
