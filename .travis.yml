@@ -21,4 +21,4 @@ script:
   - cabal build
   - dist/build/prednote-tests/prednote-tests
   - dist/build/prednote-visual-tests/prednote-visual-tests
-  - cabal register
+  - cabal install
