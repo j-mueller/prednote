@@ -5,7 +5,7 @@ ghc:
 
 before_install:
   - cabal update
-  - cabal install cartel quickpull packdeps
+  - cabal install 'cartel < 0.12' quickpull packdeps
   - sh generate
   - packdeps prednote.cabal
 
