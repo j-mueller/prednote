@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Prednote.Core
   ( -- * Predicates and their creation
-    Pred(..)
+    PredM(..)
+  , Pred
   , predicate
+  , predicateM
 
   -- * Predicate combinators
   -- ** Primitive combinators
@@ -40,6 +42,7 @@ module Prednote.Core
 
   -- * Evaluating predicates
   , test
+  , runPred
   , verboseTest
   , verboseTestStdout
 
@@ -71,6 +74,8 @@ import qualified System.IO as IO
 import qualified Data.Text as X
 import Data.Text (Text)
 import Data.List (intersperse)
+import Data.Functor.Identity
+import Control.Applicative
 
 -- | Describes the condition; for example, for a @'Pred' 'Int'@,
 -- this might be @is greater than 5@; for a @'Pred' 'String'@, this
@@ -135,75 +140,106 @@ splitResult (Result (Labeled l ei)) = case ei of
 -- | Predicates.  Is an instance of 'Contravariant', which allows you
 -- to change the type using 'contramap'.  Though the constructor is
 -- exported, ordinarily you shouldn't need to use it; other functions
--- in this module create 'Pred' and manipulate them as needed.
-newtype Pred a = Pred (a -> Result)
+-- in this module create 'PredM' and manipulate them as needed.
+--
+-- The @f@ type variable is an arbitrary context; ordinarily this type
+-- will be an instance of 'Monad', and some of the bindings in this
+-- module require this.  That allows you to run predicate computations
+-- that run in some sort of context, allowing you to perform IO,
+-- examine state, or whatever.  If you only want to do pure
+-- computations, just use the 'Pred' type synonym.
+newtype PredM f a = PredM { runPredM :: (a -> f Result) }
 
-instance Show (Pred a) where
+-- | Predicates that do not run in any context.
+type Pred = PredM Identity
+
+-- | Runs pure 'Pred' computations.
+runPred :: Pred a -> a -> Result
+runPred (PredM f) a = runIdentity $ f a
+
+instance Show (PredM f a) where
   show _ = "Pred"
 
-instance Contravariant Pred where
-  contramap f (Pred g) = Pred (g . f)
+instance Contravariant (PredM f) where
+  contramap f (PredM g) = PredM (g . f)
 
--- | Creates a new 'Pred'.  In @predicate cond f@, @cond@ describes
--- the condition, while @f@ gives the predicate function.  For
--- example, if @f@ is @(> 5)@, then @cond@ might be @"is greater than
--- 5"@.
+-- | Creates a new 'PredM' that run in some arbitrary context.  In
+-- @predicateM cond f@, @cond@ describes the condition, while @f@
+-- gives the predicate function.  For example, if @f@ is @(> 5)@, then
+-- @cond@ might be @"is greater than 5"@.
+predicateM
+  :: (Show a, Functor f)
+  => Text
+  -> (a -> f Bool)
+  -- ^ Predicate function; this is in an arbitrary context, allowing
+  -- you to perform IO, examine and change state, etc.  If you do not
+  -- need to use a context, see 'predicate'.
+  -> PredM f a
+predicateM tCond p = PredM f
+  where
+    f a = fmap mkResult $ p a
+      where
+        mkResult b = Result (Labeled [] r)
+          where
+            r | b = Right (PTerminal val cond)
+              | otherwise = Left (FTerminal val cond)
+            cond = Condition [fromText tCond]
+            val = Value . X.pack . show $ a
+
+-- | Creates a new 'Pred' that do not run in any context.  In
+-- @predicate cond f@, @cond@ describes the condition, while @f@ gives
+-- the predicate function.  For example, if @f@ is @(> 5)@, then
+-- @cond@ might be @"is greater than 5"@.
 predicate
   :: Show a
   => Text
   -> (a -> Bool)
   -> Pred a
-predicate tCond p = Pred f
-  where
-    f a = Result (Labeled [] r)
-      where
-        r | p a = Right (PTerminal val cond)
-          | otherwise = Left (FTerminal val cond)
-        cond = Condition [fromText tCond]
-        val = Value . X.pack . show $ a
-
+predicate lbl f = predicateM lbl (fmap return f)
 
 -- | And.  Returns 'True' if both argument 'Pred' return 'True'.  Is
 -- lazy in its second argment; if the first argument returns 'False',
 -- the second is ignored.
-(&&&) :: Pred a -> Pred a -> Pred a
-(Pred fL) &&& r = Pred f
-  where
-    f a = Result (Labeled [] rslt)
-      where
-        rslt = case splitResult $ fL a of
-          Left n -> Left (FAnd (Left n))
-          Right g -> case splitResult $ fR a of
-            Left b -> Left (FAnd (Right (g, b)))
-            Right g' -> Right (PAnd g g')
-        Pred fR = r
+(&&&) :: Monad m => PredM m a -> PredM m a -> PredM m a
+(PredM fL) &&& r = PredM $ \a -> do
+  resL <- fL a
+  ei <- case splitResult resL of
+    Left n -> return (Left (FAnd (Left n)))
+    Right g -> do
+      let PredM fR = r
+      resR <- fR a
+      return $ case splitResult resR of
+        Left b -> Left (FAnd (Right (g, b)))
+        Right g' -> Right (PAnd g g')
+  return (Result (Labeled [] ei))
+
 infixr 3 &&&
 
 
 -- | Or.  Returns 'True' if either argument 'Pred' returns 'True'.  Is
 -- lazy in its second argument; if the first argument returns 'True',
 -- the second argument is ignored.
-(|||) :: Pred a -> Pred a -> Pred a
-(Pred fL) ||| r = Pred f
-  where
-    Pred fR = r
-    f a = Result (Labeled [] rslt)
-      where
-        rslt = case splitResult $ fL a of
-          Left b -> case splitResult $ fR a of
-            Left b' -> Left $ FOr b b'
-            Right g -> Right $ POr (Right (b, g))
-          Right g -> Right $ POr (Left g)
+(|||) :: Monad m => PredM m a -> PredM m a -> PredM m a
+(PredM fL) ||| r = PredM $ \a -> do
+  resL <- fL a
+  ei <- case splitResult resL of
+    Left b -> do
+      let PredM fR = r
+      resR <- fR a
+      return $ case splitResult resR of
+        Left b' -> Left $ FOr b b'
+        Right g -> Right $ POr (Right (b, g))
+    Right g -> return (Right (POr (Left g)))
+  return (Result (Labeled [] ei))  
 infixr 2 |||
 
-
 -- | Negation.  Returns 'True' if the argument 'Pred' returns 'False'.
-not :: Pred a -> Pred a
-not (Pred f) = Pred g
+not :: Functor m => PredM m a -> PredM m a
+not (PredM f) = PredM $ \a -> fmap g (f a)
   where
     g a = Result (Labeled [] rslt)
       where
-        rslt = case splitResult $ f a of
+        rslt = case splitResult a of
           Left b -> Right (PNot b)
           Right y -> Left (FNot y)
 
@@ -213,13 +249,13 @@ not (Pred f) = Pred g
 -- of @l@ if @e@ is 'Left' or the result of @r@ if @e@ is 'Right'.  Is
 -- lazy, so the the argument 'Pred' that is not used is ignored.
 switch
-  :: Pred a
-  -> Pred b
-  -> Pred (Either a b)
-switch pa pb = Pred (either fa fb)
+  :: PredM m a
+  -> PredM m b
+  -> PredM m (Either a b)
+switch pa pb = PredM (either fa fb)
   where
-    Pred fa = pa
-    Pred fb = pb
+    PredM fa = pa
+    PredM fb = pb
 
 -- | Did this 'Result' pass or fail?
 resultToBool :: Result -> Bool
@@ -228,29 +264,28 @@ resultToBool (Result (Labeled _ ei))
 
 
 -- | Always returns 'True'
-true :: Show a => Pred a
-true = predicate "always returns True" (const True)
+true :: (Show a, Applicative f) => PredM f a
+true = predicateM "always returns True" (const (pure True))
 
 -- | Always returns 'False'
-false :: Show a => Pred a
-false = predicate "always returns False" (const False)
+false :: (Show a, Applicative f) => PredM f a
+false = predicateM "always returns False" (const (pure False))
 
 -- | Always returns its argument
-same :: Pred Bool
-same = predicate "is returned" id
-
+same :: Applicative f => PredM f Bool
+same = predicateM "is returned" (pure . id)
 
 -- | Adds descriptive text to a 'Pred'.  Gives useful information for
 -- the user.  The label is added to the top 'Pred' in the tree; any
 -- existing labels are also retained.  Labels that were added last
 -- will be printed first.  For an example of this, see the source code
 -- for 'any' and 'all'.
-addLabel :: Text -> Pred a -> Pred a
-addLabel s (Pred f) = Pred f'
+addLabel :: Functor f => Text -> PredM f a -> PredM f a
+addLabel s (PredM f) = PredM f'
   where
-    f' a = Result (Labeled (Label s : ss) ei)
+    f' a = fmap g (f a)
       where
-        Result (Labeled ss ei) = f a
+        g (Result (Labeled ss ei)) = Result (Labeled (Label s : ss) ei)
 
 
 -- | Represents the end of a list.
@@ -262,7 +297,7 @@ instance Show EndOfList where
 -- | Like 'Prelude.any'; is 'True' if any of the list items are
 -- 'True'.  An empty list returns 'False'.  Is lazy; will stop
 -- processing if it encounters a 'True' item.
-any :: Pred a -> Pred [a]
+any :: (Functor m, Monad m, Applicative m) => PredM m a -> PredM m [a]
 any pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
   where
     pConsCell =
@@ -276,7 +311,7 @@ any pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
 -- | Like 'Prelude.all'; is 'True' if none of the list items is
 -- 'False'.  An empty list returns 'True'.  Is lazy; will stop
 -- processing if it encouters a 'False' item.
-all :: Pred a -> Pred [a]
+all :: (Functor m, Monad m, Applicative m) => PredM m a -> PredM m [a]
 all pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
   where
     pConsCell =
@@ -295,11 +330,12 @@ instance Show Nothing where
 
 -- | Create a 'Pred' for 'Maybe'.
 maybe
-  :: Pred Nothing
+  :: Functor m
+  => PredM m Nothing
   -- ^ What to do on 'Nothing'.  Usually you wil use 'true' or 'false'.
-  -> Pred a
+  -> PredM m a
   -- ^ Analyzes 'Just' values.
-  -> Pred (Maybe a)
+  -> PredM m (Maybe a)
 maybe emp pa = contramap f
   (switch (addLabel "Nothing" emp) (addLabel "Just value" pa))
   where
@@ -318,27 +354,25 @@ explainNot :: [Chunk]
 explainNot = ["(not)"]
 
 -- | Runs a 'Pred' against a value.
-test :: Pred a -> a -> Bool
-test (Pred p) = either (const False) (const True)
-  . splitResult . p
+test :: Functor f => PredM f a -> a -> f Bool
+test (PredM p) = fmap (either (const False) (const True))
+  . fmap splitResult . p
 
 -- | Runs a 'Pred' against a particular value; also returns a list of
 -- 'Chunk' describing the steps of evaulation.
-verboseTest :: Pred a -> a -> ([Chunk], Bool)
-verboseTest (Pred f) a = (cks, resultToBool rslt)
+verboseTestM :: Functor f => PredM f a -> a -> f ([Chunk], Bool)
+verboseTestM (PredM f) a = fmap g (f a)
   where
-    rslt = f a
-    cks = resultToChunks rslt
+    g rslt = (resultToChunks rslt, resultToBool rslt)
+
+verboseTest :: Pred a -> a -> ([Chunk], Bool)
+verboseTest p a = runIdentity $ verboseTestM p a
 
 
--- | Like 'verboseTest', but results are printed to standard output.
--- Primarily for use in debugging or in a REPL.
-verboseTestStdout :: Pred a -> a -> IO Bool
-verboseTestStdout p a = do
-  let (cks, r) = verboseTest p a
-  t <- smartTermFromEnv IO.stdout
-  putChunks t cks
-  return r
+-- | Obtain a list of 'Chunk' describing the evaluation process.
+resultToChunks :: Result -> [Chunk]
+resultToChunks = either (failedToChunks 0) (passedToChunks 0)
+  . splitResult
 
 -- | A colorful label for 'True' values.
 lblTrue :: [Chunk]
@@ -390,11 +424,6 @@ explainTerminal (Value v) (Condition c)
   = [fromText v] <+> c
 
 -- | Obtain a list of 'Chunk' describing the evaluation process.
-resultToChunks :: Result -> [Chunk]
-resultToChunks = either (failedToChunks 0) (passedToChunks 0)
-  . splitResult
-
--- | Obtain a list of 'Chunk' describing the evaluation process.
 passedToChunks
   :: Int
   -- ^ Number of levels of indentation
@@ -437,3 +466,13 @@ failedToChunks i (Labeled l p) = this <> rest
             Right (y, n) -> nextPass y <> nextFail n
       FOr n1 n2 -> (explainOr, nextFail n1 <> nextFail n2, (<+>))
       FNot y -> (explainNot, nextPass y, (<+>))
+
+-- | Like 'verboseTest', but results are printed to standard output.
+-- Primarily for use in debugging or in a REPL.
+verboseTestStdout :: Pred a -> a -> IO Bool
+verboseTestStdout p a = do
+  let (cks, r) = verboseTest p a
+  t <- smartTermFromEnv IO.stdout
+  putChunks t cks
+  return r
+

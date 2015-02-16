@@ -1,81 +1,50 @@
 -- Generates the Cabal file for prednote.
--- Written to use version 0.10.0.2 of the Cartel
+-- Written to use version 0.14.2.0 of the Cartel
 -- library.
 
 module Main where
 
-import qualified Cartel as C
+import Cartel
+import Control.Applicative
 
-versionInts :: [Int]
-versionInts = [0,28,0,2]
+versionInts :: [Word]
+versionInts = [0,30,0,0]
 
-base :: C.Package
-base = C.closedOpen "base" [4,5,0,0] [5]
+base :: Package
+base = closedOpen "base" [4,5,0,0] [5]
 
-rainbowLower :: [Int]
-rainbowLower = [0,20,0,4]
+rainbow :: Package
+rainbow = closedOpen "rainbow" [0,20,0,4] [0,21]
 
-rainbowUpper :: [Int]
-rainbowUpper = [0,21]
+text :: Package
+text = closedOpen "text" [0,11,2,0] [1,3]
 
-rainbow :: C.Package
-rainbow = C.closedOpen "rainbow" rainbowLower rainbowUpper
+containers :: Package
+containers = closedOpen "containers" [0,4,2,1] [0,6]
 
-rainbow_tests :: C.Package
-rainbow_tests = C.closedOpen "rainbow-tests" rainbowLower rainbowUpper
+barecheck :: Package
+barecheck = closedOpen "barecheck" [0,2,0,0] [0,3]
 
-text :: C.Package
-text = C.closedOpen "text" [0,11,2,0] [1,3]
+quickcheck :: Package
+quickcheck = closedOpen "QuickCheck" [2,5] [2,8]
 
-containers :: C.Package
-containers = C.closedOpen "containers" [0,4,2,1] [0,6]
-
-barecheck :: C.Package
-barecheck = C.closedOpen "barecheck" [0,2,0,0] [0,3]
-
-quickcheck :: C.Package
-quickcheck = C.closedOpen "QuickCheck" [2,5] [2,8]
-
-commonProperties :: C.Properties
-commonProperties = C.empty
-  { C.prVersion = C.Version versionInts
-  , C.prLicenseFile = "LICENSE"
-  , C.prCopyright = "Copyright 2013-2015 Omari Norman"
-  , C.prAuthor = "Omari Norman"
-  , C.prMaintainer = "omari@smileystation.com"
-  , C.prStability = "Experimental"
-  , C.prHomepage = "http://www.github.com/massysett/prednote"
-  , C.prBugReports = "http://www.github.com/massysett/prednote/issues"
-  , C.prCategory = "Data"
-  , C.prSynopsis = "Evaluate and display trees of predicates"
-  }
-
-repo :: C.Repository
-repo = C.empty
-  { C.repoVcs = C.Git
-  , C.repoKind = C.Head
-  , C.repoLocation = "git://github.com/massysett/prednote.git"
-  , C.repoBranch = "master"
-  }
-
-ghcOptions :: [String]
-ghcOptions = ["-Wall"]
-
--- Dependencies
-
-split :: C.Package
-split = C.closedOpen "split" [0,2,2] [0,3]
-
-quickpull :: C.Package
-quickpull = C.closedOpen "quickpull" [0,4] [0,5]
-
-contravariant :: C.Package
-contravariant = C.closedOpen "contravariant" [1,2] [1,3]
-
-properties :: C.Properties
-properties = commonProperties
-  { C.prName = "prednote"
-  , C.prDescription =
+properties :: Properties
+properties = blank
+  { name = "prednote"
+  , version = versionInts
+  , cabalVersion = Just (1,14)
+  , buildType = Just simple
+  , license = Just bsd3
+  , licenseFile = "LICENSE"
+  , copyright = "Copyright 2013-2015 Omari Norman"
+  , author = "Omari Norman"
+  , maintainer = "omari@smileystation.com"
+  , stability = "Experimental"
+  , homepage = "http://www.github.com/massysett/prednote"
+  , bugReports = "http://www.github.com/massysett/prednote/issues"
+  , category = "Data"
+  , synopsis = "Evaluate and display trees of predicates"
+  , description =
     [ "Build and evaluate trees of predicates. For example, you might build"
     , "a predicate of the type Int -> Bool. You do this by assembling"
     , "several predicates into a tree. You can then verbosely evaluate"
@@ -85,16 +54,34 @@ properties = commonProperties
     , "given predicate, and to parse infix or RPN expressions into a tree of"
     , "predicates."
     ]
-  , C.prTestedWith = map (\ls -> (C.GHC, C.eq ls))
+  , testedWith = map (\ls -> (ghc, eq ls))
     [ [7,6,3], [7,8,2] ]
-  , C.prExtraSourceFiles =
+  , extraSourceFiles =
     [ "README.md"
     , "changelog"
     , "genCabal.hs"
     ]
+
   }
 
-libDepends :: [C.Package]
+ghcOpts :: [String]
+ghcOpts = ["-Wall"]
+
+-- Dependencies
+
+split :: Package
+split = closedOpen "split" [0,2,2] [0,3]
+
+quickpull :: Package
+quickpull = closedOpen "quickpull" [0,4] [0,5]
+
+contravariant :: Package
+contravariant = closedOpen "contravariant" [1,2] [1,3]
+
+transformers :: Package
+transformers = closedOpen "transformers" [0,3,0,0] [0,5]
+
+libDepends :: [Package]
 libDepends =
   [ base
   , rainbow
@@ -102,87 +89,75 @@ libDepends =
   , text
   , containers
   , contravariant
+  , transformers
   ]
 
 library
   :: [String]
   -- ^ Library modules
-  -> C.Library
-library ms = C.Library
-  [ C.LibExposedModules ms
-  , C.buildDepends libDepends
-  , C.hsSourceDirs ["lib"]
-  , C.ghcOptions ghcOptions
-  , C.defaultLanguage C.Haskell2010
+  -> [LibraryField]
+library ms =
+  [ exposedModules ms
+  , buildDepends libDepends
+  , hsSourceDirs ["lib"]
+  , ghcOptions ghcOpts
+  , haskell2010
   ]
 
 tests
-  :: [String]
+  :: FlagName
+  -- ^ Visual-tests flag
+  -> [String]
   -- ^ Library modules
   -> [String]
   -- ^ Test modules
-  -> (C.TestSuite, C.Executable)
-tests ls ts =
-  ( C.TestSuite "prednote-tests" $
+  -> (Section, Section)
+  -- ^ The prednote-tests test suite, and the prednote-visual-tests
+  -- executable
+tests fl ls ts =
+  ( testSuite "prednote-tests" $
     commonTestOpts ls ts ++
-    [ C.TestMainIs "prednote-tests.hs"
-    , C.TestType C.ExitcodeStdio
+    [ mainIs "prednote-tests.hs"
+    , exitcodeStdio
     ]
-  , C.Executable "prednote-visual-tests" $
-    [ C.ExeMainIs "prednote-visual-tests.hs"
-    , C.cif (C.flag "visual-tests")
-       ( commonTestOpts ls ts ++
-        [ C.buildable True
-        ]
-       )
-      [ C.buildable False
+  , executable "prednote-visual-tests" $
+    [ mainIs "prednote-visual-tests.hs"
+    , condBlock (flag fl)
+       ( buildable True, commonTestOpts ls ts)
+      [ buildable False
       ]
     ]
   )
 
 commonTestOpts
-  :: C.Field a
+  :: HasBuildInfo a
   => [String]
   -- ^ Library modules
   -> [String]
   -- ^ Test modules
   -> [a]
 commonTestOpts ls ts =
-  [ C.hsSourceDirs ["lib", "tests"]
-  , C.otherModules (ls ++ ts)
-  , C.ghcOptions ghcOptions
-  , C.defaultLanguage C.Haskell2010
-  , C.buildDepends $ quickcheck : quickpull : libDepends
+  [ hsSourceDirs ["lib", "tests"]
+  , otherModules (ls ++ ts)
+  , ghcOptions ghcOpts
+  , haskell2010
+  , buildDepends $ quickcheck : quickpull : libDepends
   ]
 
-visualTests :: C.Flag
-visualTests = C.Flag
-  { C.flName = "visual-tests"
-  , C.flDescription = "Build the prednote-visual-tests executable"
-  , C.flDefault = False
-  , C.flManual = True
+visualTests :: Applicative m => Betsy m FlagName
+visualTests = makeFlag "visual-tests" $ FlagOpts
+  { flagDescription = "Build the prednote-visual-tests executable"
+  , flagDefault = False
+  , flagManual = True
   }
 
-
-cabal
-  :: [String]
-  -- ^ Modules for library
-  -> [String]
-  -- ^ Modules for tests
-  -> C.Cabal
-cabal ls ts = C.empty
-  { C.cProperties = properties
-  , C.cRepositories = [repo]
-  , C.cLibrary = Just $ library ls
-  , C.cTestSuites = [testSuite]
-  , C.cExecutables = [executable]
-  , C.cFlags = [visualTests]
-  }
-  where
-    (testSuite, executable) = tests ls ts
 
 main :: IO ()
-main = do
-  libMods <- C.modules "lib"
-  testMods <- C.modules "tests"
-  C.render "genCabal.hs" $ cabal libMods testMods
+main = defaultMain $ do
+  fl <- visualTests
+  libMods <- modules "lib"
+  testMods <- modules "tests"
+  let (tsts, vis) = tests fl libMods testMods
+      lib = library libMods
+      repo = githubHead "massysett" "prednote"
+  return (properties, lib, [tsts, vis])
