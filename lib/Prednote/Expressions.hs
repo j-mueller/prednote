@@ -23,32 +23,32 @@ import qualified Prelude
 import Prelude hiding (maybe)
 
 -- | A single type for both RPN tokens and infix tokens.
-newtype Token a = Token { unToken :: I.InfixToken a }
+newtype Token m a = Token { unToken :: I.InfixToken m a }
 
 type Error = X.Text
 
 -- | Creates Operands from 'Pred'.
-operand :: Pred a -> Token a
+operand :: PredM m a -> Token m a
 operand p = Token (I.TokRPN (R.TokOperand p))
 
 -- | The And operator
-opAnd :: Token a
+opAnd :: Token m a
 opAnd = Token (I.TokRPN (R.TokOperator R.OpAnd))
 
 -- | The Or operator
-opOr :: Token a
+opOr :: Token m a
 opOr = Token (I.TokRPN (R.TokOperator R.OpOr))
 
 -- | The Not operator
-opNot :: Token a
+opNot :: Token m a
 opNot = Token (I.TokRPN (R.TokOperator R.OpNot))
 
 -- | Open parentheses
-openParen :: Token a
+openParen :: Token m a
 openParen = Token (I.TokParen I.Open)
 
 -- | Close parentheses
-closeParen :: Token a
+closeParen :: Token m a
 closeParen = Token (I.TokParen I.Close)
 
 -- | Is this an infix or RPN expression?
@@ -57,7 +57,7 @@ data ExprDesc
   | RPN
   deriving (Eq, Show)
 
-toksToRPN :: [Token a] -> Maybe [R.RPNToken a]
+toksToRPN :: [Token m a] -> Maybe [R.RPNToken m a]
 toksToRPN toks
   = let toEither t = case unToken t of
           I.TokRPN tok -> Right tok
@@ -71,9 +71,10 @@ toksToRPN toks
 -- RPN expression, or multiple stack values remaining.) Works by first
 -- changing infix expressions to RPN ones.
 parseExpression
-  :: ExprDesc
-  -> [Token a]
-  -> Either Error (Pred a)
+  :: (Functor m, Monad m)
+  => ExprDesc
+  -> [Token m a]
+  -> Either Error (PredM m a)
 parseExpression e toks = do
   rpnToks <- case e of
     Infix -> Prelude.maybe (Left "unbalanced parentheses\n") Right

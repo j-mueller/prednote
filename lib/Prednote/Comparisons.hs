@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Prednote.Comparisons
-  ( compareBy
+  ( -- * Comparisions that do not run in a context
+    compareBy
   , compare
   , equalBy
   , equal
@@ -15,6 +16,18 @@ module Prednote.Comparisons
   , greaterEqBy
   , lessEqBy
   , notEqBy
+
+  -- * Comparisions that run in a context
+  , compareByM
+  , equalByM
+  , compareByMaybeM
+  , greaterByM
+  , lessByM
+  , greaterEqByM
+  , lessEqByM
+  , notEqByM
+
+  -- * Parsing comparers
   , parseComparer
   ) where
 
@@ -24,6 +37,35 @@ import qualified Prelude
 import Data.Monoid
 import qualified Data.Text as X
 import Data.Text (Text)
+
+-- | Build a Pred that compares items.  The idea is that the item on
+-- the right hand side is baked into the 'Pred' and that the 'Pred'
+-- compares this single right-hand side to each left-hand side item.
+compareByM
+  :: (Show a, Functor f)
+  => Text
+  -- ^ Description of the right-hand side
+
+  -> (a -> f Ordering)
+  -- ^ How to compare the left-hand side to the right-hand side.
+  -- Return LT if the item is less than the right hand side; GT if
+  -- greater; EQ if equal to the right hand side.
+
+  -> Ordering
+  -- ^ When subjects are compared, this ordering must be the result in
+  -- order for the Predbox to be True; otherwise it is False. The subject
+  -- will be on the left hand side.
+
+  -> PredM f a
+
+compareByM rhsDesc get ord = predicateM cond pd
+  where
+    cond = "is" <+> ordDesc <+> rhsDesc
+    ordDesc = case ord of
+      EQ -> "equal to"
+      LT -> "less than"
+      GT -> "greater than"
+    pd a = fmap (== ord) (get a)
 
 -- | Build a Pred that compares items.  The idea is that the item on
 -- the right hand side is baked into the 'Pred' and that the 'Pred'
@@ -45,14 +87,7 @@ compareBy
 
   -> Pred a
 
-compareBy rhsDesc get ord = predicate cond pd
-  where
-    cond = "is" <+> ordDesc <+> rhsDesc
-    ordDesc = case ord of
-      EQ -> "equal to"
-      LT -> "less than"
-      GT -> "greater than"
-    pd a = get a == ord
+compareBy rhsDesc get ord = compareByM rhsDesc (fmap return get) ord
 
 -- | Overloaded version of 'compareBy'.
 
@@ -72,6 +107,23 @@ compare rhs ord =
 
 -- | Builds a 'Pred' that tests items for equality.
 
+equalByM
+  :: (Show a, Functor f)
+
+  => Text
+  -- ^ Description of the right-hand side
+
+  -> (a -> f Bool)
+  -- ^ How to compare an item against the right hand side.  Return
+  -- 'True' if the items are equal; 'False' otherwise.
+
+  -> PredM f a
+equalByM rhsDesc = predicateM cond
+  where
+    cond = "is equal to" <+> rhsDesc
+
+-- | Builds a 'Pred' that tests items for equality.
+
 equalBy
   :: Show a
 
@@ -83,9 +135,7 @@ equalBy
   -- 'True' if the items are equal; 'False' otherwise.
 
   -> Pred a
-equalBy rhsDesc = predicate cond
-  where
-    cond = "is equal to" <+> rhsDesc
+equalBy rhsDesc f = equalByM rhsDesc (fmap return f)
 
 -- | Overloaded version of 'equalBy'.
 
@@ -96,6 +146,38 @@ equal
 
   -> Pred a
 equal rhs = equalBy (X.pack . show $ rhs) (== rhs)
+
+
+-- | Builds a 'Pred' for items that might fail to return a comparison.
+compareByMaybeM
+  :: (Functor f, Show a)
+  => Text
+  -- ^ Description of the right-hand side
+
+  -> (a -> f (Maybe Ordering))
+  -- ^ How to compare an item against the right hand side. Return LT if
+  -- the item is less than the right hand side; GT if greater; EQ if
+  -- equal to the right hand side.
+
+  -> Ordering
+  -- ^ When subjects are compared, this ordering must be the result in
+  -- order for the Predbox to be True; otherwise it is False. The subject
+  -- will be on the left hand side.
+
+  -> PredM f a
+
+compareByMaybeM rhsDesc get ord = predicateM cond pd
+  where
+    cond = "is" <+> ordDesc <+> rhsDesc
+    ordDesc = case ord of
+      EQ -> "equal to"
+      LT -> "less than"
+      GT -> "greater than"
+    pd a = fmap f (get a)
+      where
+        f x = case x of
+          Nothing -> False
+          Just o -> o == ord
 
 
 -- | Builds a 'Pred' for items that might fail to return a comparison.
@@ -116,16 +198,7 @@ compareByMaybe
 
   -> Pred a
 
-compareByMaybe rhsDesc get ord = predicate cond pd
-  where
-    cond = "is" <+> ordDesc <+> rhsDesc
-    ordDesc = case ord of
-      EQ -> "equal to"
-      LT -> "less than"
-      GT -> "greater than"
-    pd a = case get a of
-      Nothing -> False
-      Just o -> o == ord
+compareByMaybe rhsDesc get ord = compareByMaybeM rhsDesc (fmap return get) ord
 
 greater
   :: (Show a, Ord a)
@@ -169,6 +242,19 @@ notEq
   -> Pred a
 notEq = not . equal
 
+greaterByM
+  :: (Show a, Functor f)
+  => Text
+  -- ^ Description of right-hand side
+
+  -> (a -> f Ordering)
+  -- ^ How to compare an item against the right hand side. Return LT
+  -- if the item is less than the right hand side; GT if greater; EQ
+  -- if equal to the right hand side.
+
+  -> PredM f a
+greaterByM desc get = compareByM desc get GT
+
 greaterBy
   :: Show a
   => Text
@@ -180,8 +266,21 @@ greaterBy
   -- if equal to the right hand side.
 
   -> Pred a
-greaterBy desc get = compareBy desc get GT
+greaterBy desc get = greaterByM desc (fmap return get)
 
+
+lessByM
+  :: (Show a, Functor f)
+  => Text
+  -- ^ Description of right-hand side
+
+  -> (a -> f Ordering)
+  -- ^ How to compare an item against the right hand side. Return LT
+  -- if the item is less than the right hand side; GT if greater; EQ
+  -- if equal to the right hand side.
+
+  -> PredM f a
+lessByM desc get = compareByM desc get LT
 
 lessBy
   :: Show a
@@ -194,7 +293,22 @@ lessBy
   -- if equal to the right hand side.
 
   -> Pred a
-lessBy desc get = compareBy desc get LT
+lessBy desc get = lessByM desc (fmap return get)
+
+greaterEqByM
+  :: (Functor f, Monad f, Show a)
+  => Text
+  -- ^ Description of right-hand side
+
+  -> (a -> f Ordering)
+  -- ^ How to compare an item against the right hand side. Return LT
+  -- if the item is less than the right hand side; GT if greater; EQ
+  -- if equal to the right hand side.
+
+  -> PredM f a
+greaterEqByM desc get = greaterByM desc get ||| equalByM desc f'
+  where
+    f' = fmap (fmap (== EQ)) get
 
 greaterEqBy
   :: Show a
@@ -207,9 +321,22 @@ greaterEqBy
   -- if equal to the right hand side.
 
   -> Pred a
-greaterEqBy desc get = greaterBy desc get ||| equalBy desc f'
+greaterEqBy desc get = greaterEqByM desc (fmap return get)
+
+lessEqByM
+  :: (Functor f, Monad f, Show a)
+  => Text
+  -- ^ Description of right-hand side
+
+  -> (a -> f Ordering)
+  -- ^ How to compare an item against the right hand side. Return LT
+  -- if the item is less than the right hand side; GT if greater; EQ
+  -- if equal to the right hand side.
+
+  -> PredM f a
+lessEqByM desc get = lessByM desc get ||| equalByM desc f'
   where
-    f' = fmap (== EQ) get
+    f' = fmap (fmap (== EQ)) get
 
 lessEqBy
   :: Show a
@@ -222,9 +349,19 @@ lessEqBy
   -- if equal to the right hand side.
 
   -> Pred a
-lessEqBy desc get = lessBy desc get ||| equalBy desc f'
-  where
-    f' = fmap (== EQ) get
+lessEqBy desc get = lessEqByM desc (fmap return get)
+
+notEqByM
+  :: (Functor f, Show a)
+  => Text
+  -- ^ Description of right-hand side
+
+  -> (a -> f Bool)
+  -- ^ How to compare an item against the right hand side.  Return
+  -- 'True' if equal; 'False' otherwise.
+
+  -> PredM f a
+notEqByM desc = not . equalByM desc
 
 notEqBy
   :: Show a
@@ -236,21 +373,21 @@ notEqBy
   -- 'True' if equal; 'False' otherwise.
 
   -> Pred a
-notEqBy desc = not . equalBy desc
-
+notEqBy desc f = notEqByM desc (fmap return f)
 
 -- | Parses a string that contains text, such as @>=@, which indicates
 -- which comparer to use.  Returns the comparer.
 parseComparer
-  :: Text
+  :: (Monad f, Functor f)
+  => Text
   -- ^ The string with the comparer to be parsed
 
-  -> (Ordering -> Pred a)
+  -> (Ordering -> PredM f a)
   -- ^ A function that, when given an ordering, returns a 'Pred'.
   -- Typically you will get this by partial application of 'compare',
   -- 'compareBy', or 'compareByMaybe'.
 
-  -> Maybe (Pred a)
+  -> Maybe (PredM f a)
   -- ^ If an invalid comparer string is given, Nothing; otherwise, the
   -- 'Pred'.
 parseComparer t f

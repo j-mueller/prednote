@@ -7,15 +7,14 @@
 module Prednote.Expressions.RPN where
 
 import qualified Data.Foldable as Fdbl
-import Prednote.Core (Pred)
 import qualified Prednote.Core as P
-import Prednote.Core ((&&&), (|||))
+import Prednote.Core ((&&&), (|||), PredM)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as X
 
-data RPNToken a
-  = TokOperand (Pred a)
+data RPNToken f a
+  = TokOperand (PredM f a)
   | TokOperator Operator
 
 data Operator
@@ -24,13 +23,14 @@ data Operator
   | OpNot
   deriving Show
 
-pushOperand :: Pred a -> [Pred a] -> [Pred a]
+pushOperand :: PredM f a -> [PredM f a] -> [PredM f a]
 pushOperand p ts = p : ts
 
 pushOperator
-  :: Operator
-  -> [Pred a]
-  -> Either Text [Pred a]
+  :: (Monad m, Functor m)
+  => Operator
+  -> [PredM m a]
+  -> Either Text [PredM m a]
 pushOperator o ts = case o of
   OpAnd -> case ts of
     x:y:zs -> return $ (y &&& x) : zs
@@ -46,9 +46,10 @@ pushOperator o ts = case o of
             <> "\" operator\n"
 
 pushToken
-  :: [Pred a]
-  -> RPNToken a
-  -> Either Text [Pred a]
+  :: (Functor f, Monad f)
+  => [PredM f a]
+  -> RPNToken f a
+  -> Either Text [PredM f a]
 pushToken ts t = case t of
   TokOperand p -> return $ pushOperand p ts
   TokOperator o -> pushOperator o ts
@@ -60,9 +61,10 @@ pushToken ts t = case t of
 -- operands left on the stack; the stack must contain exactly one
 -- operand in order to succeed.
 parseRPN
-  :: Fdbl.Foldable f
-  => f (RPNToken a)
-  -> Either Text (Pred a)
+  :: (Functor m, Monad m)
+  => Fdbl.Foldable f
+  => f (RPNToken m a)
+  -> Either Text (PredM m a)
 parseRPN ts = do
   trees <- Fdbl.foldlM pushToken [] ts
   case trees of
