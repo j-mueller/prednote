@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Prednote.Core.Instances where
 
@@ -5,12 +6,13 @@ import Rainbow.Types.Instances ()
 import Test.QuickCheck hiding (Result)
 import Control.Monad
 import Prednote.Core
+import qualified Data.Text as X
 
-instance CoArbitrary a => Arbitrary (Pred a) where
-  arbitrary = fmap Pred arbitrary
-
-instance Arbitrary a => CoArbitrary (Pred a) where
-  coarbitrary (Pred f) = coarbitrary f
+instance (CoArbitrary a, Show a) => Arbitrary (Pred a) where
+  arbitrary = do
+    txt <- fmap X.pack arbitrary
+    fn <- arbitrary
+    return $ predicate txt fn
 
 instance Arbitrary Condition where
   arbitrary = fmap Condition arbitrary

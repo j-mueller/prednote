@@ -42,6 +42,7 @@ module Prednote.Core
 
   -- * Evaluating predicates
   , test
+  , testM
   , runPred
   , verboseTest
   , verboseTestStdout
@@ -354,9 +355,14 @@ explainNot :: [Chunk]
 explainNot = ["(not)"]
 
 -- | Runs a 'Pred' against a value.
-test :: Functor f => PredM f a -> a -> f Bool
-test (PredM p) = fmap (either (const False) (const True))
+testM :: Functor f => PredM f a -> a -> f Bool
+testM (PredM p) = fmap (either (const False) (const True))
   . fmap splitResult . p
+
+-- | Runs a 'Pred' against a value, without a context.
+test :: Pred a -> a -> Bool
+test p a = runIdentity $ testM p a
+
 
 -- | Runs a 'Pred' against a particular value; also returns a list of
 -- 'Chunk' describing the steps of evaulation.
