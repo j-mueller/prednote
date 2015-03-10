@@ -76,7 +76,7 @@ quickpull :: Package
 quickpull = closedOpen "quickpull" [0,4] [0,5]
 
 contravariant :: Package
-contravariant = closedOpen "contravariant" [1,2] [1,3]
+contravariant = closedOpen "contravariant" [1,2] [1,4]
 
 transformers :: Package
 transformers = closedOpen "transformers" [0,3,0,0] [0,5]
