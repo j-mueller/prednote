@@ -5,6 +5,7 @@ module Prednote.Core
   , Pred
   , predicate
   , predicateM
+  , contramapM
 
   -- * Predicate combinators
   -- ** Primitive combinators
@@ -29,7 +30,6 @@ module Prednote.Core
   -- given above.
   , any
   , all
-  , Nothing
   , maybe
 
   -- * Labeling
@@ -73,10 +73,18 @@ import Prelude hiding (all, any, maybe, and, or, not)
 import qualified Prelude
 import qualified System.IO as IO
 import qualified Data.Text as X
-import Data.Text (Text)
 import Data.List (intersperse)
 import Data.Functor.Identity
 import Control.Applicative
+
+-- | Like 'contramap' but allows the mapping function to run in a
+-- monad.
+contramapM
+  :: Monad m
+  => (a -> m b)
+  -> PredM m b
+  -> PredM m a
+contramapM conv (PredM f) = PredM $ \a -> conv a >>= f
 
 -- | Describes the condition; for example, for a @'Pred' 'Int'@,
 -- this might be @is greater than 5@; for a @'Pred' 'String'@, this
@@ -84,15 +92,26 @@ import Control.Applicative
 newtype Condition = Condition [Chunk]
   deriving (Eq, Ord, Show)
 
--- | Stores the representation of a value; created using @'X.pack' '.'
--- 'show'@.
-newtype Value = Value Text
+instance Monoid Condition where
+  mempty = Condition []
+  mappend (Condition x) (Condition y) = Condition (x ++ y)
+
+-- | Stores the representation of a value.
+newtype Value = Value [Chunk]
   deriving (Eq, Ord, Show)
+
+instance Monoid Value where
+  mempty = Value []
+  mappend (Value x) (Value y) = Value (x ++ y)
 
 -- | Gives additional information about a particular 'Pred' to aid the
 -- user when viewing the output.
-newtype Label = Label Text
+newtype Label = Label [Chunk]
   deriving (Eq, Ord, Show)
+
+instance Monoid Label where
+  mempty = Label []
+  mappend (Label x) (Label y) = Label (x ++ y)
 
 -- | Any type that is accompanied by a set of labels.
 data Labeled a = Labeled [Label] a
@@ -169,34 +188,26 @@ instance Contravariant (PredM f) where
 -- gives the predicate function.  For example, if @f@ is @(> 5)@, then
 -- @cond@ might be @"is greater than 5"@.
 predicateM
-  :: (Show a, Functor f)
-  => Text
-  -> (a -> f Bool)
-  -- ^ Predicate function; this is in an arbitrary context, allowing
-  -- you to perform IO, examine and change state, etc.  If you do not
-  -- need to use a context, see 'predicate'.
+  :: Functor f
+  => (a -> f (Bool, Value, Condition))
   -> PredM f a
-predicateM tCond p = PredM f
+predicateM f = PredM f'
   where
-    f a = fmap mkResult $ p a
+    f' a = fmap mkResult $ f a
       where
-        mkResult b = Result (Labeled [] r)
+        mkResult (b, val, cond) = Result (Labeled [] r)
           where
             r | b = Right (PTerminal val cond)
               | otherwise = Left (FTerminal val cond)
-            cond = Condition [fromText tCond]
-            val = Value . X.pack . show $ a
 
 -- | Creates a new 'Pred' that do not run in any context.  In
 -- @predicate cond f@, @cond@ describes the condition, while @f@ gives
 -- the predicate function.  For example, if @f@ is @(> 5)@, then
 -- @cond@ might be @"is greater than 5"@.
 predicate
-  :: Show a
-  => Text
-  -> (a -> Bool)
+  :: (a -> (Bool, Value, Condition))
   -> Pred a
-predicate lbl f = predicateM lbl (fmap return f)
+predicate f = predicateM (fmap return f)
 
 -- | And.  Returns 'True' if both argument 'Pred' return 'True'.  Is
 -- lazy in its second argment; if the first argument returns 'False',
@@ -265,23 +276,29 @@ resultToBool (Result (Labeled _ ei))
 
 
 -- | Always returns 'True'
-true :: (Show a, Applicative f) => PredM f a
-true = predicateM "always returns True" (const (pure True))
+true :: Applicative f => PredM f a
+true = predicateM (const (pure trip))
+  where
+    trip = (True, mempty, Condition ["always returns True"])
 
 -- | Always returns 'False'
-false :: (Show a, Applicative f) => PredM f a
-false = predicateM "always returns False" (const (pure False))
+false :: Applicative f => PredM f a
+false = predicateM (const (pure trip))
+  where
+    trip = (False, mempty, Condition ["always returns False"])
 
 -- | Always returns its argument
 same :: Applicative f => PredM f Bool
-same = predicateM "is returned" (pure . id)
+same = predicateM
+  (\b -> pure (b, (Value [(fromText . X.pack . show $ b)]),
+                  Condition ["is returned"]))
 
 -- | Adds descriptive text to a 'Pred'.  Gives useful information for
 -- the user.  The label is added to the top 'Pred' in the tree; any
 -- existing labels are also retained.  Labels that were added last
 -- will be printed first.  For an example of this, see the source code
 -- for 'any' and 'all'.
-addLabel :: Functor f => Text -> PredM f a -> PredM f a
+addLabel :: Functor f => [Chunk] -> PredM f a -> PredM f a
 addLabel s (PredM f) = PredM f'
   where
     f' a = fmap g (f a)
@@ -289,59 +306,55 @@ addLabel s (PredM f) = PredM f'
         g (Result (Labeled ss ei)) = Result (Labeled (Label s : ss) ei)
 
 
--- | Represents the end of a list.
-data EndOfList = EndOfList
-
-instance Show EndOfList where
-  show _ = ""
-
 -- | Like 'Prelude.any'; is 'True' if any of the list items are
 -- 'True'.  An empty list returns 'False'.  Is lazy; will stop
 -- processing if it encounters a 'True' item.
-any :: (Functor m, Monad m, Applicative m) => PredM m a -> PredM m [a]
-any pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
+any :: (Monad m, Applicative m) => PredM m a -> PredM m [a]
+any pa = contramap f (switch (addLabel ["cons cell"] pConsCell) pEnd)
   where
     pConsCell =
-      contramap fst (addLabel "head" pa)
-      ||| contramap snd (addLabel "tail" (any pa))
+      contramap fst (addLabel ["head"] pa)
+      ||| contramap snd (addLabel ["tail"] (any pa))
     f ls = case ls of
-      [] -> Right EndOfList
+      [] -> Right ()
       x:xs -> Left (x, xs)
-    pEnd = addLabel "end of list" $ contramap (const EndOfList) false
+    pEnd = predicateM (const (pure (False, Value ["end of list"],
+                                    Condition ["always returns False"])))
 
 -- | Like 'Prelude.all'; is 'True' if none of the list items is
 -- 'False'.  An empty list returns 'True'.  Is lazy; will stop
 -- processing if it encouters a 'False' item.
-all :: (Functor m, Monad m, Applicative m) => PredM m a -> PredM m [a]
-all pa = contramap f (switch (addLabel "cons cell" pConsCell) pEnd)
+all :: (Monad m, Applicative m) => PredM m a -> PredM m [a]
+all pa = contramap f (switch (addLabel ["cons cell"] pConsCell) pEnd)
   where
     pConsCell =
-      contramap fst (addLabel "head" pa)
-      &&& contramap snd (addLabel "tail" (all pa))
+      contramap fst (addLabel ["head"] pa)
+      &&& contramap snd (addLabel ["tail"] (all pa))
     f ls = case ls of
       x:xs -> Left (x, xs)
-      [] -> Right EndOfList
-    pEnd = addLabel "end of list" $ contramap (const EndOfList) true
+      [] -> Right ()
+    pEnd = predicateM (const (pure (True, Value ["end of list"],
+                                    Condition ["always returns True"])))
 
--- | Represents 'Prelude.Nothing' of 'Maybe'.
-data Nothing = CoreNothing
-
-instance Show Nothing where
-  show _ = ""
 
 -- | Create a 'Pred' for 'Maybe'.
 maybe
-  :: Functor m
-  => PredM m Nothing
-  -- ^ What to do on 'Nothing'.  Usually you wil use 'true' or 'false'.
+  :: Applicative m
+  => Bool
+  -- ^ What to return on 'Nothing'
   -> PredM m a
-  -- ^ Analyzes 'Just' values.
+  -- ^ Analyzes 'Just' values
   -> PredM m (Maybe a)
-maybe emp pa = contramap f
-  (switch (addLabel "Nothing" emp) (addLabel "Just value" pa))
+maybe onEmp pa = contramap f
+  (switch emp (addLabel ["Just value"] pa))
   where
+    emp | onEmp = predicateM (const
+            (pure (True, noth, Condition ["always returns True"])))
+        | otherwise = predicateM (const
+            (pure (False, noth, Condition ["always returns False"])))
+    noth = Value ["Nothing"]
     f may = case may of
-      Nothing -> Left CoreNothing
+      Nothing -> Left ()
       Just a -> Right a
 
 
@@ -423,11 +436,11 @@ newline :: [Chunk]
 newline = ["\n"]
 
 labelToChunks :: Label -> [Chunk]
-labelToChunks (Label txt) = [fromText txt]
+labelToChunks (Label cks) = cks
 
 explainTerminal :: Value -> Condition -> [Chunk]
 explainTerminal (Value v) (Condition c)
-  = [fromText v] <+> c
+  = v ++ (" " : c)
 
 -- | Obtain a list of 'Chunk' describing the evaluation process.
 passedToChunks

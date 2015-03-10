@@ -8,7 +8,7 @@ import Cartel
 import Control.Applicative
 
 versionInts :: [Word]
-versionInts = [0,30,0,0]
+versionInts = [0,32,0,0]
 
 base :: Package
 base = closedOpen "base" [4,5,0,0] [5]

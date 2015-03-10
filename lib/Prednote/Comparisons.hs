@@ -37,6 +37,8 @@ import qualified Prelude
 import Data.Monoid
 import qualified Data.Text as X
 import Data.Text (Text)
+import Data.String
+import Rainbow
 
 -- | Build a Pred that compares items.  The idea is that the item on
 -- the right hand side is baked into the 'Pred' and that the 'Pred'
@@ -58,14 +60,20 @@ compareByM
 
   -> PredM f a
 
-compareByM rhsDesc get ord = predicateM cond pd
+compareByM rhsDesc get tgt = predicateM f
   where
-    cond = "is" <+> ordDesc <+> rhsDesc
-    ordDesc = case ord of
-      EQ -> "equal to"
-      LT -> "less than"
-      GT -> "greater than"
-    pd a = fmap (== ord) (get a)
+    f a = fmap mkTup (get a)
+      where
+        mkTup ord = (bl, val, cond)
+          where
+            val = Value [fromString . show $ a]
+            cond = Condition [fromText condTxt]
+            condTxt = "is" <+> ordDesc <+> rhsDesc
+            ordDesc = case ord of
+              EQ -> "equal to"
+              LT -> "less than"
+              GT -> "greater than"
+            bl = ord == tgt
 
 -- | Build a Pred that compares items.  The idea is that the item on
 -- the right hand side is baked into the 'Pred' and that the 'Pred'
@@ -118,9 +126,12 @@ equalByM
   -- 'True' if the items are equal; 'False' otherwise.
 
   -> PredM f a
-equalByM rhsDesc = predicateM cond
+equalByM rhsDesc get = predicateM f
   where
-    cond = "is equal to" <+> rhsDesc
+    f a = fmap mkTup (get a)
+      where
+        mkTup bl = (bl, Value [fromString . show $ a],
+          Condition [fromText $ "is equal to" <+> rhsDesc])
 
 -- | Builds a 'Pred' that tests items for equality.
 
@@ -166,18 +177,21 @@ compareByMaybeM
 
   -> PredM f a
 
-compareByMaybeM rhsDesc get ord = predicateM cond pd
+compareByMaybeM rhsDesc get ord = predicateM f
   where
-    cond = "is" <+> ordDesc <+> rhsDesc
-    ordDesc = case ord of
-      EQ -> "equal to"
-      LT -> "less than"
-      GT -> "greater than"
-    pd a = fmap f (get a)
+    f a = fmap mkTup (get a)
       where
-        f x = case x of
-          Nothing -> False
-          Just o -> o == ord
+        mkTup mayOrd = (bl, val, cond)
+          where
+            val = Value [fromString . show $ a]
+            cond = Condition [fromText $ "is" <+> ordDesc <+> rhsDesc]
+            ordDesc = case ord of
+              EQ -> "equal to"
+              LT -> "less than"
+              GT -> "greater than"
+            bl = case mayOrd of
+              Nothing -> False
+              Just o -> o == ord
 
 
 -- | Builds a 'Pred' for items that might fail to return a comparison.

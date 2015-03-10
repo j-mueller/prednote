@@ -11,34 +11,31 @@ import qualified Prelude
 testInt :: Pred Int -> Int -> Bool
 testInt = test
 
-prop_predicateIsLazyInArguments (Fun _ f) i
-  = testInt (predicate undefined f) i || True
-
-prop_predicateIsSameAsOriginal (Fun _ f) i
-  = testInt (predicate undefined f) i == f i
-
 prop_andIsLazyInSecondArgument i
   = testInt (false &&& undefined) i || True
 
 prop_orIsLazyInSecondArgument i
   = testInt (true ||| undefined) i || True
 
+fst3 :: (a, b, c) -> a
+fst3 (a, _, _) = a
+
 prop_andIsLikePreludeAnd (Fun _ f1) (Fun _ f2) i
-  = testInt (p1 &&& p2) i == (f1 i && f2 i)
+  = testInt (p1 &&& p2) i == (fst3 (f1 i) && fst3 (f2 i))
   where
-    p1 = predicate undefined f1
-    p2 = predicate undefined f2
+    p1 = predicate f1
+    p2 = predicate f2
 
 prop_orIsLikePreludeOr (Fun _ f1) (Fun _ f2) i
-  = testInt (p1 ||| p2) i == (f1 i || f2 i)
+  = testInt (p1 ||| p2) i == (fst3 (f1 i) || fst3 (f2 i))
   where
-    p1 = predicate undefined f1
-    p2 = predicate undefined f2
+    p1 = predicate f1
+    p2 = predicate f2
 
 prop_notIsLikePreludeNot (Fun _ f1) i
-  = testInt (not p1) i == Prelude.not (f1 i)
+  = testInt (not p1) i == Prelude.not (fst3 (f1 i))
   where
-    p1 = predicate undefined f1
+    p1 = predicate f1
 
 prop_switchIsLazyInFirstArgument pb i
   = test (switch undefined pb) (Right i) || True
@@ -55,10 +52,10 @@ prop_switch (Fun _ fa) (Fun _ fb) ei
   where
     _types = ei :: Either Int Char
     expected = case ei of
-      Left i -> fa i
-      Right c -> fb c
-    pa = predicate undefined fa
-    pb = predicate undefined fb
+      Left i -> fst3 (fa i)
+      Right c -> fst3 (fb c)
+    pa = predicate fa
+    pb = predicate fb
     
 prop_true = testInt true
 
@@ -67,14 +64,14 @@ prop_false = Prelude.not . testInt false
 prop_same b = test same b == b
 
 prop_any (Fun _ f) ls
-  = test (any pa) ls == Prelude.any f ls
+  = test (any pa) ls == Prelude.any (fmap fst3 f) ls
   where
-    pa = predicate undefined f
+    pa = predicate f
     _types = ls :: [Int]
     
 prop_all (Fun _ f) ls
-  = test (all pa) ls == Prelude.all f ls
+  = test (all pa) ls == Prelude.all (fmap fst3 f) ls
   where
-    pa = predicate undefined f
+    pa = predicate f
     _types = ls :: [Int]
     

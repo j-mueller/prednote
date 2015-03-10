@@ -6,13 +6,9 @@ import Rainbow.Types.Instances ()
 import Test.QuickCheck hiding (Result)
 import Control.Monad
 import Prednote.Core
-import qualified Data.Text as X
 
 instance (CoArbitrary a, Show a) => Arbitrary (Pred a) where
-  arbitrary = do
-    txt <- fmap X.pack arbitrary
-    fn <- arbitrary
-    return $ predicate txt fn
+  arbitrary = fmap predicate arbitrary
 
 instance Arbitrary Condition where
   arbitrary = fmap Condition arbitrary
