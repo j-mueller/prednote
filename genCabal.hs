@@ -8,7 +8,7 @@ import Cartel
 import Control.Applicative
 
 versionInts :: [Word]
-versionInts = [0,32,0,0]
+versionInts = [0,32,0,2]
 
 base :: Package
 base = closedOpen "base" [4,5,0,0] [5]
@@ -26,7 +26,7 @@ barecheck :: Package
 barecheck = closedOpen "barecheck" [0,2,0,0] [0,3]
 
 quickcheck :: Package
-quickcheck = closedOpen "QuickCheck" [2,5] [2,8]
+quickcheck = closedOpen "QuickCheck" [2,5] [2,9]
 
 properties :: Properties
 properties = blank
