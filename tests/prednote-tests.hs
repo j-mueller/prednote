@@ -1,8 +1,10 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 module Main where
 
-import Quickpull
-import Decrees
+import Test.Tasty
+import qualified Prednote.Core.Properties
 
 main :: IO ()
-main = defaultMain decrees
+main = defaultMain $ testGroup "all tests"
+  [ Prednote.Core.Properties.tests
+  ]

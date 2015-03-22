@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Prednote.Core.Properties where
 
@@ -7,6 +8,12 @@ import Prednote.Core
 import Test.QuickCheck.Function
 import Prelude hiding (not, any, all)
 import qualified Prelude
+import Test.Tasty
+import Test.Tasty.QuickCheck
+import Test.Tasty.TH
+
+tests :: TestTree
+tests = $(testGroupGenerator)
 
 testInt :: Pred Int -> Int -> Bool
 testInt = test

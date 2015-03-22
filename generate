@@ -1,4 +1,3 @@
 #!/bin/sh
 
-quickpull tests > tests/Decrees.hs
 runghc genCabal.hs > prednote.cabal
