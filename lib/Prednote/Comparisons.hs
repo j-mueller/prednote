@@ -36,7 +36,6 @@ import Prelude hiding (compare, not)
 import qualified Prelude
 import Data.Monoid
 import qualified Data.Text as X
-import Data.Text (Text)
 import Data.String
 import Rainbow
 
@@ -67,7 +66,7 @@ compareByM rhsDesc get tgt = predicateM f
         mkTup ord = (bl, val, cond)
           where
             val = Value [fromString . show $ a]
-            cond = Condition [fromText condTxt]
+            cond = Condition [chunkFromText condTxt]
             condTxt = "is" <+> ordDesc <+> rhsDesc
             ordDesc = case ord of
               EQ -> "equal to"
@@ -131,7 +130,7 @@ equalByM rhsDesc get = predicateM f
     f a = fmap mkTup (get a)
       where
         mkTup bl = (bl, Value [fromString . show $ a],
-          Condition [fromText $ "is equal to" <+> rhsDesc])
+          Condition [chunkFromText $ "is equal to" <+> rhsDesc])
 
 -- | Builds a 'Pred' that tests items for equality.
 
@@ -184,7 +183,7 @@ compareByMaybeM rhsDesc get ord = predicateM f
         mkTup mayOrd = (bl, val, cond)
           where
             val = Value [fromString . show $ a]
-            cond = Condition [fromText $ "is" <+> ordDesc <+> rhsDesc]
+            cond = Condition [chunkFromText $ "is" <+> ordDesc <+> rhsDesc]
             ordDesc = case ord of
               EQ -> "equal to"
               LT -> "less than"

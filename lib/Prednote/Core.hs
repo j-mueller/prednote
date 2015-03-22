@@ -67,15 +67,16 @@ module Prednote.Core
   ) where
 
 import Rainbow
+import Rainbow.Types
 import Data.Monoid
 import Data.Functor.Contravariant
 import Prelude hiding (all, any, maybe, and, or, not)
 import qualified Prelude
-import qualified System.IO as IO
 import qualified Data.Text as X
 import Data.List (intersperse)
 import Data.Functor.Identity
 import Control.Applicative
+import qualified Data.ByteString as BS
 
 -- | Like 'contramap' but allows the mapping function to run in a
 -- monad.
@@ -290,7 +291,7 @@ false = predicateM (const (pure trip))
 -- | Always returns its argument
 same :: Applicative f => PredM f Bool
 same = predicateM
-  (\b -> pure (b, (Value [(fromText . X.pack . show $ b)]),
+  (\b -> pure (b, (Value [(chunkFromText . X.pack . show $ b)]),
                   Condition ["is returned"]))
 
 -- | Adds descriptive text to a 'Pred'.  Gives useful information for
@@ -423,13 +424,13 @@ hyphen :: [Chunk]
 hyphen = [" - "]
 
 chunksNull :: [Chunk] -> Bool
-chunksNull = Prelude.all $ Prelude.all X.null . text
+chunksNull = Prelude.all $ Prelude.all X.null . chunkTexts
 
 indentAmt :: Int
 indentAmt = 2
 
 spaces :: Int -> [Chunk]
-spaces i = (:[]) . fromText . X.replicate (i * indentAmt)
+spaces i = (:[]) . chunkFromText . X.replicate (i * indentAmt)
   . X.singleton $ ' '
 
 newline :: [Chunk]
@@ -491,7 +492,7 @@ failedToChunks i (Labeled l p) = this <> rest
 verboseTestStdout :: Pred a -> a -> IO Bool
 verboseTestStdout p a = do
   let (cks, r) = verboseTest p a
-  t <- smartTermFromEnv IO.stdout
-  putChunks t cks
+  mkr <- byteStringMakerFromEnvironment
+  mapM_ BS.putStr . chunksToByteStrings mkr $ cks
   return r
 

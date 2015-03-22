@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Prednote.Core.Instances where
 
-import Rainbow.Types.Instances ()
+import Rainbow.Instances ()
 import Test.QuickCheck hiding (Result)
 import Control.Monad
 import Prednote.Core

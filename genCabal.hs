@@ -8,13 +8,13 @@ import Cartel
 import Control.Applicative
 
 versionInts :: [Word]
-versionInts = [0,32,0,2]
+versionInts = [0,32,0,4]
 
 base :: Package
 base = closedOpen "base" [4,5,0,0] [5]
 
 rainbow :: Package
-rainbow = closedOpen "rainbow" [0,20,0,4] [0,21]
+rainbow = nextBreaking "rainbow" [0,22]
 
 text :: Package
 text = closedOpen "text" [0,11,2,0] [1,3]
@@ -26,7 +26,10 @@ barecheck :: Package
 barecheck = closedOpen "barecheck" [0,2,0,0] [0,3]
 
 quickcheck :: Package
-quickcheck = closedOpen "QuickCheck" [2,5] [2,9]
+quickcheck = closedOpen "QuickCheck" [2,7] [2,9]
+
+bytestring :: Package
+bytestring = nextBreaking "bytestring" [0,10]
 
 properties :: Properties
 properties = blank
@@ -90,6 +93,7 @@ libDepends =
   , containers
   , contravariant
   , transformers
+  , bytestring
   ]
 
 library
