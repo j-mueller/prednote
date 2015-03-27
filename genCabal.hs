@@ -160,6 +160,8 @@ visualTests = makeFlag "visual-tests" $ FlagOpts
   , flagManual = True
   }
 
+github :: Section
+github = githubHead "massysett" "prednote"
 
 main :: IO ()
 main = defaultMain $ do
@@ -169,4 +171,4 @@ main = defaultMain $ do
   let (tsts, vis) = tests fl libMods testMods
       lib = library libMods
       repo = githubHead "massysett" "prednote"
-  return (properties, lib, [tsts, vis])
+  return (properties, lib, [tsts, vis, github])
