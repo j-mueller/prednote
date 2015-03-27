@@ -8,10 +8,10 @@ import Cartel
 import Control.Applicative
 
 versionInts :: [Word]
-versionInts = [0,32,0,4]
+versionInts = [0,32,0,6]
 
 base :: Package
-base = closedOpen "base" [4,5,0,0] [5]
+base = closedOpen "base" [4,7] [4,9]
 
 rainbow :: Package
 rainbow = nextBreaking "rainbow" [0,22]
@@ -41,7 +41,7 @@ properties :: Properties
 properties = blank
   { name = "prednote"
   , version = versionInts
-  , cabalVersion = Just (1,14)
+  , cabalVersion = Just (1,18)
   , buildType = Just simple
   , license = Just bsd3
   , licenseFile = "LICENSE"
@@ -64,7 +64,7 @@ properties = blank
     , "predicates."
     ]
   , testedWith = map (\ls -> (ghc, eq ls))
-    [ [7,6,3], [7,8,2] ]
+    [ [7,8,3], [7,10,1] ]
   , extraSourceFiles =
     [ "README.md"
     , "changelog"
@@ -80,9 +80,6 @@ ghcOpts = ["-Wall"]
 
 split :: Package
 split = closedOpen "split" [0,2,2] [0,3]
-
-quickpull :: Package
-quickpull = closedOpen "quickpull" [0,4] [0,5]
 
 contravariant :: Package
 contravariant = closedOpen "contravariant" [1,2] [1,4]
