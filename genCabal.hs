@@ -8,13 +8,13 @@ import Cartel
 import Control.Applicative
 
 versionInts :: [Word]
-versionInts = [0,32,0,6]
+versionInts = [0,34,0,0]
 
 base :: Package
 base = closedOpen "base" [4,7] [4,9]
 
 rainbow :: Package
-rainbow = nextBreaking "rainbow" [0,22]
+rainbow = nextBreaking "rainbow" [0,24]
 
 text :: Package
 text = closedOpen "text" [0,11,2,0] [1,3]
@@ -127,13 +127,10 @@ tests fl ls ts =
     [ mainIs "prednote-tests.hs"
     , exitcodeStdio
     ]
-  , executable "prednote-visual-tests" $
+  , testSuite "prednote-visual-tests" $
     [ mainIs "prednote-visual-tests.hs"
-    , condBlock (flag fl)
-       ( buildable True, commonTestOpts ls ts)
-      [ buildable False
-      ]
-    ]
+    , exitcodeStdio
+    ] ++ commonTestOpts ls ts
   )
 
 commonTestOpts

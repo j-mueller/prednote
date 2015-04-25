@@ -67,11 +67,12 @@ module Prednote.Core
   ) where
 
 import Rainbow
-import Rainbow.Types
+import Rainbow.Types (_yarn)
 import Data.Monoid
 import Data.Functor.Contravariant
 import Prelude hiding (all, any, maybe, and, or, not)
 import qualified Prelude
+import Data.Text (Text)
 import qualified Data.Text as X
 import Data.List (intersperse)
 import Data.Functor.Identity
@@ -90,7 +91,7 @@ contramapM conv (PredM f) = PredM $ \a -> conv a >>= f
 -- | Describes the condition; for example, for a @'Pred' 'Int'@,
 -- this might be @is greater than 5@; for a @'Pred' 'String'@, this
 -- might be @begins with \"Hello\"@.
-newtype Condition = Condition [Chunk]
+newtype Condition = Condition [Chunk Text]
   deriving (Eq, Ord, Show)
 
 instance Monoid Condition where
@@ -98,7 +99,7 @@ instance Monoid Condition where
   mappend (Condition x) (Condition y) = Condition (x ++ y)
 
 -- | Stores the representation of a value.
-newtype Value = Value [Chunk]
+newtype Value = Value [Chunk Text]
   deriving (Eq, Ord, Show)
 
 instance Monoid Value where
@@ -107,7 +108,7 @@ instance Monoid Value where
 
 -- | Gives additional information about a particular 'Pred' to aid the
 -- user when viewing the output.
-newtype Label = Label [Chunk]
+newtype Label = Label [Chunk Text]
   deriving (Eq, Ord, Show)
 
 instance Monoid Label where
@@ -280,26 +281,26 @@ resultToBool (Result (Labeled _ ei))
 true :: Applicative f => PredM f a
 true = predicateM (const (pure trip))
   where
-    trip = (True, mempty, Condition ["always returns True"])
+    trip = (True, mempty, Condition [chunk "always returns True"])
 
 -- | Always returns 'False'
 false :: Applicative f => PredM f a
 false = predicateM (const (pure trip))
   where
-    trip = (False, mempty, Condition ["always returns False"])
+    trip = (False, mempty, Condition [chunk "always returns False"])
 
 -- | Always returns its argument
 same :: Applicative f => PredM f Bool
 same = predicateM
-  (\b -> pure (b, (Value [(chunkFromText . X.pack . show $ b)]),
-                  Condition ["is returned"]))
+  (\b -> pure (b, (Value [(chunk . X.pack . show $ b)]),
+                  Condition [chunk "is returned"]))
 
 -- | Adds descriptive text to a 'Pred'.  Gives useful information for
 -- the user.  The label is added to the top 'Pred' in the tree; any
 -- existing labels are also retained.  Labels that were added last
 -- will be printed first.  For an example of this, see the source code
 -- for 'any' and 'all'.
-addLabel :: Functor f => [Chunk] -> PredM f a -> PredM f a
+addLabel :: Functor f => [Chunk Text] -> PredM f a -> PredM f a
 addLabel s (PredM f) = PredM f'
   where
     f' a = fmap g (f a)
@@ -311,31 +312,31 @@ addLabel s (PredM f) = PredM f'
 -- 'True'.  An empty list returns 'False'.  Is lazy; will stop
 -- processing if it encounters a 'True' item.
 any :: (Monad m, Applicative m) => PredM m a -> PredM m [a]
-any pa = contramap f (switch (addLabel ["cons cell"] pConsCell) pEnd)
+any pa = contramap f (switch (addLabel [chunk "cons cell"] pConsCell) pEnd)
   where
     pConsCell =
-      contramap fst (addLabel ["head"] pa)
-      ||| contramap snd (addLabel ["tail"] (any pa))
+      contramap fst (addLabel [chunk "head"] pa)
+      ||| contramap snd (addLabel [chunk "tail"] (any pa))
     f ls = case ls of
       [] -> Right ()
       x:xs -> Left (x, xs)
-    pEnd = predicateM (const (pure (False, Value ["end of list"],
-                                    Condition ["always returns False"])))
+    pEnd = predicateM (const (pure (False, Value [chunk "end of list"],
+                                    Condition [chunk "always returns False"])))
 
 -- | Like 'Prelude.all'; is 'True' if none of the list items is
 -- 'False'.  An empty list returns 'True'.  Is lazy; will stop
 -- processing if it encouters a 'False' item.
 all :: (Monad m, Applicative m) => PredM m a -> PredM m [a]
-all pa = contramap f (switch (addLabel ["cons cell"] pConsCell) pEnd)
+all pa = contramap f (switch (addLabel [chunk "cons cell"] pConsCell) pEnd)
   where
     pConsCell =
-      contramap fst (addLabel ["head"] pa)
-      &&& contramap snd (addLabel ["tail"] (all pa))
+      contramap fst (addLabel [chunk "head"] pa)
+      &&& contramap snd (addLabel [chunk "tail"] (all pa))
     f ls = case ls of
       x:xs -> Left (x, xs)
       [] -> Right ()
-    pEnd = predicateM (const (pure (True, Value ["end of list"],
-                                    Condition ["always returns True"])))
+    pEnd = predicateM (const (pure (True, Value [chunk "end of list"],
+                                    Condition [chunk "always returns True"])))
 
 
 -- | Create a 'Pred' for 'Maybe'.
@@ -347,26 +348,26 @@ maybe
   -- ^ Analyzes 'Just' values
   -> PredM m (Maybe a)
 maybe onEmp pa = contramap f
-  (switch emp (addLabel ["Just value"] pa))
+  (switch emp (addLabel [chunk "Just value"] pa))
   where
     emp | onEmp = predicateM (const
-            (pure (True, noth, Condition ["always returns True"])))
+            (pure (True, noth, Condition [chunk "always returns True"])))
         | otherwise = predicateM (const
-            (pure (False, noth, Condition ["always returns False"])))
-    noth = Value ["Nothing"]
+            (pure (False, noth, Condition [chunk "always returns False"])))
+    noth = Value [chunk "Nothing"]
     f may = case may of
       Nothing -> Left ()
       Just a -> Right a
 
 
-explainAnd :: [Chunk]
-explainAnd = ["(and)"]
+explainAnd :: [Chunk Text]
+explainAnd = [chunk "(and)"]
 
-explainOr :: [Chunk]
-explainOr = ["(or)"]
+explainOr :: [Chunk Text]
+explainOr = [chunk "(or)"]
 
-explainNot :: [Chunk]
-explainNot = ["(not)"]
+explainNot :: [Chunk Text]
+explainNot = [chunk "(not)"]
 
 -- | Runs a 'Pred' against a value.
 testM :: Functor f => PredM f a -> a -> f Bool
@@ -380,75 +381,72 @@ test p a = runIdentity $ testM p a
 
 -- | Runs a 'Pred' against a particular value; also returns a list of
 -- 'Chunk' describing the steps of evaulation.
-verboseTestM :: Functor f => PredM f a -> a -> f ([Chunk], Bool)
+verboseTestM :: Functor f => PredM f a -> a -> f ([Chunk Text], Bool)
 verboseTestM (PredM f) a = fmap g (f a)
   where
     g rslt = (resultToChunks rslt, resultToBool rslt)
 
-verboseTest :: Pred a -> a -> ([Chunk], Bool)
+verboseTest :: Pred a -> a -> ([Chunk Text], Bool)
 verboseTest p a = runIdentity $ verboseTestM p a
 
 
 -- | Obtain a list of 'Chunk' describing the evaluation process.
-resultToChunks :: Result -> [Chunk]
+resultToChunks :: Result -> [Chunk Text]
 resultToChunks = either (failedToChunks 0) (passedToChunks 0)
   . splitResult
 
 -- | A colorful label for 'True' values.
-lblTrue :: [Chunk]
-lblTrue = ["[", fore green <> "TRUE", "]"]
+lblTrue :: [Chunk Text]
+lblTrue = [chunk "[", chunk "TRUE" & fore green, chunk "]"]
 
 -- | A colorful label for 'False' values.
-lblFalse :: [Chunk]
-lblFalse = ["[", fore red <> "FALSE", "]"]
+lblFalse :: [Chunk Text]
+lblFalse = [chunk "[", chunk "FALSE" & fore red, chunk "]"]
 
 -- | Append two lists of 'Chunk', with an intervening space if both
 -- lists are not empty.
-(<+>) :: [Chunk] -> [Chunk] -> [Chunk]
+(<+>) :: [Chunk Text] -> [Chunk Text] -> [Chunk Text]
 l <+> r
-  | full l && full r = l <> [" "] <> r
+  | full l && full r = l <> [chunk " "] <> r
   | otherwise = l <> r
   where
-    full = Prelude.not . chunksNull
+    full = Prelude.any (Prelude.not . X.null) . map _yarn
 
 -- | Append two lists of 'Chunk', with an intervening hyphen if both
 -- lists have text.
-(<->) :: [Chunk] -> [Chunk] -> [Chunk]
+(<->) :: [Chunk Text] -> [Chunk Text] -> [Chunk Text]
 l <-> r
   | full l && full r = l <> hyphen <> r
   | otherwise = l <> r
   where
-    full = Prelude.not . chunksNull
+    full = Prelude.any (Prelude.not . X.null) . map _yarn
 
-hyphen :: [Chunk]
-hyphen = [" - "]
-
-chunksNull :: [Chunk] -> Bool
-chunksNull = Prelude.all $ Prelude.all X.null . chunkTexts
+hyphen :: [Chunk Text]
+hyphen = [chunk " - "]
 
 indentAmt :: Int
 indentAmt = 2
 
-spaces :: Int -> [Chunk]
-spaces i = (:[]) . chunkFromText . X.replicate (i * indentAmt)
+spaces :: Int -> [Chunk Text]
+spaces i = (:[]) . chunk . X.replicate (i * indentAmt)
   . X.singleton $ ' '
 
-newline :: [Chunk]
-newline = ["\n"]
+newline :: [Chunk Text]
+newline = [chunk "\n"]
 
-labelToChunks :: Label -> [Chunk]
+labelToChunks :: Label -> [Chunk Text]
 labelToChunks (Label cks) = cks
 
-explainTerminal :: Value -> Condition -> [Chunk]
+explainTerminal :: Value -> Condition -> [Chunk Text]
 explainTerminal (Value v) (Condition c)
-  = v ++ (" " : c)
+  = v ++ (chunk " " : c)
 
 -- | Obtain a list of 'Chunk' describing the evaluation process.
 passedToChunks
   :: Int
   -- ^ Number of levels of indentation
   -> Labeled Passed
-  -> [Chunk]
+  -> [Chunk Text]
 passedToChunks i (Labeled l p) = this <> rest
   where
     this = spaces i <> (lblTrue <+> (labels `sep` explain)) <> newline
@@ -470,7 +468,7 @@ failedToChunks
   :: Int
   -- ^ Number of levels of indentation
   -> Labeled Failed
-  -> [Chunk]
+  -> [Chunk Text]
 failedToChunks i (Labeled l p) = this <> rest
   where
     this = spaces i <> (lblFalse <+> (labels `sep` explain)) <> newline

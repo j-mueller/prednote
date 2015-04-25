@@ -35,8 +35,8 @@ import Prednote.Core
 import Prelude hiding (compare, not)
 import qualified Prelude
 import Data.Monoid
+import Data.Text (Text)
 import qualified Data.Text as X
-import Data.String
 import Rainbow
 
 -- | Build a Pred that compares items.  The idea is that the item on
@@ -65,8 +65,8 @@ compareByM rhsDesc get tgt = predicateM f
       where
         mkTup ord = (bl, val, cond)
           where
-            val = Value [fromString . show $ a]
-            cond = Condition [chunkFromText condTxt]
+            val = Value [chunk . X.pack . show $ a]
+            cond = Condition [chunk condTxt]
             condTxt = "is" <+> ordDesc <+> rhsDesc
             ordDesc = case ord of
               EQ -> "equal to"
@@ -129,8 +129,8 @@ equalByM rhsDesc get = predicateM f
   where
     f a = fmap mkTup (get a)
       where
-        mkTup bl = (bl, Value [fromString . show $ a],
-          Condition [chunkFromText $ "is equal to" <+> rhsDesc])
+        mkTup bl = (bl, Value [chunk . X.pack . show $ a],
+          Condition [chunk $ "is equal to" <+> rhsDesc])
 
 -- | Builds a 'Pred' that tests items for equality.
 
@@ -182,8 +182,8 @@ compareByMaybeM rhsDesc get ord = predicateM f
       where
         mkTup mayOrd = (bl, val, cond)
           where
-            val = Value [fromString . show $ a]
-            cond = Condition [chunkFromText $ "is" <+> ordDesc <+> rhsDesc]
+            val = Value [chunk . X.pack . show $ a]
+            cond = Condition [chunk $ "is" <+> ordDesc <+> rhsDesc]
             ordDesc = case ord of
               EQ -> "equal to"
               LT -> "less than"
