@@ -14,7 +14,7 @@ base :: Package
 base = closedOpen "base" [4,7] [4,9]
 
 rainbow :: Package
-rainbow = nextBreaking "rainbow" [0,24]
+rainbow = nextBreaking "rainbow" [0,26]
 
 text :: Package
 text = closedOpen "text" [0,11,2,0] [1,3]
