@@ -7,35 +7,38 @@ module Main where
 import Cartel
 import Control.Applicative
 
+atLeast :: NonEmptyString -> [Word] -> Package
+atLeast name ver = package name (gtEq ver)
+
 versionInts :: [Word]
-versionInts = [0,36,0,2]
+versionInts = [0,36,0,4]
 
 base :: Package
-base = closedOpen "base" [4,7] [4,9]
+base = closedOpen "base" [4,7] [5]
 
 rainbow :: Package
-rainbow = nextBreaking "rainbow" [0,26]
+rainbow = atLeast "rainbow" [0,26]
 
 text :: Package
-text = closedOpen "text" [0,11,2,0] [1,3]
+text = atLeast "text" [0,11,2,0]
 
 containers :: Package
-containers = closedOpen "containers" [0,4,2,1] [0,6]
+containers = atLeast "containers" [0,4,2,1]
 
 quickcheck :: Package
-quickcheck = closedOpen "QuickCheck" [2,7] [2,9]
+quickcheck = atLeast "QuickCheck" [2,7]
 
 tasty :: Package
-tasty = nextBreaking "tasty" [0,10]
+tasty = atLeast "tasty" [0,10]
 
 tastyQuickcheck :: Package
-tastyQuickcheck = nextBreaking "tasty-quickcheck" [0,8]
+tastyQuickcheck = atLeast "tasty-quickcheck" [0,8]
 
 tastyTh :: Package
-tastyTh = nextBreaking "tasty-th" [0,1]
+tastyTh = atLeast "tasty-th" [0,1]
 
 bytestring :: Package
-bytestring = nextBreaking "bytestring" [0,10]
+bytestring = atLeast "bytestring" [0,10]
 
 properties :: Properties
 properties = blank
@@ -63,8 +66,6 @@ properties = blank
     , "given predicate, and to parse infix or RPN expressions into a tree of"
     , "predicates."
     ]
-  , testedWith = map (\ls -> (ghc, eq ls))
-    [ [7,8,3], [7,10,1] ]
   , extraSourceFiles =
     [ "README.md"
     , "changelog"
@@ -79,13 +80,13 @@ ghcOpts = ["-Wall"]
 -- Dependencies
 
 split :: Package
-split = closedOpen "split" [0,2,2] [0,3]
+split = atLeast "split" [0,2,2]
 
 contravariant :: Package
-contravariant = closedOpen "contravariant" [1,2] [1,4]
+contravariant = atLeast "contravariant" [1,2]
 
 transformers :: Package
-transformers = closedOpen "transformers" [0,3,0,0] [0,5]
+transformers = atLeast "transformers" [0,3,0,0]
 
 libDepends :: [Package]
 libDepends =
